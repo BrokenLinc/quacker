@@ -1,10 +1,12 @@
 import {
   Group,
+  GroupUser,
   Message,
   addMessage,
   updateGroup,
   useGroup,
   useGroupMessages,
+  useGroupUsers,
 } from '@@api';
 import { Header } from '@@components/Header';
 import { useAuthState } from '@@firebase/auth';
@@ -21,6 +23,7 @@ import {
   faQrcode,
 } from '@fortawesome/free-solid-svg-icons';
 import { formatDistanceToNow } from 'date-fns';
+import _ from 'lodash';
 import React from 'react';
 import Markdown from 'react-markdown';
 import QRCode from 'react-qr-code';
@@ -342,16 +345,23 @@ const AddMessageForm: React.FC<{ groupId: string }> = ({ groupId }) => {
 const useGroupState = (groupId: string) => {
   const [user, userLoading, userError] = useAuthState();
   const [group, groupLoading, groupError] = useGroup(groupId);
+  const [groupUsers, groupUsersLoading, groupUsersError] = useGroupUsers({
+    groupId,
+  });
 
-  const loading = userLoading || groupLoading;
-  const error = userError || groupError;
+  const loading = userLoading || groupLoading || groupUsersLoading;
+  const error = userError || groupError || groupUsersError;
+
+  const groupUser = _.find(groupUsers, {
+    userId: user?.uid,
+  } as Partial<GroupUser>);
 
   const isCreator = group?.uid === user?.uid;
-  const canAddGroupMessage = isCreator;
-  const canManageGroup = isCreator;
+  const canAddGroupMessage = isCreator || groupUser?.canPost;
+  const canManageGroup = isCreator || groupUser?.canManage;
 
   const addGroupMessage = (text: string) => {
-    if (!user) return;
+    if (!user || !canAddGroupMessage) return;
 
     addMessage({
       uid: user.uid,
