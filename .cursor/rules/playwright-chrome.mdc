@@ -1,0 +1,41 @@
+---
+description: Prefer system Google Chrome for Playwright e2e (agent/local); CI uses bundled Chromium
+alwaysApply: true
+---
+
+# Playwright — Prefer Installed Chrome
+
+Bundled Playwright Chromium often hangs or fails in agent/sandbox environments. **Prefer the user's installed Google Chrome desktop** for local and agent-run e2e.
+
+## Config (already set in `playwright*.config.ts`)
+
+- **Local / agent**: `channel: 'chrome'` with `devices['Desktop Chrome']`
+- **CI** (`CI=true`): no channel — use Playwright's bundled Chromium from `playwright install --with-deps chromium`
+
+Do not remove `channel: 'chrome'` from local configs to "fix" agent runs.
+
+## When running e2e
+
+```bash
+# Preferred — uses system Chrome via config
+yarn test:e2e
+yarn verify
+
+# Smoke against production
+PLAYWRIGHT_BASE_URL=https://quacker-five.vercel.app yarn test:e2e --config=playwright.smoke.config.ts
+```
+
+## Troubleshooting
+
+| Symptom | Action |
+| ------- | ------ |
+| Tests hang at startup | Confirm Google Chrome is installed; do **not** switch to bundled Chromium locally |
+| `channel: 'chrome'` not found | Install [Google Chrome](https://www.google.com/chrome/); on macOS it lives in `/Applications/Google Chrome.app` |
+| Agent sandbox blocks browser | Request `all` permissions for the test command, not a config change away from Chrome |
+| CI failure | Keep `CI=true` path on bundled Chromium; do not set `channel: 'chrome'` in GitHub Actions |
+
+## Avoid locally
+
+- `playwright install chromium` as the first fix for hangs
+- Overriding config to force headless bundled Chromium when Chrome is available
+- Installing Edge/Firefox projects unless explicitly requested

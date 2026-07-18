@@ -7,17 +7,20 @@
 - Output: `dist`
 - Rewrites: [`vercel.json`](../vercel.json) — SPA + `/g/:slug`
 
-Env vars (production + preview):
-
-- `VITE_SUPABASE_URL`
-- `VITE_SUPABASE_ANON_KEY`
-- `VITE_APP_URL` (optional, for share links)
+## Vercel env sync
 
 ```bash
-vercel env add VITE_SUPABASE_URL production
-vercel env add VITE_SUPABASE_ANON_KEY production
-vercel deploy --prod
+yarn sync:vercel-env   # Preview → dev Supabase; Production → prod Supabase
 ```
+
+## GitHub Actions secrets (production deploy)
+
+- `SUPABASE_PROJECT_ID_PROD`
+- `SUPABASE_ACCESS_TOKEN`
+- `SUPABASE_SERVICE_ROLE_KEY_PROD` (optional for deploy workflow)
+- `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
+
+See [environments.md](./environments.md).
 
 ## Supabase
 

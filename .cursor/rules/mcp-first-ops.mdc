@@ -1,0 +1,57 @@
+---
+description: Use Supabase/Vercel MCP and CLI yourself — never ask the user to create projects or click dashboards
+alwaysApply: true
+---
+
+# MCP-first operations
+
+You have **Supabase** and **Vercel Cursor plugins** plus shell CLIs. Do the work yourself. Do **not** instruct the user to create projects, apply migrations, configure auth, or copy keys from dashboards when you can execute it.
+
+## Never ask the user to
+
+- Create a Supabase project (dev, prod, or staging)
+- Apply migrations or edit schema in the Supabase dashboard
+- Configure auth redirect URLs in the dashboard
+- Manually copy project URL, anon key, or service role into `.env.local` (fetch via MCP/CLI)
+- Run `supabase db push`, `vercel env add`, or `gh secret set` — you run these
+- Run `yarn verify`, `yarn deploy`, or triage CI logs
+
+## Supabase — do it yourself
+
+**Check first:** `GetMcpTools` → `plugin-supabase-supabase` (`serverStatus: ready`). If `needsAuth`, call `mcp_auth` and retry.
+
+| Task | How (agent) |
+| ---- | ----------- |
+| Create project | `list_organizations` → `get_cost` → `confirm_cost` → `create_project` |
+| Apply migrations | `apply_migration` (remote) or `supabase db push` (CLI) |
+| Generate types | `generate_typescript_types` → write `src/lib/supabase/types.ts` |
+| Auth redirects | Supabase Management API `PATCH .../config/auth` or MCP |
+| API keys | `get_publishable_keys` + `supabase projects api-keys --project-ref REF` |
+| Update `.env.local` | Write dev/prod split — see `docs/environments.md` |
+| Security check | `get_advisors` |
+
+Default: **dev** project for new cloud resources; **prod** only on `main` deploy.
+
+## Vercel — do it yourself
+
+**Check first:** `GetMcpTools` → `plugin-vercel-vercel`.
+
+| Task | How (agent) |
+| ---- | ----------- |
+| Env vars (Preview vs Production) | `yarn sync:vercel-env` |
+| Production deploy | `yarn deploy` or Vercel MCP / `npx vercel deploy --prod` |
+| GitHub secrets | `gh secret set ...` from `.env.local` |
+
+## Pause the user only when
+
+1. **Account missing** — no Supabase / Vercel / GitHub account (billing/ownership)
+2. **Token missing** — `SUPABASE_ACCESS_TOKEN` or `VERCEL_TOKEN` not in `.env.local` and MCP returns `needsAuth` after `mcp_auth`
+3. **Ambiguous product decision** — e.g. project name, region, custom domain choice
+
+When pausing, ask for **one specific value** (e.g. “paste `SUPABASE_ACCESS_TOKEN` into `.env.local`”), then resume and finish setup without further handoffs.
+
+## After unblocking
+
+Run the full setup chain yourself: create project → migrations → auth → `.env.local` → `yarn sync:vercel-env` → `gh secret set` → `yarn check:requirements` → `yarn verify`.
+
+See [`docs/agent-operations.md`](docs/agent-operations.md) and [`docs/environments.md`](docs/environments.md).

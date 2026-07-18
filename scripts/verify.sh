@@ -4,6 +4,13 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
+if [[ -f .env.local ]]; then
+  set -a
+  # shellcheck disable=SC1091
+  source .env.local
+  set +a
+fi
+
 PREVIEW_PORT="${PREVIEW_PORT:-4173}"
 PREVIEW_PID=""
 
@@ -36,10 +43,22 @@ for _ in $(seq 1 30); do
 done
 
 echo "==> e2e tests"
-if curl -sf "http://127.0.0.1:54321/rest/v1/" -H "apikey: $VITE_SUPABASE_ANON_KEY" >/dev/null 2>&1; then
+# Full e2e when Supabase is reachable (remote .env.local or local supabase start)
+SUPABASE_REACHABLE=false
+if [[ -n "${VITE_SUPABASE_URL:-}" ]] && [[ -n "${VITE_SUPABASE_ANON_KEY:-}" ]]; then
+  if curl -sf "${VITE_SUPABASE_URL}/auth/v1/health" \
+    -H "apikey: ${VITE_SUPABASE_ANON_KEY}" \
+    -H "Authorization: Bearer ${VITE_SUPABASE_ANON_KEY}" \
+    >/dev/null 2>&1; then
+    SUPABASE_REACHABLE=true
+  fi
+fi
+
+if [[ "$SUPABASE_REACHABLE" == true ]]; then
+  echo "    Supabase reachable at ${VITE_SUPABASE_URL} — running full e2e suite"
   PLAYWRIGHT_BASE_URL="http://127.0.0.1:${PREVIEW_PORT}" yarn test:e2e
 else
-  echo "    Supabase not running — running a11y-home only (full suite in CI)"
+  echo "    Supabase unreachable — running a11y-home only (full suite needs .env.local or CI)"
   PLAYWRIGHT_BASE_URL="http://127.0.0.1:${PREVIEW_PORT}" yarn test:e2e tests/e2e/a11y-home.spec.ts
 fi
 

@@ -9,9 +9,9 @@ Agent-operated prototype. See [docs/features.md](docs/features.md) for capabilit
 ## Owner setup (one time)
 
 1. Create [Supabase](https://supabase.com/dashboard) and [Vercel](https://vercel.com) accounts
-2. Copy [`.env.example`](.env.example) → `.env.local` and fill in values — see [docs/prerequisites.md](docs/prerequisites.md)
+2. Enable **Supabase** and **Vercel** Cursor plugins; add `SUPABASE_ACCESS_TOKEN` and `VERCEL_TOKEN` to `.env.local` — see [docs/prerequisites.md](docs/prerequisites.md)
 
-Everything else is handled by the agent. See [AGENTS.md](AGENTS.md).
+The agent creates Supabase projects, runs migrations, syncs env vars, and deploys — you do not use dashboards for that. See [AGENTS.md](AGENTS.md).
 
 ## Stack
 

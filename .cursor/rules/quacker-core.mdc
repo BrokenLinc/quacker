@@ -19,7 +19,7 @@ Quacker is a private, ad-hoc group chat for trips and conferences — short-live
 - Pin exact semver versions in `package.json` — no carets
 - Minimal diffs; match existing patterns in surrounding code
 - Import Chakra via `@@ui` barrel, not `@chakra-ui/react` directly in pages
-- **Agent owns all execution** — never ask the user to run commands, click dashboards, or manually verify
+- **Agent owns all execution** — use MCP/CLI for Supabase, Vercel, GitHub; see [`.cursor/rules/mcp-first-ops.mdc`](mcp-first-ops.mdc)
 
 ## Verification
 

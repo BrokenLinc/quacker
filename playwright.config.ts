@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
+// Bundled Chromium often hangs in agent/sandbox runs; use installed Chrome locally.
+const browserChannel = process.env.CI ? undefined : ('chrome' as const);
 
 export default defineConfig({
   testDir: './tests/e2e',
@@ -15,9 +17,10 @@ export default defineConfig({
   },
   projects: [
     {
-      name: 'chromium',
+      name: browserChannel ?? 'chromium',
       use: {
         ...devices['Desktop Chrome'],
+        ...(browserChannel ? { channel: browserChannel } : {}),
       },
     },
   ],

@@ -17,7 +17,11 @@ if command -v supabase &>/dev/null; then
   echo "==> Starting local Supabase (if not already running)"
   supabase start 2>/dev/null || true
 else
-  echo "==> supabase CLI not found — install via: yarn dlx supabase start"
+  echo "==> supabase CLI not found — install via: brew install supabase/tap/supabase"
+  echo "    Or enable the Supabase Cursor Plugin (see docs/system-requirements.md)"
 fi
+
+echo "==> Checking system requirements"
+scripts/check-requirements.sh || true
 
 echo "==> Bootstrap complete. Run: yarn dev"

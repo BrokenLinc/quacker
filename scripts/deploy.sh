@@ -4,7 +4,6 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
 cd "$ROOT"
 
-# Load secrets for deploy (agent-only; not committed)
 if [[ -f .env.local ]]; then
   set -a
   # shellcheck disable=SC1091
@@ -12,16 +11,17 @@ if [[ -f .env.local ]]; then
   set +a
 fi
 
-: "${SUPABASE_PROJECT_ID:?Set SUPABASE_PROJECT_ID in .env.local}"
+: "${SUPABASE_PROJECT_ID_PROD:?Set SUPABASE_PROJECT_ID_PROD in .env.local}"
+: "${SUPABASE_ACCESS_TOKEN:?Set SUPABASE_ACCESS_TOKEN in .env.local}"
 
-echo "==> Linking Supabase project"
-supabase link --project-ref "$SUPABASE_PROJECT_ID"
+echo "==> Linking Supabase production project"
+supabase link --project-ref "$SUPABASE_PROJECT_ID_PROD"
 
-echo "==> Pushing migrations"
+echo "==> Pushing migrations to production"
 supabase db push
 
 if [[ -n "${VERCEL_TOKEN:-}" ]]; then
-  echo "==> Deploying to Vercel"
+  echo "==> Deploying to Vercel production"
   vercel deploy --prod --token "$VERCEL_TOKEN"
 else
   echo "==> Skipping Vercel deploy (VERCEL_TOKEN not set)"
@@ -32,4 +32,4 @@ if [[ -n "${VITE_APP_URL:-}" ]]; then
   PLAYWRIGHT_BASE_URL="$VITE_APP_URL" yarn test:e2e --config=playwright.smoke.config.ts
 fi
 
-echo "==> Deploy complete"
+echo "==> Deploy complete (production)"

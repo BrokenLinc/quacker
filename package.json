@@ -12,8 +12,10 @@
     "test:watch": "TZ=America/New_York vitest",
     "test:e2e": "playwright test",
     "bootstrap": "scripts/bootstrap.sh",
+    "check:requirements": "scripts/check-requirements.sh",
     "verify": "scripts/verify.sh",
-    "deploy": "scripts/deploy.sh"
+    "deploy": "scripts/deploy.sh",
+    "sync:vercel-env": "scripts/sync-vercel-env.sh"
   },
   "dependencies": {
     "@chakra-ui/react": "2.10.9",

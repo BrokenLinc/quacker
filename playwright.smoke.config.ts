@@ -6,6 +6,8 @@ if (!baseURL) {
   throw new Error('Set PLAYWRIGHT_BASE_URL or VITE_APP_URL for smoke tests');
 }
 
+const browserChannel = process.env.CI ? undefined : ('chrome' as const);
+
 export default defineConfig({
   testDir: './tests/e2e',
   testMatch: 'smoke-production.spec.ts',
@@ -13,5 +15,13 @@ export default defineConfig({
     baseURL,
     trace: 'on-first-retry',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: browserChannel ?? 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(browserChannel ? { channel: browserChannel } : {}),
+      },
+    },
+  ],
 });

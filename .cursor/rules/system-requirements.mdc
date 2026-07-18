@@ -1,0 +1,48 @@
+---
+description: System requirements — detect missing tools/plugins and recommend fixes before ops fail
+alwaysApply: true
+---
+
+# System Requirements
+
+Before deploy, secret propagation, remote Supabase ops, or local e2e, verify the environment. Full reference: [`docs/system-requirements.md`](docs/system-requirements.md).
+
+## Quick check
+
+```bash
+yarn check:requirements
+```
+
+Exit code `1` = required items missing. Warnings = agent may be blocked on specific tasks.
+
+## MCP plugins (agent-only detection)
+
+Shell cannot see Cursor plugins. Use **GetMcpTools**:
+
+| Server ID | Purpose | If missing / needsAuth |
+| --------- | ------- | ---------------------- |
+| `plugin-supabase-supabase` | Remote migrations, types, **create_project** | If `needsAuth`: `mcp_auth`; else user adds `SUPABASE_ACCESS_TOKEN` once — **do not ask user to create projects** |
+| `plugin-vercel-vercel` | Deploy, env, project ops | If unavailable: `npx vercel` + `VERCEL_TOKEN` — agent runs sync/deploy |
+
+If `serverStatus` is `needsAuth`, call `mcp_auth` for that server and retry.
+
+## When blocked — tell the user what to install
+
+| Symptom | Likely missing | Fix |
+| ------- | -------------- | --- |
+| `gh: command not found` | GitHub CLI | `brew install gh && gh auth login` |
+| `supabase: command not found` | Supabase CLI | `brew install supabase/tap/supabase` — or rely on Supabase MCP |
+| `vercel` / deploy fails | Vercel token or CLI | Add `VERCEL_*` to `.env.local`; `npm i -g vercel` or Vercel MCP |
+| Playwright hangs locally | Chrome or sandbox | Install Google Chrome; run tests with `all` permissions |
+| `supabase start` fails | Docker (optional) | Only needed for local Supabase — use remote project or CI for full e2e |
+| MCP tools unavailable | Cursor plugin | Cursor Settings → MCP; if `needsAuth`, `mcp_auth` — not “go create a project in Supabase” |
+| `.env.local` keys empty | User gate | Point to `docs/prerequisites.md` — do not invent secrets |
+
+## Priority
+
+1. **Required:** Node, Yarn, Git, `.env.local` Supabase vars
+2. **Recommended for full autonomy:** Supabase MCP or CLI, Vercel MCP or CLI + token, `gh`, Chrome
+3. **Optional:** Docker (local `supabase start` only)
+4. **CI:** GitHub Actions secrets (via `gh secret set` once `gh` is available)
+
+Do not defer to manual dashboard steps when CLI or MCP can do the job.

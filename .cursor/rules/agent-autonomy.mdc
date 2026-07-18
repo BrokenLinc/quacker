@@ -10,14 +10,18 @@ This repo is operated entirely by the agent. The user sets vision; the agent exe
 ## Rules
 
 1. Run `yarn verify` (or `scripts/verify.sh`) before declaring done
-2. Use CLIs (`supabase`, `vercel`, `gh`, `yarn`) — not service dashboards
-3. Pause only at documented user gates in `docs/prerequisites.md` (account creation, `.env.local` secrets)
-4. Self-fix CI failures; never ask the user to triage logs
-5. Propagate secrets from `.env.local` via CLI — user does not configure GitHub/Vercel manually
+2. Run `yarn check:requirements` when blocked on deploy, secrets, Supabase, Vercel, or e2e
+3. Use **MCP plugins first**, then CLIs (`supabase`, `vercel`, `gh`, `yarn`) — not service dashboards
+4. **Create and configure cloud resources yourself** (Supabase projects, migrations, auth, Vercel env, GitHub secrets) — see [`.cursor/rules/mcp-first-ops.mdc`](mcp-first-ops.mdc)
+5. Pause only at documented user gates in `docs/prerequisites.md` — never for tasks you have tools to perform
+6. Self-fix CI failures; never ask the user to triage logs
+7. Propagate secrets from `.env.local` via CLI — user does not configure GitHub/Vercel manually
+8. If MCP `serverStatus` is `needsAuth`, call `mcp_auth` and retry before asking the user
 
 ## User gates (only these)
 
-- GitHub repo ownership
-- Supabase project creation
-- Vercel account / project link
-- Filling `.env.local` with API keys
+- **Accounts exist** — GitHub, Supabase, Vercel (ownership/billing; one-time signup)
+- **Access tokens in `.env.local`** — `SUPABASE_ACCESS_TOKEN`, `VERCEL_TOKEN` (only if MCP auth cannot complete)
+- **Product choices** — when genuinely ambiguous (e.g. custom domain name)
+
+**Not user gates:** creating Supabase projects, applying migrations, auth redirect URLs, fetching API keys, syncing Vercel env, setting GitHub secrets, deploying.
