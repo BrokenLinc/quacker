@@ -31,7 +31,7 @@ export const RouteButton = React.forwardRef<
     <UI.Button
       ref={ref}
       as={Link}
-      // @ts-ignore TODO: figure out why the custom button breaks this
+      // @ts-expect-error Chakra Button `as={Link}` to prop typing
       to={route.path}
       children={route.label}
       {...restProps}

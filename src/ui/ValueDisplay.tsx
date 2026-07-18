@@ -2,7 +2,7 @@ import { DataGridColumnMeta } from '@@data-grid/types';
 import { formatDateOnly } from '@@helpers/dateOnlyHelpers';
 import { formatDateTime } from '@@helpers/dateTimeHelpers';
 import { formatDateTimeOnly } from '@@helpers/dateTimeOnlyHelpers';
-import { subtypeMetas } from '@@helpers/subtypeMetas';
+import { subtypeMetas, SubtypeMetaKey } from '@@helpers/subtypeMetas';
 import * as UI from '@chakra-ui/react';
 import { format } from 'date-fns';
 import _ from 'lodash';
@@ -29,7 +29,8 @@ export function ValueDisplay({
     formattedValue = meta.format(value);
   }
   if (!formattedValue && meta?.subtype) {
-    formattedValue = subtypeMetas[meta.subtype].format?.(value);
+    const key = meta.subtype as SubtypeMetaKey;
+    formattedValue = subtypeMetas[key]?.format?.(value);
   }
   if (!formattedValue) {
     formattedValue = String(value);

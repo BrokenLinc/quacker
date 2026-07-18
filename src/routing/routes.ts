@@ -1,16 +1,5 @@
-/**************************************************************
- * Centralized route definitions
- *
- * All the application routes should be defined here,
- * and then imported for usage in the router, links, menus, etc.
- **************************************************************/
-
 import * as Pages from '@@pages';
 
-/**
- * Root routes should have no paths prefix,
- * and should load pages from the /pages directory.
- */
 export const routes = {
   home: () => ({
     path: '/',
@@ -21,5 +10,15 @@ export const routes = {
     path: `/${groupId}`,
     component: Pages.GroupPage,
     label: 'Group',
+  }),
+  groupBySlug: (slug = ':slug') => ({
+    path: `/g/${slug}`,
+    component: Pages.GroupSlugPage,
+    label: 'Group',
+  }),
+  authCallback: () => ({
+    path: '/auth/callback',
+    component: Pages.AuthCallbackPage,
+    label: 'Auth',
   }),
 };

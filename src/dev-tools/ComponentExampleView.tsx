@@ -53,7 +53,7 @@ export const ComponentExampleList: React.FC<
         </UI.List>
         <UI.VStack spacing={0} alignItems="stretch" maxW="980px">
           {componentExamples.map(
-            ({ title, description, noBorder, render }, i) => (
+            ({ title, description, noBorder, render }) => (
               <ComponentExampleListItem
                 key={title}
                 as="section"

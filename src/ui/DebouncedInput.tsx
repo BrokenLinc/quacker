@@ -16,7 +16,7 @@ export type DebouncedInputProps = {
   rightIcon?: FontAwesomeIconProps;
 } & Omit<UI.InputProps, 'value' | 'onChange'>;
 
-export const DebouncedInput: React.FC<DebouncedInputProps> = (props, ref) => {
+export const DebouncedInput: React.FC<DebouncedInputProps> = (props) => {
   const {
     value: initialValue = '',
     onChange,

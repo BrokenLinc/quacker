@@ -1,0 +1,23 @@
+---
+description: Agent-operated repo — CLI-first, self-verifying, no user deferral
+alwaysApply: true
+---
+
+# Agent Autonomy
+
+This repo is operated entirely by the agent. The user sets vision; the agent executes.
+
+## Rules
+
+1. Run `yarn verify` (or `scripts/verify.sh`) before declaring done
+2. Use CLIs (`supabase`, `vercel`, `gh`, `yarn`) — not service dashboards
+3. Pause only at documented user gates in `docs/prerequisites.md` (account creation, `.env.local` secrets)
+4. Self-fix CI failures; never ask the user to triage logs
+5. Propagate secrets from `.env.local` via CLI — user does not configure GitHub/Vercel manually
+
+## User gates (only these)
+
+- GitHub repo ownership
+- Supabase project creation
+- Vercel account / project link
+- Filling `.env.local` with API keys

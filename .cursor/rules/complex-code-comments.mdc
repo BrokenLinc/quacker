@@ -1,0 +1,16 @@
+---
+description: Lean comments on non-obvious logic only
+globs: "**/*.{ts,tsx,sql}"
+alwaysApply: false
+---
+
+# Complex Code Comments
+
+Add **lean comments** only where a human (or agent) would struggle without context:
+
+- RLS policies and security rules (SQL)
+- Realtime subscription lifecycle (subscribe/unsubscribe, channel naming)
+- Auth flows (magic-link callback, session exchange)
+- Permission checks that encode product rules
+
+Do **not** comment self-explanatory UI, simple getters, or obvious Chakra layout.

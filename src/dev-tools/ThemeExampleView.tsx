@@ -47,7 +47,7 @@ export const ThemeExampleList: React.FC<
           })}
         </UI.List>
         <UI.VStack spacing={0} alignItems="stretch" maxW="980px" flex="1">
-          {componentExamples.map(({ title, description, render }, i) => (
+          {componentExamples.map(({ title, description, render }) => (
             <ThemeExampleListItem
               key={title}
               as="section"

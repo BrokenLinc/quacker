@@ -1,0 +1,26 @@
+---
+description: Quacker product context, stack conventions, and agent ownership
+alwaysApply: true
+---
+
+# Quacker Core
+
+Quacker is a private, ad-hoc group chat for trips and conferences — short-lived social groups that need to sync quickly.
+
+## Stack
+
+- Vite + `@vitejs/plugin-react-swc` (SWC, not Babel)
+- React 18, Chakra UI v2, FontAwesome
+- Supabase (Postgres + Realtime + magic-link auth)
+- Path alias: `@@*` → `src/*`
+
+## Conventions
+
+- Pin exact semver versions in `package.json` — no carets
+- Minimal diffs; match existing patterns in surrounding code
+- Import Chakra via `@@ui` barrel, not `@chakra-ui/react` directly in pages
+- **Agent owns all execution** — never ask the user to run commands, click dashboards, or manually verify
+
+## Verification
+
+Run `yarn verify` before marking work complete.

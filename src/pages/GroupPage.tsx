@@ -1,24 +1,30 @@
+import { useChirpOnNewMessages } from '@@lib/notifications/chirp';
+import { getShareUrl } from '@@lib/share';
 import {
   Group,
   Message,
   addMessage,
+  ensureGroupMember,
+  isGroupMember,
   updateGroup,
   useGroup,
   useGroupMessages,
 } from '@@api';
 import { Header } from '@@components/Header';
-import { useAuthState } from '@@firebase/auth';
+import { useAuthState } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
 import {
   faArrowLeft,
   faCamera,
   faCheck,
+  faCopy,
   faGear,
   faHeart,
   faPaperPlane,
   faPencil,
   faQrcode,
+  faShareNodes,
 } from '@fortawesome/free-solid-svg-icons';
 import { formatDistanceToNow } from 'date-fns';
 import React from 'react';
@@ -78,7 +84,7 @@ const GroupHeader: React.FC<{ groupId: string }> = ({ groupId }) => {
           </UI.RouteLink>
           {group?.name || '...'}
         </UI.Heading>
-        <GroupSharer ml="auto" />
+        <GroupSharer group={group} ml="auto" />
         <GroupManager groupId={groupId} />
       </UI.HStack>
       <UI.Divider />
@@ -86,8 +92,31 @@ const GroupHeader: React.FC<{ groupId: string }> = ({ groupId }) => {
   );
 };
 
-const GroupSharer: React.FC<UI.ButtonProps> = (props) => {
+const GroupSharer: React.FC<UI.ButtonProps & { group?: Group }> = ({
+  group,
+  ...props
+}) => {
   const modal = UI.useDisclosure();
+  const toast = UI.useToast();
+  const shareUrl = group ? getShareUrl(group.slug) : '';
+
+  const copyLink = async () => {
+    await navigator.clipboard.writeText(shareUrl);
+    toast({ title: 'Link copied', status: 'success', duration: 2000 });
+  };
+
+  const nativeShare = async () => {
+    if (navigator.share) {
+      await navigator.share({
+        title: group?.name ?? 'Quacker group',
+        url: shareUrl,
+      });
+    } else {
+      copyLink();
+    }
+  };
+
+  if (!group) return null;
 
   return (
     <React.Fragment>
@@ -104,23 +133,39 @@ const GroupSharer: React.FC<UI.ButtonProps> = (props) => {
         headerContent={
           <React.Fragment>
             <UI.Icon icon={faCamera} mr={2} />
-            Snap me!
+            Join {group.name}
           </React.Fragment>
         }
         size="md"
         {...modal}
       >
         <UI.ModalBody px={6} pb={6}>
-          <UI.Box
-            bg="white"
-            p={16}
-            borderRadius="3xl"
-            border="1px solid"
-            borderColor="gray.200"
-            shadow="lg"
-          >
-            <QRCode value={window.location.href} size={270} />
-          </UI.Box>
+          <UI.VStack spacing={4}>
+            <UI.Box
+              bg="white"
+              p={8}
+              borderRadius="3xl"
+              border="1px solid"
+              borderColor="gray.200"
+              shadow="lg"
+            >
+              <QRCode value={shareUrl} size={240} />
+            </UI.Box>
+            <UI.Text fontSize="sm" fontFamily="mono" wordBreak="break-all">
+              {shareUrl}
+            </UI.Text>
+            <UI.ButtonGroup size="sm">
+              <UI.Button leftIcon={<UI.Icon icon={faCopy} />} onClick={copyLink}>
+                Copy link
+              </UI.Button>
+              <UI.Button
+                leftIcon={<UI.Icon icon={faShareNodes} />}
+                onClick={nativeShare}
+              >
+                Share
+              </UI.Button>
+            </UI.ButtonGroup>
+          </UI.VStack>
         </UI.ModalBody>
       </UI.QuickModal>
     </React.Fragment>
@@ -137,7 +182,6 @@ const GroupManager: React.FC<UI.ButtonProps & { groupId: string }> = ({
   if (loading) return <UI.Spinner />;
   if (error) return null;
   if (!group) return null;
-
   if (!canManageGroup) return null;
 
   return (
@@ -164,7 +208,7 @@ const GroupManager: React.FC<UI.ButtonProps & { groupId: string }> = ({
               <GroupForm groupId={groupId} defaultValues={group} />
             </UI.TabPanel>
             <UI.TabPanel px={5} py={3}>
-              {/* <GroupPermissions groupId={groupId} defaultValues={group} /> */}
+              {/* Permissions UI deferred */}
             </UI.TabPanel>
           </UI.TabPanels>
         </UI.Tabs>
@@ -234,14 +278,18 @@ const AddMessageForm: React.FC<{ groupId: string }> = ({ groupId }) => {
   if (!user || !group) return null;
 
   if (!canAddGroupMessage) {
-    return null;
+    return (
+      <UI.Text fontSize="sm" color="gray.500">
+        Sign in and join this group to post.
+      </UI.Text>
+    );
   }
 
   const canSend = !!text.trim();
 
-  const handleSendClick = () => {
+  const handleSendClick = async () => {
     if (canSend) {
-      addGroupMessage(text);
+      await addGroupMessage(text);
       setText('');
     }
   };
@@ -253,10 +301,11 @@ const AddMessageForm: React.FC<{ groupId: string }> = ({ groupId }) => {
           <MessageCard
             preview
             message={{
+              id: 'preview',
               uid: user.uid,
               authorName: user.displayName,
               authorPhotoURL: user.photoURL,
-              time: new Date().getTime(),
+              time: Date.now(),
               text,
               groupId,
             }}
@@ -342,22 +391,32 @@ const AddMessageForm: React.FC<{ groupId: string }> = ({ groupId }) => {
 const useGroupState = (groupId: string) => {
   const [user, userLoading, userError] = useAuthState();
   const [group, groupLoading, groupError] = useGroup(groupId);
+  const [member, setMember] = React.useState<boolean | null>(null);
 
-  const loading = userLoading || groupLoading;
+  React.useEffect(() => {
+    if (!user || !groupId) {
+      setMember(null);
+      return;
+    }
+    ensureGroupMember(groupId, user.uid).then(() => {
+      isGroupMember(groupId, user.uid).then(setMember);
+    });
+  }, [user, groupId]);
+
+  const loading = userLoading || groupLoading || (user && member === null);
   const error = userError || groupError;
 
   const isCreator = group?.uid === user?.uid;
-  const canAddGroupMessage = isCreator;
+  const canAddGroupMessage = !!user && member === true;
   const canManageGroup = isCreator;
 
-  const addGroupMessage = (text: string) => {
+  const addGroupMessage = async (text: string) => {
     if (!user) return;
 
-    addMessage({
+    await addMessage({
       uid: user.uid,
       authorName: user.displayName,
       authorPhotoURL: user.photoURL,
-      time: Date.now(),
       text,
       groupId,
     });
@@ -377,13 +436,15 @@ const useGroupState = (groupId: string) => {
 const MessageList: React.FC<{ groupId: string }> = ({ groupId }) => {
   const [messages, loading, error] = useGroupMessages(groupId, { limit: 100 });
 
+  useChirpOnNewMessages(messages, groupId);
+
   if (loading) return <UI.Spinner />;
   if (error) return null;
   if (!messages?.length) return null;
 
   return (
     <UI.VStack align="stretch">
-      {messages?.map((message) => (
+      {messages.map((message) => (
         <MessageCard key={message.id} message={message} />
       ))}
     </UI.VStack>
@@ -404,8 +465,8 @@ export const MessageCard: React.FC<{ message: Message; preview?: boolean }> = ({
             ? 'purple.50'
             : 'purple.800'
           : isLight
-          ? 'gray.50'
-          : 'gray.700'
+            ? 'gray.50'
+            : 'gray.700'
       }
       border={preview ? '2px solid' : undefined}
       borderColor={isLight ? 'purple.100' : 'purple.700'}

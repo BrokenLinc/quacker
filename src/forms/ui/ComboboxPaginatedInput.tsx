@@ -79,7 +79,7 @@ export const ComboboxPaginatedInput = React.forwardRef<
   const loadPagedOptions = React.useCallback(
     async (
       q: string,
-      prevOptions: any,
+      _prevOptions: any,
       additional?: {
         page: number;
       }

@@ -1,0 +1,13 @@
+---
+description: Supabase schema-first workflow
+globs: "supabase/**,src/api/**,src/lib/supabase/**"
+alwaysApply: false
+---
+
+# Supabase
+
+- All schema changes via `supabase/migrations/*.sql` — never edit prod in the dashboard
+- After migrations: `supabase gen types typescript --local > src/lib/supabase/types.ts`
+- Apply locally: `supabase db reset` or `supabase migration up`
+- Apply remote: `supabase db push` (agent runs this, not the user)
+- RLS must enforce auth server-side; client checks are UX only

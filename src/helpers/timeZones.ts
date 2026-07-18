@@ -1,4 +1,4 @@
-import ct from 'countries-and-timezones';
+import * as ct from 'countries-and-timezones';
 import _ from 'lodash';
 
 const getTimeZoneFriendlyName = (timeZoneId: string) => {

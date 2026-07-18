@@ -1,0 +1,13 @@
+---
+description: TypeScript and React patterns for Quacker
+globs: "**/*.{ts,tsx}"
+alwaysApply: false
+---
+
+# TypeScript & React
+
+- Use `@@ui` for Chakra components and custom UI primitives
+- Use `react-hook-form` + Zod for forms (see `src/forms/`)
+- Pages are lazy-loaded via `src/pages/index.ts`; use default exports for page components only
+- Prefer named exports for components, hooks, and utilities
+- Supabase client lives in `src/lib/supabase/` — never import service-role keys in frontend code

@@ -20,7 +20,7 @@ export const theme = extendTheme({
 /**
  * Customizes the Chakra theme and provides it via context.
  */
-export const ThemeProvider: React.FC<React.PropsWithChildren<{}>> = (props) => {
+export const ThemeProvider: React.FC<React.PropsWithChildren> = (props) => {
   return (
     <ChakraProvider theme={theme}>
       <ColorModeScript initialColorMode={theme.config.initialColorMode} />
