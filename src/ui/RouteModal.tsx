@@ -1,4 +1,4 @@
-import { AppRoute } from '@@routing/types';
+import { RouteDef } from '@@routing/types';
 import * as UI from '@@ui';
 import React from 'react';
 import { useNavigate } from 'react-router';
@@ -14,8 +14,8 @@ import { useMatch } from 'react-router-dom';
  */
 
 type RouteModalProps = Partial<Omit<UI.ModalProps, 'children'>> & {
-  route: AppRoute;
-  parentRoute?: AppRoute;
+  route: RouteDef;
+  parentRoute?: RouteDef;
   children?: React.ReactNode | React.FC<{ onClose: () => void }>;
   header?: React.ReactNode;
   printable?: boolean;

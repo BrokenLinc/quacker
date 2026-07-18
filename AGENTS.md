@@ -54,6 +54,7 @@ Do **not** ask the user to create projects, use dashboards, run `yarn dev`, appl
 - [`docs/prerequisites.md`](docs/prerequisites.md) — user setup checklist
 - [`docs/agent-operations.md`](docs/agent-operations.md) — CLI reference, failure recovery
 - [`docs/architecture.md`](docs/architecture.md) — stack and data model
+- [`docs/gravatar-llms.txt`](docs/gravatar-llms.txt) — Gravatar API v3.0.0 reference for AI development environments
 - [`.cursor/skills/quacker-ops/SKILL.md`](.cursor/skills/quacker-ops/SKILL.md) — detailed ops skill
 
 ## Auth

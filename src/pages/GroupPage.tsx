@@ -11,7 +11,8 @@ import {
   useGroupMessages,
 } from '@@api';
 import { Header } from '@@components/Header';
-import { useAuthState } from '@@lib/supabase/auth';
+import { UserAvatar } from '@@components/UserAvatar';
+import { resolveAppUserPhotoURL, useAuthState } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
 import {
@@ -300,6 +301,7 @@ const AddMessageForm: React.FC<{ groupId: string }> = ({ groupId }) => {
         <UI.Box pb={2}>
           <MessageCard
             preview
+            authorEmail={user.email}
             message={{
               id: 'preview',
               uid: user.uid,
@@ -416,7 +418,7 @@ const useGroupState = (groupId: string) => {
     await addMessage({
       uid: user.uid,
       authorName: user.displayName,
-      authorPhotoURL: user.photoURL,
+      authorPhotoURL: await resolveAppUserPhotoURL(user),
       text,
       groupId,
     });
@@ -451,10 +453,11 @@ const MessageList: React.FC<{ groupId: string }> = ({ groupId }) => {
   );
 };
 
-export const MessageCard: React.FC<{ message: Message; preview?: boolean }> = ({
-  message,
-  preview,
-}) => {
+export const MessageCard: React.FC<{
+  message: Message;
+  preview?: boolean;
+  authorEmail?: string | null;
+}> = ({ message, preview, authorEmail }) => {
   const isLight = UI.useColorModeValue(true, false);
 
   return (
@@ -491,10 +494,11 @@ export const MessageCard: React.FC<{ message: Message; preview?: boolean }> = ({
         </UI.Badge>
       )}
       <UI.HStack spacing={3}>
-        <UI.Avatar
+        <UserAvatar
           bg="purple.200"
           name={message.authorName || ''}
-          src={message.authorPhotoURL || ''}
+          email={authorEmail}
+          photoURL={message.authorPhotoURL}
           size="sm"
         />
         <UI.VStack spacing={0} align="stretch" pt={0.5}>

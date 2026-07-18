@@ -3,7 +3,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { addGroup, useGroups } from '@@api';
-import { signOut, signInWithMagicLink, useAuthState } from '@@lib/supabase/auth';
+import { UserAvatar } from '@@components/UserAvatar';
+import {
+  resolveAppUserPhotoURL,
+  signOut,
+  signInWithMagicLink,
+  useAuthState,
+} from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 import { faMessage } from '@fortawesome/free-solid-svg-icons';
 
@@ -107,9 +113,10 @@ const UserMenu: React.FC = () => {
     <React.Fragment>
       <UI.Menu>
         <UI.MenuButton
-          as={UI.Avatar}
+          as={UserAvatar}
           name={user.displayName || user.email || ''}
-          src={user.photoURL || undefined}
+          email={user.email}
+          photoURL={user.photoURL}
           cursor="pointer"
           size="sm"
         />
@@ -180,7 +187,7 @@ const AddGroupForm: React.FC<{ onCreated: () => void }> = ({ onCreated }) => {
       const { id } = await addGroup({
         uid: user.uid,
         authorName: user.displayName,
-        authorPhotoURL: user.photoURL,
+        authorPhotoURL: await resolveAppUserPhotoURL(user),
         name: name.trim(),
       });
       onCreated();
