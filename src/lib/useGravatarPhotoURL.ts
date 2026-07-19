@@ -26,6 +26,7 @@ export const useGravatarPhotoURL = (
       return;
     }
 
+    setSrc(undefined);
     let cancelled = false;
     getGravatarAvatarUrlForEmail(email, gravatarOptions).then((url) => {
       if (!cancelled) setSrc(url);
