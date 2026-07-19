@@ -331,12 +331,10 @@ const useGroupState = (groupId: string) => {
     let cancelled = false;
 
     ensureGroupMember(groupId, user.uid)
+      .catch(() => undefined)
       .then(() => isGroupMember(groupId, user.uid))
       .then((isMember) => {
         if (!cancelled) setMember(isMember);
-      })
-      .catch(() => {
-        if (!cancelled) setMember(false);
       });
 
     return () => {
