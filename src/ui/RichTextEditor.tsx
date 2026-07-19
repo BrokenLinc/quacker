@@ -50,7 +50,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     if (!editor) return;
 
     if (value === '' && !editor.isEmpty) {
-      editor.commands.clearContent();
+      editor.commands.clearContent(false);
     }
   }, [editor, value]);
 

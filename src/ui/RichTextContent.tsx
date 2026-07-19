@@ -8,11 +8,7 @@ export type RichTextContentProps = {
   emptyFallback?: React.ReactNode;
 };
 
-export const RichTextContent: React.FC<RichTextContentProps> = ({
-  content,
-  emptyFallback = '🤔',
-}) => {
-  const markdown = content.trim();
+const RichTextDocument: React.FC<{ markdown: string }> = ({ markdown }) => {
   const extensions = React.useMemo(
     () => createRichTextExtensions({ openLinksOnClick: true }),
     [],
@@ -20,7 +16,7 @@ export const RichTextContent: React.FC<RichTextContentProps> = ({
 
   const editor = useEditor({
     extensions,
-    content: markdown || '',
+    content: markdown,
     contentType: 'markdown',
     editable: false,
   });
@@ -28,12 +24,8 @@ export const RichTextContent: React.FC<RichTextContentProps> = ({
   React.useEffect(() => {
     if (!editor) return;
 
-    editor.commands.setContent(markdown || '', { contentType: 'markdown' });
+    editor.commands.setContent(markdown, { contentType: 'markdown' });
   }, [editor, markdown]);
-
-  if (!markdown) {
-    return <UI.Text>{emptyFallback}</UI.Text>;
-  }
 
   if (!editor) return null;
 
@@ -53,4 +45,17 @@ export const RichTextContent: React.FC<RichTextContentProps> = ({
       <EditorContent editor={editor} />
     </UI.Box>
   );
+};
+
+export const RichTextContent: React.FC<RichTextContentProps> = ({
+  content,
+  emptyFallback = '🤔',
+}) => {
+  const markdown = content.trim();
+
+  if (!markdown) {
+    return <UI.Text>{emptyFallback}</UI.Text>;
+  }
+
+  return <RichTextDocument markdown={markdown} />;
 };
