@@ -60,20 +60,11 @@ const pollOtpFromInbucket = async (email: string, timeoutMs = 15_000) => {
   const deadline = Date.now() + timeoutMs;
 
   while (Date.now() < deadline) {
-    const listRes = await fetch(`${base}/api/v1/mailbox/${mailbox}`);
-    if (listRes.ok) {
-      const messages = (await listRes.json()) as { id: string }[];
-      const latest = messages[0];
-      if (latest?.id) {
-        const msgRes = await fetch(
-          `${base}/api/v1/mailbox/${mailbox}/${latest.id}`
-        );
-        if (msgRes.ok) {
-          const body = await msgRes.text();
-          const match = body.match(/\b(\d{6})\b/);
-          if (match?.[1]) return match[1];
-        }
-      }
+    const msgRes = await fetch(`${base}/api/v1/mailbox/${mailbox}/latest`);
+    if (msgRes.ok) {
+      const body = await msgRes.text();
+      const match = body.match(/\b(\d{6})\b/);
+      if (match?.[1]) return match[1];
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
   }

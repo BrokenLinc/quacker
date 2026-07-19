@@ -8,7 +8,7 @@ import { SignInScreen } from './SignInScreen';
 export const RequireAuth: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, loading, error] = useAuthState();
+  const [user, loading] = useAuthState();
 
   if (loading) {
     return (
@@ -23,7 +23,6 @@ export const RequireAuth: React.FC<{ children: React.ReactNode }> = ({
     );
   }
 
-  if (error) return null;
   if (!user) return <SignInScreen />;
 
   return <>{children}</>;

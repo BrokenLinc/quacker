@@ -60,6 +60,7 @@ export const useAuthState = (): [
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session: Session | null) => {
+      setError(undefined);
       setUser(toAppUser(session?.user ?? null));
       setLoading(false);
     });
