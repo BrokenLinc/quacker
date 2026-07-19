@@ -38,12 +38,14 @@ See [`.env.example`](../.env.example).
 | `VITE_SUPABASE_ANON_KEY` | dev anon key | prod anon key |
 | `VITE_APP_URL` | omit (uses origin) | `https://quacker-five.vercel.app` |
 
-## Supabase auth redirects
+## Supabase auth
 
-| Project | `site_url` | Redirect URLs |
-| ------- | ---------- | ------------- |
-| **dev** | `http://127.0.0.1:5173` | localhost + `https://*.vercel.app/auth/callback` |
-| **prod** | `https://quacker-five.vercel.app` | prod URL + `https://*.vercel.app/auth/callback` |
+Email OTP does not use redirect URLs. Remote projects should use an OTP-only email template (`{{ .Token }}`; no confirmation link).
+
+| Project | `site_url` |
+| ------- | ---------- |
+| **dev** | Preview / local origin |
+| **prod** | `https://quacker-five.vercel.app` |
 
 ## Workflows
 

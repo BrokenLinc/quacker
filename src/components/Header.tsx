@@ -7,8 +7,8 @@ import { UserAvatar } from '@@components/UserAvatar';
 import {
   resolveAppUserPhotoURL,
   signOut,
-  signInWithMagicLink,
   useAuthState,
+  type AppUser,
 } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 import { faMessage } from '@fortawesome/free-solid-svg-icons';
@@ -18,6 +18,7 @@ export const Header: React.FC = () => {
 
   if (loading) return <UI.Spinner />;
   if (error) return null;
+  if (!user) return null;
 
   return (
     <UI.Box>
@@ -35,60 +36,10 @@ export const Header: React.FC = () => {
           </UI.Text>
         </UI.HStack>
         <ColorModeToggle />
-        {user ? <UserMenu /> : <SignInForm />}
+        <UserMenu user={user} />
       </UI.HStack>
       <UI.Divider />
     </UI.Box>
-  );
-};
-
-const SignInForm: React.FC = () => {
-  const [email, setEmail] = React.useState('');
-  const [sent, setSent] = React.useState(false);
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError(null);
-    const { error: signInError } = await signInWithMagicLink(email.trim());
-    setLoading(false);
-    if (signInError) {
-      setError(signInError.message);
-    } else {
-      setSent(true);
-    }
-  };
-
-  if (sent) {
-    return (
-      <UI.Text fontSize="sm" color="green.500">
-        Check your email for a magic link
-      </UI.Text>
-    );
-  }
-
-  return (
-    <UI.HStack as="form" onSubmit={handleSubmit} spacing={2}>
-      <UI.Input
-        size="sm"
-        type="email"
-        placeholder="you@email.com"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
-        required
-        w="160px"
-      />
-      <UI.Button type="submit" variant="outline" size="sm" disabled={loading}>
-        {loading ? 'Sending…' : 'Magic link'}
-      </UI.Button>
-      {error && (
-        <UI.Text fontSize="xs" color="red.500">
-          {error}
-        </UI.Text>
-      )}
-    </UI.HStack>
   );
 };
 
@@ -101,13 +52,8 @@ const ColorModeToggle = () => {
   );
 };
 
-const UserMenu: React.FC = () => {
-  const [user, loading, error] = useAuthState();
+const UserMenu: React.FC<{ user: AppUser }> = ({ user }) => {
   const addGroupModal = UI.useDisclosure();
-
-  if (loading) return <UI.Spinner />;
-  if (error) return null;
-  if (!user) return null;
 
   return (
     <React.Fragment>
@@ -138,7 +84,7 @@ const UserMenu: React.FC = () => {
       </UI.Menu>
       <UI.QuickModal {...addGroupModal} headerContent="New group">
         <UI.ModalBody>
-          <AddGroupForm onCreated={addGroupModal.onClose} />
+          <AddGroupForm user={user} onCreated={addGroupModal.onClose} />
         </UI.ModalBody>
       </UI.QuickModal>
     </React.Fragment>
@@ -175,15 +121,13 @@ const GroupMenuItemList: React.FC = () => {
   );
 };
 
-const AddGroupForm: React.FC<{ onCreated: () => void }> = ({ onCreated }) => {
-  const [user, loading, error] = useAuthState();
+const AddGroupForm: React.FC<{
+  user: AppUser;
+  onCreated: () => void;
+}> = ({ user, onCreated }) => {
   const [name, setName] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
   const navigate = useNavigate();
-
-  if (loading) return <UI.Spinner />;
-  if (error) return null;
-  if (!user) return null;
 
   const handleSubmit = async () => {
     if (!name.trim()) return;

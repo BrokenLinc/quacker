@@ -13,7 +13,8 @@
 | `/` | Home — group list |
 | `/:groupId` | Group chat |
 | `/g/:slug` | Short link → resolves to group |
-| `/auth/callback` | Magic-link session exchange |
+
+All routes are protected by `RequireAuth`; unauthenticated users see the email OTP sign-in screen (deep-link URL is preserved).
 
 ## Data model
 
@@ -37,16 +38,16 @@ Supabase `postgres_changes` on `messages` and `groups` tables. Hooks in `src/api
 
 ## Auth flow
 
-1. User enters email → `signInWithOtp`
-2. Email link → `/auth/callback` → session stored
-3. RLS policies enforce membership for writes
+1. User enters email → `requestEmailOtp` (`signInWithOtp`)
+2. User enters 6-digit code from email → `verifyEmailOtp`
+3. Session stored in browser; RLS policies enforce membership for writes
 
 ## Folder layout
 
 ```
 src/
   api/           # group + message hooks
-  components/    # Header, etc.
+  components/    # Header, RequireAuth, SignInScreen, etc.
   lib/supabase/  # client, auth, types
   lib/notifications/  # chirp, push subscribe
   pages/         # route pages

@@ -65,7 +65,7 @@ Do not ask the user to perform steps 2–6.
 | No Supabase project | Agent: `create_project` — do not ask user to use dashboard |
 | Migration error | Fix SQL, `supabase db reset` (optional), re-run verify |
 | E2e auth fails | Check dev `SUPABASE_SERVICE_ROLE_KEY`; remote Supabase reachable |
-| Magic link redirect 404 | Agent: PATCH auth `uri_allow_list` — see `docs/environments.md` |
+| OTP email not received locally | Check Inbucket at `http://127.0.0.1:54324` after **Send code** |
 | Realtime not updating | Confirm tables in `supabase_realtime` publication |
 
 ## User gates

@@ -71,7 +71,7 @@ vercel env add VITE_SUPABASE_ANON_KEY production
 ```bash
 supabase start
 # Studio: http://127.0.0.1:54323
-# Inbucket (magic links): http://127.0.0.1:54324
+# Inbucket (email OTP): http://127.0.0.1:54324
 ```
 
 Local anon URL/key are printed by `supabase start`. Use them in `.env.local` for local dev.
@@ -91,7 +91,7 @@ Ask the user **only** when MCP/CLI cannot proceed. Otherwise execute the setup y
 | Blocked | Agent action (no user handoff) |
 | ------- | ------------------------------ |
 | Need dev/prod project | `create_project` → `apply_migration` → update `.env.local` |
-| Magic link redirect fails | PATCH auth config via Management API |
+| OTP sign-in fails in prod | Verify Supabase email template uses `{{ .Token }}` (OTP-only, no link) |
 | Vercel env out of sync | `yarn sync:vercel-env` |
 
 ## Failure recovery

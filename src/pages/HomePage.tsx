@@ -1,5 +1,4 @@
 import { useGroups } from '@@api';
-import { Header } from '@@components/Header';
 import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
 import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
@@ -7,12 +6,9 @@ import React from 'react';
 
 const HomePage: React.FC = () => {
   return (
-    <React.Fragment>
-      <Header />
-      <UI.Box maxW="480px" mx="auto" p={4}>
-        <GroupCardList />
-      </UI.Box>
-    </React.Fragment>
+    <UI.Box maxW="480px" mx="auto" p={4}>
+      <GroupCardList />
+    </UI.Box>
   );
 };
 export default HomePage;

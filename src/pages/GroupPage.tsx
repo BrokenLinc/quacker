@@ -10,7 +10,6 @@ import {
   useGroup,
   useGroupMessages,
 } from '@@api';
-import { Header } from '@@components/Header';
 import { UserAvatar } from '@@components/UserAvatar';
 import { resolveAppUserPhotoURL, useAuthState } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
@@ -35,12 +34,7 @@ import { useParams } from 'react-router-dom';
 const GroupPage: React.FC = () => {
   const { groupId } = useParams() as { groupId: string };
 
-  return (
-    <React.Fragment>
-      <Header />
-      <GroupPageContents groupId={groupId} />
-    </React.Fragment>
-  );
+  return <GroupPageContents groupId={groupId} />;
 };
 export default GroupPage;
 

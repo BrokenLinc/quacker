@@ -146,7 +146,7 @@ If e2e hangs in the agent sandbox, the agent should request **`all`** shell perm
 
 **Not required** if you use your **remote Supabase project** (typical setup with `.env.local` + Supabase Cursor Plugin).
 
-Docker is only needed when you want the full **offline** stack via `supabase start` (Postgres, Auth, Inbucket for local magic links, Studio). That path is for contributors who prefer local DB e2e; CI runs its own Supabase on GitHub Actions.
+Docker is only needed when you want the full **offline** stack via `supabase start` (Postgres, Auth, Inbucket for local email OTP, Studio). That path is for contributors who prefer local DB e2e; CI runs its own Supabase on GitHub Actions.
 
 ```bash
 docker info   # optional check

@@ -6,7 +6,7 @@ Quacker is a private, ad-hoc group chat for trips and conferences.
 
 | Feature | Description |
 | ------- | ----------- |
-| Magic-link auth | Email OTP sign-in via Supabase (no password in prod) |
+| Email OTP auth | Enter email, verify 6-digit code in-app (PWA-safe; no magic link) |
 | User avatars | Gravatar v3 SHA256 avatars from sign-in email; Chakra initials fallback |
 | Group list | Browse all groups on home page |
 | Create group | Name a group; auto short slug for sharing |
@@ -21,7 +21,8 @@ Quacker is a private, ad-hoc group chat for trips and conferences.
 
 ## Auth (MVP)
 
-- **Magic link only** — enter email, click link in inbox (Inbucket locally)
+- **Email OTP only** — enter email, type 6-digit code from inbox (Inbucket locally at `http://127.0.0.1:54324`)
+- All routes require sign-in via `RequireAuth` wrapper
 - Display name defaults to email local-part
 - Avatar defaults to [Gravatar](https://gravatar.com) (SHA256 hash of email); see [`docs/gravatar-llms.txt`](gravatar-llms.txt)
 

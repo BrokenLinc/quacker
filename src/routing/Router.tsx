@@ -3,21 +3,11 @@ import {
   RouterProvider,
   useRouteError,
 } from 'react-router-dom';
-import _ from 'lodash';
 import React from 'react';
 
+import { AppShell } from '@@components/AppShell';
+import { RequireAuth } from '@@components/auth/RequireAuth';
 import * as Pages from '@@pages';
-
-import { getRouteIdFromPaths } from './helpers/routeId';
-import { routes } from './routes';
-import { AppRoute } from './types';
-
-const appRoutes: AppRoute[] = [
-  { ...routes.home(), component: Pages.HomePage },
-  { ...routes.group(), component: Pages.GroupPage },
-  { ...routes.groupBySlug(), component: Pages.GroupSlugPage },
-  { ...routes.authCallback(), component: Pages.AuthCallbackPage },
-];
 
 const RouteError: React.FC = () => {
   const error = useRouteError();
@@ -43,20 +33,45 @@ const RouteError: React.FC = () => {
   );
 };
 
-const router = createBrowserRouter(
-  _.map(appRoutes, (route) => ({
-    id: getRouteIdFromPaths({
-      path: route.path,
-    }),
-    path: route.path,
+const router = createBrowserRouter([
+  {
+    path: '/',
     element: (
       <React.Suspense fallback={<div data-testid="route-loading" />}>
-        <route.component />
+        <RequireAuth>
+          <AppShell />
+        </RequireAuth>
       </React.Suspense>
     ),
     errorElement: <RouteError />,
-  }))
-);
+    children: [
+      {
+        index: true,
+        element: (
+          <React.Suspense fallback={<div data-testid="route-loading" />}>
+            <Pages.HomePage />
+          </React.Suspense>
+        ),
+      },
+      {
+        path: 'g/:slug',
+        element: (
+          <React.Suspense fallback={<div data-testid="route-loading" />}>
+            <Pages.GroupSlugPage />
+          </React.Suspense>
+        ),
+      },
+      {
+        path: ':groupId',
+        element: (
+          <React.Suspense fallback={<div data-testid="route-loading" />}>
+            <Pages.GroupPage />
+          </React.Suspense>
+        ),
+      },
+    ],
+  },
+]);
 
 export const Router: React.FC = () => {
   return <RouterProvider router={router} />;

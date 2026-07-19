@@ -49,7 +49,92 @@ export const waitForAuthenticated = async (page: Page) => {
   });
 };
 
-/** E2E uses admin-generated magic links (test-only); prod uses email magic link. */
+const authStorageKey = (supabaseUrl: string) => {
+  const hostname = new URL(supabaseUrl).hostname;
+  return `sb-${hostname.replace(/\./g, '-')}-auth-token`;
+};
+
+const pollOtpFromInbucket = async (email: string, timeoutMs = 15_000) => {
+  const mailbox = encodeURIComponent(email.split('@')[0] ?? email);
+  const base = process.env.INBUCKET_URL ?? 'http://127.0.0.1:54324';
+  const deadline = Date.now() + timeoutMs;
+
+  while (Date.now() < deadline) {
+    const listRes = await fetch(`${base}/api/v1/mailbox/${mailbox}`);
+    if (listRes.ok) {
+      const messages = (await listRes.json()) as { id: string }[];
+      const latest = messages[0];
+      if (latest?.id) {
+        const msgRes = await fetch(
+          `${base}/api/v1/mailbox/${mailbox}/${latest.id}`
+        );
+        if (msgRes.ok) {
+          const body = await msgRes.text();
+          const match = body.match(/\b(\d{6})\b/);
+          if (match?.[1]) return match[1];
+        }
+      }
+    }
+    await new Promise((resolve) => setTimeout(resolve, 500));
+  }
+
+  return null;
+};
+
+const injectSession = async (
+  page: Page,
+  email: string,
+  appOrigin: string
+) => {
+  const { url, anonKey, serviceKey } = getSupabaseEnv();
+  const admin = createClient(url, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const anon = createClient(url, anonKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+
+  const { data: linkData, error: linkError } =
+    await admin.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+    });
+  const otp = linkData?.properties?.email_otp;
+  if (linkError || !otp) {
+    throw linkError ?? new Error('No OTP from admin generateLink');
+  }
+
+  const { data: verifyData, error: verifyError } = await anon.auth.verifyOtp({
+    email,
+    token: otp,
+    type: 'email',
+  });
+  if (verifyError || !verifyData.session) {
+    throw verifyError ?? new Error('Failed to verify admin OTP');
+  }
+
+  const storageKey = authStorageKey(url);
+  await page.goto(`${appOrigin}/`);
+  await page.evaluate(
+    ({ key, session }) => {
+      localStorage.setItem(
+        key,
+        JSON.stringify({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          expires_at: session.expires_at,
+          expires_in: session.expires_in,
+          token_type: session.token_type,
+          user: session.user,
+        })
+      );
+    },
+    { key: storageKey, session: verifyData.session }
+  );
+  await page.reload();
+};
+
+/** E2E uses admin-generated OTP; prod uses email OTP UI. */
 export const seedTestSession = async (page: Page) => {
   const admin = getAdminClient();
   const email = `e2e-${Date.now()}@quacker.test`;
@@ -62,20 +147,20 @@ export const seedTestSession = async (page: Page) => {
   });
   if (error || !userData.user) throw error ?? new Error('No user');
 
-  const { data: linkData, error: linkError } =
-    await admin.auth.admin.generateLink({
-      type: 'magiclink',
-      email,
-      options: {
-        redirectTo: `${appOrigin}/auth/callback`,
-      },
-    });
-  if (linkError || !linkData.properties?.action_link) {
-    throw linkError ?? new Error('No magic link');
+  await page.goto(`${appOrigin}/`);
+  await expect(page.getByTestId('sign-in-screen')).toBeVisible();
+  await page.getByTestId('sign-in-email').fill(email);
+  await page.getByTestId('sign-in-send-code').click();
+  await expect(page.getByText('Check your email for a 6-digit code')).toBeVisible();
+
+  const otp = await pollOtpFromInbucket(email);
+  if (otp) {
+    await page.getByTestId('sign-in-otp').fill(otp);
+    await page.getByTestId('sign-in-verify').click();
+  } else {
+    await injectSession(page, email, appOrigin);
   }
 
-  await page.goto(linkData.properties.action_link);
-  await page.waitForURL(`${appOrigin}/**`, { timeout: 15_000 });
   await waitForAuthenticated(page);
 
   return { admin, userId: userData.user.id, email };

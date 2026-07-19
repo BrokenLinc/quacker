@@ -33,13 +33,11 @@ export const resolveAppUserPhotoURL = (
 
 export const signOut = () => supabase.auth.signOut();
 
-export const signInWithMagicLink = (email: string) => {
-  const redirectTo = `${window.location.origin}/auth/callback`;
-  return supabase.auth.signInWithOtp({
-    email,
-    options: { emailRedirectTo: redirectTo },
-  });
-};
+export const requestEmailOtp = (email: string) =>
+  supabase.auth.signInWithOtp({ email });
+
+export const verifyEmailOtp = (email: string, token: string) =>
+  supabase.auth.verifyOtp({ email, token, type: 'email' });
 
 export const useAuthState = (): [
   AppUser | null,
