@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react';
 import type { Session, User } from '@supabase/supabase-js';
 
+import { resolvePhotoURL } from '@@lib/gravatar';
+
 import { supabase } from './client';
 
 /** App-facing user shape (compatible with legacy Firebase fields). */
@@ -24,6 +26,10 @@ export const toAppUser = (user: User | null): AppUser | null => {
     photoURL: (user.user_metadata?.avatar_url as string | undefined) ?? null,
   };
 };
+
+export const resolveAppUserPhotoURL = (
+  user: Pick<AppUser, 'photoURL' | 'email'>
+) => resolvePhotoURL(user.photoURL, user.email);
 
 export const signOut = () => supabase.auth.signOut();
 

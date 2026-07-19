@@ -1,20 +1,24 @@
 import { IconDefinition } from '@fortawesome/fontawesome-svg-core';
 
-export type AppRoute = {
-  parent?: AppRoute;
+export type RouteDef = {
+  parent?: RouteDef;
   path: string;
-  component: React.LazyExoticComponent<React.FC>;
   label: string;
   icon?: IconDefinition;
 };
 
+export type AppRoute = RouteDef & {
+  component: React.LazyExoticComponent<React.FC>;
+};
+
 export type ModalRoute = {
-  parent: AppRoute;
+  parent: RouteDef;
   subPath: string;
   label: string;
   icon?: IconDefinition;
 };
 
+export type RouteDefFn = () => RouteDef;
 export type AppRouteFn = () => AppRoute;
 
 export type AppRouteTree = AppRouteFn | AppRoutes;

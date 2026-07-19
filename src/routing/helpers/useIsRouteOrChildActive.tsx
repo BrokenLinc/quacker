@@ -1,10 +1,10 @@
-import { AppRoute } from '@@routing/types';
+import { RouteDef } from '@@routing/types';
 import _ from 'lodash';
 import { useMatch, useMatches } from 'react-router-dom';
 import { getRoutePathsFromId } from './routeId';
 
 export const useIsRouteOrChildActive = (
-  route: AppRoute,
+  route: RouteDef,
   activateOnChild?: boolean
 ) => {
   const isActive = useMatch(route.path);

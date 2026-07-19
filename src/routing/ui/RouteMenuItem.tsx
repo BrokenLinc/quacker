@@ -1,5 +1,5 @@
 import { useIsRouteOrChildActive } from '@@routing/helpers/useIsRouteOrChildActive';
-import { AppRoute } from '@@routing/types';
+import { RouteDef } from '@@routing/types';
 import * as UI from '@@ui';
 import React from 'react';
 import { Link } from 'react-router-dom';
@@ -10,7 +10,7 @@ import { Link } from 'react-router-dom';
  */
 
 export type RouteMenuItemProps = {
-  route: AppRoute;
+  route: RouteDef;
   activeProps?: UI.MenuItemProps;
   onActive?: () => void;
   activateOnChild?: boolean;

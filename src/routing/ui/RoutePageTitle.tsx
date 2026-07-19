@@ -3,9 +3,9 @@ import { faArrowLeft } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React from 'react';
 
-import { AppRoute } from '../types';
+import { RouteDef } from '../types';
 
-export const RoutePageTitle: React.FC<{ route: AppRoute } & UI.StackProps> = ({
+export const RoutePageTitle: React.FC<{ route: RouteDef } & UI.StackProps> = ({
   route,
   children,
   ...restProps
