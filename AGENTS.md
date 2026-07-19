@@ -71,11 +71,8 @@ Docker runs rootless-in-VM and is not started automatically:
 
 `.env.local` is created during setup from `.env.example` with the standard local Supabase demo keys (`http://127.0.0.1:54321`). It is gitignored, so recreate it if missing: `cp .env.example .env.local` and fill `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`/`SUPABASE_SERVICE_ROLE_KEY` with the values printed by `supabase start`.
 
-### CRITICAL: do not upgrade the Supabase CLI past v2.102.0
-The CLI is intentionally pinned to **v2.102.0**. Starting with v2.103.0 (the May 30 2026 flip), `[api].auto_expose_new_tables` defaults to `false`, which revokes `select/insert/update/delete` from `anon`, `authenticated`, and `service_role` on `postgres`-owned tables. Because this repo's migrations create tables as `postgres` and rely on the legacy auto-expose grants (they contain no explicit `GRANT`s), any newer CLI makes every Data API read/write fail with `permission denied for table ... (42501)` — the whole app and e2e suite break. If the CLI gets upgraded, reinstall v2.102.0 and recreate the stack with a fresh volume (`supabase stop --no-backup` then `supabase start`).
-
 ### Auth / magic-link testing
 Magic-link emails are not really sent locally — they are captured by Mailpit at `http://127.0.0.1:54324`. To log in: enter an email on the app, open Mailpit, open the newest message, and follow the "Log In" link (or paste its `/auth/v1/verify?...` URL into the app tab).
 
 ### Running e2e
-`yarn test:e2e` uses the installed Google **Chrome** (`channel: 'chrome'`), not bundled Chromium. Start a preview server first (`yarn preview --host 127.0.0.1 --port 4173`) and run with `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173`; `yarn verify` wires this up automatically. Note: 3 of the 6 e2e specs (`auth-flow`, `group-messaging` "member can post", `a11y-group`) currently fail on **pre-existing test-selector bugs** (ambiguous `getByText` strict-mode matches and a collapsed-menu visibility check) — not environment problems; the underlying app flows work (verified manually).
+`yarn test:e2e` uses the installed Google **Chrome** (`channel: 'chrome'`), not bundled Chromium. Start a preview server first (`yarn preview --host 127.0.0.1 --port 4173`) and run with `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173`; `yarn verify` wires this up automatically.
