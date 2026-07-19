@@ -66,6 +66,8 @@ export { Icon, type IconProps } from './Icon';
 export * from './IndicatorBadge';
 export * from './InfoTooltip';
 export * from './QuickModal';
+export * from './RichTextContent';
+export * from './RichTextEditor';
 export * from './RouteModal';
 export * from './TabCarouselControl';
 export * from './TimeLeft';

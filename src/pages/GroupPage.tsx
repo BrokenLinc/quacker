@@ -29,10 +29,8 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import { formatDistanceToNow } from 'date-fns';
 import React from 'react';
-import Markdown from 'react-markdown';
 import QRCode from 'react-qr-code';
 import { useParams } from 'react-router-dom';
-import TextareaAutosize from 'react-textarea-autosize';
 
 const GroupPage: React.FC = () => {
   const { groupId } = useParams() as { groupId: string };
@@ -267,12 +265,9 @@ const GroupForm: React.FC<{ groupId: string; defaultValues: Group }> = ({
 };
 
 const AddMessageForm: React.FC<{ groupId: string }> = ({ groupId }) => {
-  const isLight = UI.useColorModeValue(true, false);
   const { user, group, loading, error, canAddGroupMessage, addGroupMessage } =
     useGroupState(groupId);
   const [text, setText] = React.useState('');
-  const [previewVisible, setPreviewVisible] = React.useState(false);
-  const [helpVisible, setHelpVisible] = React.useState(false);
 
   if (loading) return <UI.Spinner />;
   if (error) return null;
@@ -296,96 +291,19 @@ const AddMessageForm: React.FC<{ groupId: string }> = ({ groupId }) => {
   };
 
   return (
-    <UI.Box>
-      <UI.Collapse in={previewVisible} animateOpacity>
-        <UI.Box pb={2}>
-          <MessageCard
-            preview
-            authorEmail={user.email}
-            message={{
-              id: 'preview',
-              uid: user.uid,
-              authorName: user.displayName,
-              authorPhotoURL: user.photoURL,
-              time: Date.now(),
-              text,
-              groupId,
-            }}
-          />
-        </UI.Box>
-      </UI.Collapse>
-      <UI.Collapse in={helpVisible} animateOpacity>
-        <UI.Box pb={2}>
-          <UI.HStack
-            bg={isLight ? 'purple.50' : 'purple.800'}
-            border="2px solid"
-            borderColor={isLight ? 'purple.100' : 'purple.700'}
-            align="stretch"
-            fontSize="xs"
-            spacing={0}
-            borderRadius="lg"
-          >
-            <UI.Text px={2} py={2} fontWeight="Bold">
-              Formatting:
-            </UI.Text>
-            <UI.Text px={2} py={2}>
-              [link label](url)
-            </UI.Text>
-            <UI.Text px={2} py={2}>
-              **bold**
-            </UI.Text>
-            <UI.Text px={2} py={2}>
-              *italic*
-            </UI.Text>
-            <UI.Text px={2} py={2}>
-              # heading
-            </UI.Text>
-          </UI.HStack>
-        </UI.Box>
-      </UI.Collapse>
-      <UI.InputGroup mb={2}>
-        <UI.Textarea
-          as={TextareaAutosize}
-          placeholder="Say something!"
-          resize="none"
-          minH={10}
-          value={text}
-          onChange={(e) => setText(e.currentTarget.value)}
-        />
-        <UI.InputRightElement top="auto" bottom={0} w="auto" pr={1}>
-          <UI.Button
-            colorScheme="green"
-            size="sm"
-            onClick={handleSendClick}
-            iconAfter={faPaperPlane}
-            isDisabled={!canSend}
-          >
-            Send
-          </UI.Button>
-        </UI.InputRightElement>
-      </UI.InputGroup>
-      <UI.HStack>
-        <UI.ButtonGroup size="xs">
-          {previewVisible ? (
-            <UI.Button onClick={() => setPreviewVisible(false)}>
-              Hide Preview
-            </UI.Button>
-          ) : (
-            <UI.Button onClick={() => setPreviewVisible(true)}>
-              Show Preview
-            </UI.Button>
-          )}
-          {helpVisible ? (
-            <UI.Button onClick={() => setHelpVisible(false)}>
-              Hide Markdown Help
-            </UI.Button>
-          ) : (
-            <UI.Button onClick={() => setHelpVisible(true)}>
-              Show Markdown Help
-            </UI.Button>
-          )}
-        </UI.ButtonGroup>
-      </UI.HStack>
+    <UI.Box position="relative" mb={2}>
+      <UI.RichTextEditor value={text} onChange={setText} />
+      <UI.Box position="absolute" bottom={2} right={2}>
+        <UI.Button
+          colorScheme="green"
+          size="sm"
+          onClick={handleSendClick}
+          iconAfter={faPaperPlane}
+          isDisabled={!canSend}
+        >
+          Send
+        </UI.Button>
+      </UI.Box>
     </UI.Box>
   );
 };
@@ -453,26 +371,12 @@ const MessageList: React.FC<{ groupId: string }> = ({ groupId }) => {
   );
 };
 
-export const MessageCard: React.FC<{
-  message: Message;
-  preview?: boolean;
-  authorEmail?: string | null;
-}> = ({ message, preview, authorEmail }) => {
+export const MessageCard: React.FC<{ message: Message }> = ({ message }) => {
   const isLight = UI.useColorModeValue(true, false);
 
   return (
     <UI.VStack
-      bg={
-        preview
-          ? isLight
-            ? 'purple.50'
-            : 'purple.800'
-          : isLight
-            ? 'gray.50'
-            : 'gray.700'
-      }
-      border={preview ? '2px solid' : undefined}
-      borderColor={isLight ? 'purple.100' : 'purple.700'}
+      bg={isLight ? 'gray.50' : 'gray.700'}
       px={4}
       pt={3}
       pb={5}
@@ -481,23 +385,10 @@ export const MessageCard: React.FC<{
       align="stretch"
       position="relative"
     >
-      {preview && (
-        <UI.Badge
-          colorScheme="purple"
-          borderRadius="md"
-          position="absolute"
-          top={2}
-          right={2}
-          px={3}
-        >
-          Preview
-        </UI.Badge>
-      )}
       <UI.HStack spacing={3}>
         <UserAvatar
           bg="purple.200"
           name={message.authorName || ''}
-          email={authorEmail}
           photoURL={message.authorPhotoURL}
           size="sm"
         />
@@ -509,19 +400,7 @@ export const MessageCard: React.FC<{
         </UI.VStack>
       </UI.HStack>
       <UI.Box>
-        <Markdown
-          components={{
-            h1: (props) => <UI.Heading size="md" {...props} />,
-            h2: (props) => <UI.Heading size="sm" {...props} />,
-            h3: (props) => <UI.Heading size="sm" {...props} />,
-            h4: (props) => <UI.Heading size="sm" {...props} />,
-            h5: (props) => <UI.Heading size="sm" {...props} />,
-            h6: (props) => <UI.Heading size="sm" {...props} />,
-            a: UI.Link,
-          }}
-        >
-          {message.text.trim() || '🤔'}
-        </Markdown>
+        <UI.RichTextContent content={message.text} />
       </UI.Box>
     </UI.VStack>
   );
