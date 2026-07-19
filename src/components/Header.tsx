@@ -119,6 +119,7 @@ const UserMenu: React.FC = () => {
           photoURL={user.photoURL}
           cursor="pointer"
           size="sm"
+          data-testid="user-menu-button"
         />
         <UI.MenuList>
           <GroupMenuItemList />
