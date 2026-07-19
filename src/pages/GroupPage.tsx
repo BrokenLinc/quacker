@@ -45,7 +45,7 @@ const GroupPage: React.FC = () => {
 export default GroupPage;
 
 const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
-  const { groupLoading } = useGroupState(groupId);
+  const { groupLoading } = useGroupState(groupId, { channelId: 'page-contents' });
 
   if (groupLoading) {
     return (
@@ -69,7 +69,9 @@ const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
 };
 
 const GroupHeader: React.FC<{ groupId: string }> = ({ groupId }) => {
-  const { group, groupLoading, error } = useGroupState(groupId);
+  const { group, groupLoading, error } = useGroupState(groupId, {
+    channelId: 'header',
+  });
 
   if (groupLoading) return <UI.Spinner />;
   if (error) return null;
@@ -177,7 +179,10 @@ const GroupManager: React.FC<UI.ButtonProps & { groupId: string }> = ({
   groupId,
   ...props
 }) => {
-  const { group, groupLoading, error, canManageGroup } = useGroupState(groupId);
+  const { group, groupLoading, error, canManageGroup } = useGroupState(
+    groupId,
+    { channelId: 'manager' }
+  );
   const modal = UI.useDisclosure();
 
   if (groupLoading) return <UI.Spinner />;
@@ -275,7 +280,7 @@ const AddMessageForm: React.FC<{ groupId: string }> = ({ groupId }) => {
     error,
     canAddGroupMessage,
     addGroupMessage,
-  } = useGroupState(groupId);
+  } = useGroupState(groupId, { channelId: 'add-message' });
   const [text, setText] = React.useState('');
 
   if (groupLoading || membershipLoading) return <UI.Spinner />;
@@ -317,9 +322,14 @@ const AddMessageForm: React.FC<{ groupId: string }> = ({ groupId }) => {
   );
 };
 
-const useGroupState = (groupId: string) => {
+const useGroupState = (
+  groupId: string,
+  options?: { channelId?: string }
+) => {
   const [user, userLoading, userError] = useAuthState();
-  const [group, groupLoading, groupError] = useGroup(groupId);
+  const [group, groupLoading, groupError] = useGroup(groupId, {
+    channelId: options?.channelId,
+  });
   const [member, setMember] = React.useState<boolean | null>(null);
 
   React.useEffect(() => {

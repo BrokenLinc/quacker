@@ -29,7 +29,11 @@ const rowToGroup = (row: GroupRow): Group => ({
 
 type HookResult<T> = [T | undefined, boolean, Error | undefined];
 
-export const useGroup = (id: string): HookResult<Group> => {
+export const useGroup = (
+  id: string,
+  options?: { channelId?: string }
+): HookResult<Group> => {
+  const channelId = options?.channelId ?? 'default';
   const [group, setGroup] = useState<Group | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
@@ -55,7 +59,7 @@ export const useGroup = (id: string): HookResult<Group> => {
     fetchGroup();
 
     const channel = supabase
-      .channel(`group-doc:${id}`)
+      .channel(`group-doc:${id}:${channelId}`)
       .on(
         'postgres_changes',
         {
@@ -77,7 +81,7 @@ export const useGroup = (id: string): HookResult<Group> => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id]);
+  }, [channelId, id]);
 
   return [group, loading, error];
 };
