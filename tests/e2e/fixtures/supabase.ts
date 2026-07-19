@@ -36,9 +36,6 @@ export const getAdminClient = () => {
   });
 };
 
-const storageKey = (url: string) =>
-  `sb-${new URL(url).hostname.split('.')[0]}-auth-token`;
-
 export type TestGroup = {
   id: string;
   slug: string;
@@ -52,54 +49,33 @@ export const waitForAuthenticated = async (page: Page) => {
   });
 };
 
-/** E2E uses password sign-in (test-only); prod uses magic link. */
+/** E2E uses admin-generated magic links (test-only); prod uses email magic link. */
 export const seedTestSession = async (page: Page) => {
-  const { url, anonKey } = getSupabaseEnv();
   const admin = getAdminClient();
   const email = `e2e-${Date.now()}@quacker.test`;
-  const password = 'QuackerE2ETest99!';
+  const appOrigin =
+    process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
 
   const { data: userData, error } = await admin.auth.admin.createUser({
     email,
-    password,
     email_confirm: true,
   });
   if (error || !userData.user) throw error ?? new Error('No user');
 
-  const key = storageKey(url);
+  const { data: linkData, error: linkError } =
+    await admin.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+      options: {
+        redirectTo: `${appOrigin}/auth/callback`,
+      },
+    });
+  if (linkError || !linkData.properties?.action_link) {
+    throw linkError ?? new Error('No magic link');
+  }
 
-  await page.goto('/');
-  await page.evaluate(
-    async ({ authUrl, anonKey, email, password, key }) => {
-      const res = await fetch(`${authUrl}/auth/v1/token?grant_type=password`, {
-        method: 'POST',
-        headers: {
-          apikey: anonKey,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ email, password }),
-      });
-      if (!res.ok) {
-        throw new Error(`Browser auth failed: ${res.status} ${await res.text()}`);
-      }
-
-      const data = await res.json();
-      const expiresAt =
-        data.expires_at ??
-        Math.round(Date.now() / 1000) + (data.expires_in ?? 3600);
-      const session = {
-        access_token: data.access_token,
-        refresh_token: data.refresh_token,
-        expires_in: data.expires_in,
-        expires_at: expiresAt,
-        token_type: data.token_type ?? 'bearer',
-        user: data.user,
-      };
-      localStorage.setItem(key, JSON.stringify(session));
-    },
-    { authUrl: url, anonKey, email, password, key }
-  );
-  await page.reload();
+  await page.goto(linkData.properties.action_link);
+  await page.waitForURL(`${appOrigin}/**`, { timeout: 15_000 });
   await waitForAuthenticated(page);
 
   return { admin, userId: userData.user.id, email };
