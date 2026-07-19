@@ -9,7 +9,8 @@ This repository is **agent-operated**. The user sets vision; you execute everyth
 | `yarn check:requirements` | Verify CLIs, `.env.local`, and list MCP plugin expectations |
 | `yarn bootstrap` | Install deps, scaffold `.env.local`, start local Supabase |
 | `yarn dev` | Vite dev server |
-| `yarn verify` | lint + build + unit + e2e (definition of done) |
+| `yarn verify` | lint + build + unit + smoke e2e locally (~seconds); full e2e in CI or with local Supabase |
+| `yarn verify:fast` | lint + build + unit only (skip e2e) |
 | `yarn deploy` | Push Supabase migrations + Vercel prod deploy |
 
 ## Environment

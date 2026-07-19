@@ -50,7 +50,8 @@ See [`.env.example`](../.env.example).
 | Command / workflow | Target |
 | ------------------ | ------ |
 | `yarn dev` | dev Supabase |
-| `yarn verify` | dev Supabase (full e2e when reachable) |
+| `yarn verify` | lint + build + unit + smoke e2e locally; full e2e with local Supabase or CI |
+| `yarn verify:fast` | lint + build + unit only (skip e2e) |
 | `yarn deploy` | **prod** Supabase + Vercel production |
 | `ci.yml` | Ephemeral local Supabase on runner (isolated) |
 | `deploy.yml` on `main` | **prod** Supabase + Vercel production |
