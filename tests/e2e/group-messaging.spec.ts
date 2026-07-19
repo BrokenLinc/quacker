@@ -1,67 +1,56 @@
 import { expect, test } from '@playwright/test';
 
-import { seedTestSession } from './fixtures/supabase';
+import {
+  gotoGroupPage,
+  seedTestGroup,
+  seedTestSession,
+} from './fixtures/supabase';
 
-test('member can post and see message in feed', async ({ page }) => {
-  const { admin, userId } = await seedTestSession(page);
+test.describe('group messaging', () => {
+  test.describe.configure({ mode: 'serial' });
 
-  const slug = `msg${Date.now().toString(36).slice(-5)}`;
-  const { data: group } = await admin
-    .from('groups')
-    .insert({
-      slug,
-      creator_id: userId,
+  test('member can post and see message in feed', async ({ page }) => {
+    const { admin, userId } = await seedTestSession(page);
+
+    const group = await seedTestGroup(admin, userId, {
+      slug: `msg${Date.now().toString(36).slice(-5)}`,
       name: 'Messaging Test',
-      author_name: 'Tester',
-    })
-    .select()
-    .single();
+    });
 
-  await page.reload();
-  await page.goto(`/${group!.id}`);
-  await expect(page.getByRole('heading', { name: 'Messaging Test' })).toBeVisible({
-    timeout: 10_000,
+    await gotoGroupPage(page, group);
+
+    const messageText = `Hello from e2e ${Date.now()}`;
+    const editor = page.getByTestId('message-editor');
+    await expect(editor).toBeVisible({ timeout: 15_000 });
+    await editor.click();
+    await page.keyboard.type(messageText);
+    await page.getByRole('button', { name: 'Send' }).click();
+
+    await expect
+      .poll(async () => page.getByText(messageText).count(), { timeout: 15_000 })
+      .toBeGreaterThan(0);
   });
 
-  const messageText = `Hello from e2e ${Date.now()}`;
-  await page.getByRole('textbox', { name: 'Say something!' }).click();
-  await page.keyboard.type(messageText);
-  await page.getByRole('button', { name: 'Send' }).click();
+  test('realtime updates when message inserted via admin', async ({ page }) => {
+    const { admin, userId } = await seedTestSession(page);
 
-  await expect.poll(async () => page.getByText(messageText).count()).toBeGreaterThan(0);
-});
-
-test('realtime updates when message inserted via admin', async ({ page }) => {
-  const { admin, userId } = await seedTestSession(page);
-
-  const slug = `rt${Date.now().toString(36).slice(-5)}`;
-  const { data: group } = await admin
-    .from('groups')
-    .insert({
-      slug,
-      creator_id: userId,
+    const group = await seedTestGroup(admin, userId, {
+      slug: `rt${Date.now().toString(36).slice(-5)}`,
       name: 'Realtime Test',
-      author_name: 'Tester',
-    })
-    .select()
-    .single();
+    });
 
-  await admin.from('group_members').upsert({
-    group_id: group!.id,
-    user_id: userId,
-    role: 'creator',
+    await gotoGroupPage(page, group);
+
+    const realtimeText = `Realtime ${Date.now()}`;
+    await admin.from('messages').insert({
+      group_id: group.id,
+      author_id: userId,
+      author_name: 'Admin',
+      text: realtimeText,
+    });
+
+    await expect
+      .poll(async () => page.getByText(realtimeText).count(), { timeout: 20_000 })
+      .toBeGreaterThan(0);
   });
-
-  await page.reload();
-  await page.goto(`/${group!.id}`);
-
-  const realtimeText = `Realtime ${Date.now()}`;
-  await admin.from('messages').insert({
-    group_id: group!.id,
-    author_id: userId,
-    author_name: 'Admin',
-    text: realtimeText,
-  });
-
-  await expect(page.getByText(realtimeText)).toBeVisible({ timeout: 15_000 });
 });

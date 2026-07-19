@@ -45,9 +45,9 @@ const GroupPage: React.FC = () => {
 export default GroupPage;
 
 const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
-  const { loading } = useGroupState(groupId);
+  const { groupLoading } = useGroupState(groupId);
 
-  if (loading) {
+  if (groupLoading) {
     return (
       <UI.Box maxW="480px" mx="auto" p={4}>
         <UI.Spinner />
@@ -69,19 +69,21 @@ const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
 };
 
 const GroupHeader: React.FC<{ groupId: string }> = ({ groupId }) => {
-  const { group, loading, error } = useGroupState(groupId);
+  const { group, groupLoading, error } = useGroupState(groupId);
 
-  if (loading) return <UI.Spinner />;
+  if (groupLoading) return <UI.Spinner />;
   if (error) return null;
 
   return (
     <UI.Box>
       <UI.HStack px={4} py={2}>
         <UI.Heading size="sm">
-          <UI.RouteLink route={routes.home()} mr={2}>
+          <UI.RouteLink route={routes.home()} mr={2} aria-label="Back to home">
             <UI.Icon icon={faArrowLeft} />
           </UI.RouteLink>
-          {group?.name || '...'}
+          <UI.Text as="span" data-testid="group-title">
+            {group?.name || '...'}
+          </UI.Text>
         </UI.Heading>
         <GroupSharer group={group} ml="auto" />
         <GroupManager groupId={groupId} />
@@ -175,10 +177,10 @@ const GroupManager: React.FC<UI.ButtonProps & { groupId: string }> = ({
   groupId,
   ...props
 }) => {
-  const { group, loading, error, canManageGroup } = useGroupState(groupId);
+  const { group, groupLoading, error, canManageGroup } = useGroupState(groupId);
   const modal = UI.useDisclosure();
 
-  if (loading) return <UI.Spinner />;
+  if (groupLoading) return <UI.Spinner />;
   if (error) return null;
   if (!group) return null;
   if (!canManageGroup) return null;
@@ -265,11 +267,18 @@ const GroupForm: React.FC<{ groupId: string; defaultValues: Group }> = ({
 };
 
 const AddMessageForm: React.FC<{ groupId: string }> = ({ groupId }) => {
-  const { user, group, loading, error, canAddGroupMessage, addGroupMessage } =
-    useGroupState(groupId);
+  const {
+    user,
+    group,
+    groupLoading,
+    membershipLoading,
+    error,
+    canAddGroupMessage,
+    addGroupMessage,
+  } = useGroupState(groupId);
   const [text, setText] = React.useState('');
 
-  if (loading) return <UI.Spinner />;
+  if (groupLoading || membershipLoading) return <UI.Spinner />;
   if (error) return null;
   if (!user || !group) return null;
 
@@ -318,12 +327,22 @@ const useGroupState = (groupId: string) => {
       setMember(null);
       return;
     }
-    ensureGroupMember(groupId, user.uid).then(() => {
-      isGroupMember(groupId, user.uid).then(setMember);
-    });
+
+    let cancelled = false;
+
+    ensureGroupMember(groupId, user.uid)
+      .catch(() => undefined)
+      .then(() => isGroupMember(groupId, user.uid))
+      .then((isMember) => {
+        if (!cancelled) setMember(isMember);
+      });
+
+    return () => {
+      cancelled = true;
+    };
   }, [user, groupId]);
 
-  const loading = userLoading || groupLoading || (user && member === null);
+  const membershipLoading = !!user && member === null;
   const error = userError || groupError;
 
   const isCreator = group?.uid === user?.uid;
@@ -345,7 +364,8 @@ const useGroupState = (groupId: string) => {
   return {
     user,
     group,
-    loading,
+    groupLoading: userLoading || groupLoading,
+    membershipLoading,
     error,
     canAddGroupMessage,
     addGroupMessage,
