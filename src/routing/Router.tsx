@@ -50,7 +50,7 @@ const router = createBrowserRouter(
     }),
     path: route.path,
     element: (
-      <React.Suspense>
+      <React.Suspense fallback={<div data-testid="route-loading" />}>
         <route.component />
       </React.Suspense>
     ),

@@ -31,12 +31,9 @@ export type TestGroup = {
   name: string;
 };
 
-/** Wait until the browser session is authenticated (Header shows avatar, not magic link). */
+/** Wait until the browser session is authenticated (Header shows user menu). */
 export const waitForAuthenticated = async (page: Page) => {
-  await expect(page.getByPlaceholder('you@email.com')).not.toBeVisible({
-    timeout: 15_000,
-  });
-  await expect(page.getByRole('button', { name: 'Magic link' })).not.toBeVisible({
+  await expect(page.getByTestId('user-menu-button')).toBeVisible({
     timeout: 15_000,
   });
 };
@@ -118,7 +115,13 @@ export const gotoGroupPage = async (
   group: Pick<TestGroup, 'id' | 'name'>
 ) => {
   await page.goto(`/${group.id}`);
-  await expect(page.getByTestId('group-title')).toHaveText(group.name, {
+  await expect(page.getByTestId('route-loading')).toBeHidden({
     timeout: 15_000,
   });
+  await expect
+    .poll(
+      async () => page.getByTestId('group-title').textContent(),
+      { timeout: 20_000 }
+    )
+    .toBe(group.name);
 };
