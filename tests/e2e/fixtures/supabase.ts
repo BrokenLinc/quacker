@@ -4,13 +4,16 @@ import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 const getSupabaseEnv = () => {
   const url =
     process.env.VITE_SUPABASE_URL ??
+    process.env.API_URL ??
     process.env.SUPABASE_URL ??
     'http://127.0.0.1:54321';
   const anonKey =
     process.env.VITE_SUPABASE_ANON_KEY ??
+    process.env.ANON_KEY ??
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
   const serviceKey =
     process.env.SUPABASE_SERVICE_ROLE_KEY ??
+    process.env.SERVICE_ROLE_KEY ??
     'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
   return { url, anonKey, serviceKey };
 };
@@ -52,19 +55,38 @@ export const seedTestSession = async (page: Page) => {
   });
   if (error || !userData.user) throw error ?? new Error('No user');
 
-  const client = createClient(url, anonKey);
-  const { data: sessionData, error: signInError } =
-    await client.auth.signInWithPassword({ email, password });
-  if (signInError || !sessionData.session) {
-    throw signInError ?? new Error('No session');
-  }
+  const key = storageKey(url);
 
   await page.goto('/');
   await page.evaluate(
-    ({ key, session }) => {
+    async ({ authUrl, anonKey, email, password, key }) => {
+      const res = await fetch(`${authUrl}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: {
+          apikey: anonKey,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email, password }),
+      });
+      if (!res.ok) {
+        throw new Error(`Browser auth failed: ${res.status} ${await res.text()}`);
+      }
+
+      const data = await res.json();
+      const expiresAt =
+        data.expires_at ??
+        Math.round(Date.now() / 1000) + (data.expires_in ?? 3600);
+      const session = {
+        access_token: data.access_token,
+        refresh_token: data.refresh_token,
+        expires_in: data.expires_in,
+        expires_at: expiresAt,
+        token_type: data.token_type ?? 'bearer',
+        user: data.user,
+      };
       localStorage.setItem(key, JSON.stringify(session));
     },
-    { key: storageKey(url), session: sessionData.session }
+    { authUrl: url, anonKey, email, password, key }
   );
   await page.reload();
   await waitForAuthenticated(page);
