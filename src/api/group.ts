@@ -35,7 +35,10 @@ export const useGroup = (id: string): HookResult<Group> => {
   const [error, setError] = useState<Error | undefined>();
 
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setLoading(false);
+      return;
+    }
 
     const fetchGroup = async () => {
       const { data, error: fetchError } = await supabase
