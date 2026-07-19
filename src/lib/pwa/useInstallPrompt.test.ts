@@ -45,6 +45,25 @@ describe('isIosSafari', () => {
     expect(isIosSafari()).toBe(true);
   });
 
+  it('detects iPadOS using its Mac user agent', () => {
+    vi.stubGlobal('navigator', {
+      maxTouchPoints: 5,
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15',
+    });
+    expect(isIosSafari()).toBe(true);
+  });
+
+  it('does not detect desktop macOS from DOM touch event support', () => {
+    vi.stubGlobal('document', { ontouchend: null });
+    vi.stubGlobal('navigator', {
+      maxTouchPoints: 0,
+      userAgent:
+        'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15) AppleWebKit/605.1.15',
+    });
+    expect(isIosSafari()).toBe(false);
+  });
+
   it('returns false when already installed', () => {
     vi.stubGlobal('navigator', {
       userAgent:

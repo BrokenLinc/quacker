@@ -15,7 +15,7 @@ export const isStandaloneDisplay = (): boolean =>
 export const isIosSafari = (): boolean => {
   const ua = navigator.userAgent;
   const isAppleDevice = /iPad|iPhone|iPod/.test(ua);
-  const isMacTouch = ua.includes('Mac') && 'ontouchend' in document;
+  const isMacTouch = ua.includes('Mac') && navigator.maxTouchPoints > 1;
   return (isAppleDevice || isMacTouch) && !isStandaloneDisplay();
 };
 
@@ -58,8 +58,8 @@ export const useInstallPrompt = () => {
     return false;
   }, [deferredPrompt, dismiss]);
 
-  const showIosHint = isIosSafari() && !dismissed;
   const showInstallButton = deferredPrompt !== null && !dismissed;
+  const showIosHint = !showInstallButton && isIosSafari() && !dismissed;
 
   return {
     dismiss,
