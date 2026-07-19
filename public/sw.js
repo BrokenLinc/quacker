@@ -3,7 +3,7 @@ self.addEventListener('push', (event) => {
   event.waitUntil(
     self.registration.showNotification(data.title ?? 'Quacker', {
       body: data.body ?? 'Someone quacked!',
-      icon: '/vite.svg',
+      icon: '/icons/icon-192.png',
       data: data.url,
     })
   );

@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-label="Quacker">
+  <rect width="512" height="512" rx="96" fill="#38A169" />
+  <path
+    fill="#ffffff"
+    d="M128 144c0-17.7 14.3-32 32-32h192c17.7 0 32 14.3 32 32v144c0 17.7-14.3 32-32 32H240l-64 48v-48h-16c-17.7 0-32-14.3-32-32V144z"
+  />
+  <circle cx="208" cy="216" r="20" fill="#38A169" />
+  <circle cx="256" cy="216" r="20" fill="#38A169" />
+  <circle cx="304" cy="216" r="20" fill="#38A169" />
+</svg>

@@ -16,6 +16,7 @@ Quacker is a private, ad-hoc group chat for trips and conferences.
 | Share | Short URL `/g/:slug`, QR code, copy link, native share |
 | Chirp notifications | Tab title flash + sound when tab is backgrounded |
 | Dark mode | System-aware theme toggle |
+| PWA install | Web manifest, app icons, install banner (Chrome/Android + iOS Add to Home Screen hint) |
 | Web Push (scaffold) | Service worker + subscription table + edge function stub |
 
 ## Auth (MVP)
