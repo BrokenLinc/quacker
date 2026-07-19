@@ -130,11 +130,11 @@ export const ComboboxPaginatedInput = React.forwardRef<
         components={{
           ...chakraSelectProps.components,
           ClearIndicator:
-            'readOnly' in restProps && restProps.readOnly
+            'isReadOnly' in restProps && restProps.isReadOnly
               ? () => null
               : chakraSelectProps.components?.ClearIndicator,
           DropdownIndicator:
-            'readOnly' in restProps && restProps.readOnly
+            'isReadOnly' in restProps && restProps.isReadOnly
               ? () => null
               : chakraSelectProps.components?.DropdownIndicator,
           Menu: MenuComponent,

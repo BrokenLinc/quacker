@@ -46,7 +46,7 @@ export const CheckboxGroupWithOptions: React.FC<
           return (
             <UI.Checkbox
               key={option.value}
-              value={option.value}
+              value={String(getCheckboxValue(option.value))}
               size="lg"
               alignItems="start"
             >

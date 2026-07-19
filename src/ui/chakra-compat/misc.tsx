@@ -51,14 +51,37 @@ export const InputGroup = ({
   endElement,
   ...rest
 }: InputGroupProps) => {
-  if (startElement || endElement) {
+  let legacyStartElement: React.ReactNode;
+  let legacyEndElement: React.ReactNode;
+  const inputChildren = React.Children.toArray(children).filter((child) => {
+    if (!React.isValidElement<{ children?: React.ReactNode }>(child)) {
+      return true;
+    }
+    if (child.type === InputLeftElement) {
+      legacyStartElement = child.props.children;
+      return false;
+    }
+    if (child.type === InputRightElement) {
+      legacyEndElement = child.props.children;
+      return false;
+    }
+    return true;
+  });
+  const resolvedStartElement = startElement ?? legacyStartElement;
+  const resolvedEndElement = endElement ?? legacyEndElement;
+
+  if (resolvedStartElement || resolvedEndElement) {
     return (
       <ChakraInputGroup
-        startElement={startElement}
-        endElement={endElement}
+        startElement={resolvedStartElement}
+        endElement={resolvedEndElement}
         {...mapV2Props(rest)}
       >
-        {React.isValidElement(children) ? children : <Box w="full">{children}</Box>}
+        {inputChildren.length === 1 && React.isValidElement(inputChildren[0]) ? (
+          inputChildren[0]
+        ) : (
+          <Box w="full">{inputChildren}</Box>
+        )}
       </ChakraInputGroup>
     );
   }

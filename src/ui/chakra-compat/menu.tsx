@@ -68,7 +68,7 @@ export const MenuItem = React.forwardRef<HTMLElement, MenuItemProps>(
       const AsComponent = Component as React.ElementType;
       return (
         <ChakraMenu.Item asChild value={itemValue} {...mapped}>
-          <AsComponent ref={ref} to={to} {...mapped}>
+          <AsComponent ref={ref} to={to}>
             {icon}
             {children}
           </AsComponent>

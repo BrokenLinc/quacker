@@ -35,12 +35,9 @@ type ToastOptions = {
   isClosable?: boolean;
 };
 
-const activeToastIds = new Set<string>();
-
 export function useToast() {
   const toast = (options: ToastOptions) => {
     const id = options.id ?? crypto.randomUUID();
-    activeToastIds.add(id);
     toaster.create({
       id,
       title: options.title,
@@ -52,14 +49,12 @@ export function useToast() {
     return id;
   };
 
-  toast.isActive = (id: string) => activeToastIds.has(id);
+  toast.isActive = (id: string) => toaster.isVisible(id);
   toast.close = (id: string) => {
     toaster.dismiss(id);
-    activeToastIds.delete(id);
   };
   toast.closeAll = () => {
     toaster.dismiss();
-    activeToastIds.clear();
   };
 
   return toast;
