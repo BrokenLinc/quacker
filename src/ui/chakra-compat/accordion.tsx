@@ -8,6 +8,8 @@ import {
 import React from 'react';
 import { mapV2Props } from './props';
 
+const AccordionItemIndexContext = React.createContext<number | null>(null);
+
 export type AccordionProps = AccordionRootProps & {
   allowMultiple?: boolean;
   allowToggle?: boolean;
@@ -22,6 +24,7 @@ export const Accordion = ({
   defaultIndex,
   index,
   onChange,
+  children,
   ...rest
 }: AccordionProps) => {
   const toValue = (value?: number | number[]) => {
@@ -30,6 +33,17 @@ export const Accordion = ({
       ? value.map(String)
       : [String(value)];
   };
+
+  let itemIndex = 0;
+  const indexedChildren = React.Children.map(children, (child) =>
+    React.isValidElement(child) ? (
+      <AccordionItemIndexContext.Provider value={itemIndex++}>
+        {child}
+      </AccordionItemIndexContext.Provider>
+    ) : (
+      child
+    )
+  );
 
   return (
     <ChakraAccordion.Root
@@ -43,7 +57,9 @@ export const Accordion = ({
         onChange(allowMultiple ? values : values[0] ?? -1);
       }}
       {...mapV2Props(rest)}
-    />
+    >
+      {indexedChildren}
+    </ChakraAccordion.Root>
   );
 };
 
@@ -58,7 +74,11 @@ let accordionItemCounter = 0;
 
 export const AccordionItem = React.forwardRef<HTMLDivElement, AccordionItemProps>(
   function AccordionItem({ children, value, ...rest }, ref) {
-    const itemValue = value ?? `accordion-item-${++accordionItemCounter}`;
+    const itemIndex = React.useContext(AccordionItemIndexContext);
+    const itemValue =
+      itemIndex === null
+        ? value ?? `accordion-item-${++accordionItemCounter}`
+        : String(itemIndex);
 
     if (typeof children === 'function') {
       return (
