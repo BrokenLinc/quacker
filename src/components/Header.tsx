@@ -147,7 +147,10 @@ const UserMenu: React.FC = () => {
 
 const GroupMenuItemList: React.FC = () => {
   const isLight = UI.useColorModeValue(true, false);
-  const [groups, loading, error] = useGroups({ limit: 100 });
+  const [groups, loading, error] = useGroups({
+    limit: 100,
+    channelId: 'header-menu',
+  });
 
   if (loading) return <UI.Spinner />;
   if (error) return null;

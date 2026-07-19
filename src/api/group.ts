@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { supabase } from '@@lib/supabase/client';
-import type { GroupRow } from '@@lib/supabase/types';
+import type { Database, GroupRow } from '@@lib/supabase/types';
 import { generateSlug } from '@@lib/share';
+
+type GroupUpdate = Database['public']['Tables']['groups']['Update'];
 
 /** App-level group (legacy field names for minimal page churn). */
 export interface Group {
@@ -27,7 +29,11 @@ const rowToGroup = (row: GroupRow): Group => ({
 
 type HookResult<T> = [T | undefined, boolean, Error | undefined];
 
-export const useGroup = (id: string): HookResult<Group> => {
+export const useGroup = (
+  id: string,
+  options?: { channelId?: string }
+): HookResult<Group> => {
+  const channelId = options?.channelId ?? 'default';
   const [group, setGroup] = useState<Group | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
@@ -53,7 +59,7 @@ export const useGroup = (id: string): HookResult<Group> => {
     fetchGroup();
 
     const channel = supabase
-      .channel(`group-doc:${id}`)
+      .channel(`group-doc:${id}:${channelId}`)
       .on(
         'postgres_changes',
         {
@@ -75,7 +81,7 @@ export const useGroup = (id: string): HookResult<Group> => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [id]);
+  }, [channelId, id]);
 
   return [group, loading, error];
 };
@@ -106,8 +112,13 @@ export const useGroupBySlug = (slug: string): HookResult<Group> => {
   return [group, loading, error];
 };
 
-export const useGroups = (options?: { limit: number }): HookResult<Group[]> => {
+export const useGroups = (options?: {
+  limit?: number;
+  /** Unique Realtime channel suffix — required when multiple hooks subscribe in one view. */
+  channelId?: string;
+}): HookResult<Group[]> => {
   const limit = options?.limit ?? 1000;
+  const channelId = options?.channelId ?? 'default';
   const [groups, setGroups] = useState<Group[] | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
@@ -128,7 +139,7 @@ export const useGroups = (options?: { limit: number }): HookResult<Group[]> => {
     fetchGroups();
 
     const channel = supabase
-      .channel('groups-list')
+      .channel(`groups-list:${channelId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'groups' },
@@ -139,7 +150,7 @@ export const useGroups = (options?: { limit: number }): HookResult<Group[]> => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchGroups]);
+  }, [channelId, fetchGroups]);
 
   return [groups, loading, error];
 };
@@ -169,7 +180,7 @@ export const addGroup = async (data: {
 };
 
 export const updateGroup = async (id: string, data: Partial<Group>) => {
-  const patch: Record<string, unknown> = {};
+  const patch: GroupUpdate = {};
   if (data.name !== undefined) patch.name = data.name;
   if (data.slug !== undefined) patch.slug = data.slug;
 

@@ -18,7 +18,10 @@ const HomePage: React.FC = () => {
 export default HomePage;
 
 const GroupCardList: React.FC = () => {
-  const [groups, groupLoading, groupError] = useGroups({ limit: 100 });
+  const [groups, groupLoading, groupError] = useGroups({
+    limit: 100,
+    channelId: 'home',
+  });
 
   if (groupLoading) return <UI.Spinner />;
   if (groupError) return null;
