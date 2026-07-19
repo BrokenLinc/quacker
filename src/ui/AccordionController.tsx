@@ -6,10 +6,10 @@ import React from 'react';
  * A render-props component that provides functions to open and close accordion items by index
  */
 export type AccordionControllerProps = {
-  children: React.FC<{
-    openByIndex: (index: number) => any;
-    closeByIndex: (index: number) => any;
-  }>;
+  children: (props: {
+    openByIndex: (index: number) => void;
+    closeByIndex: (index: number) => void;
+  }) => React.ReactNode;
 };
 export const AccordionController: React.FC<AccordionControllerProps> = ({
   children,

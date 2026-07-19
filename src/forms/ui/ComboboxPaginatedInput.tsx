@@ -3,9 +3,9 @@ import * as UI from '@@ui';
 import { faArrowDown, faSearch } from '@fortawesome/free-solid-svg-icons';
 import {
   MenuProps,
-  SelectInstance,
   useChakraSelectProps,
 } from 'chakra-react-select';
+import { GroupBase, SelectInstance } from 'react-select';
 import _ from 'lodash';
 import React from 'react';
 import { AsyncPaginate, AsyncPaginateProps } from 'react-select-async-paginate';
@@ -26,7 +26,7 @@ export type ComboboxPaginatedInputProps = Omit<
   }>;
 };
 export const ComboboxPaginatedInput = React.forwardRef<
-  SelectInstance,
+  SelectInstance<unknown, boolean, GroupBase<unknown>>,
   ComboboxPaginatedInputProps
 >(({ chakraStyles, value, defaultValue, loadOptions, ...restProps }, ref) => {
   const [resetCount, setResetCount] = React.useState(0);

@@ -5,7 +5,9 @@ import React from 'react';
 
 export const FieldSet: React.FC<
   Omit<UI.BoxProps, 'children'> & {
-    children: React.ReactNode | React.FC<{ panel: UI.UseDisclosureReturn }>;
+    children:
+      | React.ReactNode
+      | ((props: { panel: UI.UseDisclosureReturn }) => React.ReactNode);
     disabled?: boolean;
     isInvalid?: boolean;
     hasValues?: boolean;
