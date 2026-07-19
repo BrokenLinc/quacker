@@ -9,11 +9,39 @@ const AuthCallbackPage: React.FC = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      navigate(session ? routes.home().path : routes.home().path, {
-        replace: true,
-      });
+    let cancelled = false;
+
+    const finish = () => {
+      if (!cancelled) {
+        navigate(routes.home().path, { replace: true });
+      }
+    };
+
+    const code = new URLSearchParams(window.location.search).get('code');
+
+    if (code) {
+      supabase.auth.exchangeCodeForSession(code).then(() => finish());
+      return () => {
+        cancelled = true;
+      };
+    }
+
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange((event, session) => {
+      if (session && (event === 'SIGNED_IN' || event === 'INITIAL_SESSION')) {
+        finish();
+      }
     });
+
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session) finish();
+    });
+
+    return () => {
+      cancelled = true;
+      subscription.unsubscribe();
+    };
   }, [navigate]);
 
   return (
