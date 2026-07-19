@@ -1,21 +1,32 @@
 import { expect, type Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
+const demoAnonKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+const demoServiceRoleKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+
+const isJwtKey = (key: string) => key.startsWith('eyJ');
+
 const getSupabaseEnv = () => {
   const url =
     process.env.VITE_SUPABASE_URL ??
     process.env.API_URL ??
     process.env.SUPABASE_URL ??
     'http://127.0.0.1:54321';
-  const anonKey =
-    process.env.VITE_SUPABASE_ANON_KEY ??
-    process.env.ANON_KEY ??
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
-  const serviceKey =
+  const anonCandidate =
+    process.env.VITE_SUPABASE_ANON_KEY ?? process.env.ANON_KEY ?? demoAnonKey;
+  const serviceCandidate =
     process.env.SUPABASE_SERVICE_ROLE_KEY ??
     process.env.SERVICE_ROLE_KEY ??
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
-  return { url, anonKey, serviceKey };
+    demoServiceRoleKey;
+
+  return {
+    url,
+    // Local Supabase CLI may export opaque sb_* keys; supabase-js admin APIs need JWTs.
+    anonKey: isJwtKey(anonCandidate) ? anonCandidate : demoAnonKey,
+    serviceKey: isJwtKey(serviceCandidate) ? serviceCandidate : demoServiceRoleKey,
+  };
 };
 
 export const getAdminClient = () => {
