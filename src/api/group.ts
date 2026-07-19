@@ -108,8 +108,13 @@ export const useGroupBySlug = (slug: string): HookResult<Group> => {
   return [group, loading, error];
 };
 
-export const useGroups = (options?: { limit: number }): HookResult<Group[]> => {
+export const useGroups = (options?: {
+  limit?: number;
+  /** Unique Realtime channel suffix — required when multiple hooks subscribe in one view. */
+  channelId?: string;
+}): HookResult<Group[]> => {
   const limit = options?.limit ?? 1000;
+  const channelId = options?.channelId ?? 'default';
   const [groups, setGroups] = useState<Group[] | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
@@ -130,7 +135,7 @@ export const useGroups = (options?: { limit: number }): HookResult<Group[]> => {
     fetchGroups();
 
     const channel = supabase
-      .channel('groups-list')
+      .channel(`groups-list:${channelId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'groups' },
@@ -141,7 +146,7 @@ export const useGroups = (options?: { limit: number }): HookResult<Group[]> => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [fetchGroups]);
+  }, [channelId, fetchGroups]);
 
   return [groups, loading, error];
 };
