@@ -1,8 +1,10 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { supabase } from '@@lib/supabase/client';
-import type { GroupRow } from '@@lib/supabase/types';
+import type { Database, GroupRow } from '@@lib/supabase/types';
 import { generateSlug } from '@@lib/share';
+
+type GroupUpdate = Database['public']['Tables']['groups']['Update'];
 
 /** App-level group (legacy field names for minimal page churn). */
 export interface Group {
@@ -166,7 +168,7 @@ export const addGroup = async (data: {
 };
 
 export const updateGroup = async (id: string, data: Partial<Group>) => {
-  const patch: Record<string, unknown> = {};
+  const patch: GroupUpdate = {};
   if (data.name !== undefined) patch.name = data.name;
   if (data.slug !== undefined) patch.slug = data.slug;
 
