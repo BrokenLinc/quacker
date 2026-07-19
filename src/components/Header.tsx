@@ -112,14 +112,16 @@ const UserMenu: React.FC = () => {
   return (
     <React.Fragment>
       <UI.Menu>
-        <UI.MenuButton
-          as={UserAvatar}
-          name={user.displayName || user.email || ''}
-          email={user.email}
-          photoURL={user.photoURL}
-          cursor="pointer"
-          size="sm"
-        />
+        <UI.Box as="span" display="inline-flex" data-testid="user-menu-button">
+          <UI.MenuButton
+            as={UserAvatar}
+            name={user.displayName || user.email || ''}
+            email={user.email}
+            photoURL={user.photoURL}
+            cursor="pointer"
+            size="sm"
+          />
+        </UI.Box>
         <UI.MenuList>
           <GroupMenuItemList />
           <UI.MenuItem

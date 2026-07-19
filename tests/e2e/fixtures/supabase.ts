@@ -1,18 +1,32 @@
 import { expect, type Page } from '@playwright/test';
 import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
+const demoAnonKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
+const demoServiceRoleKey =
+  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
+
+const isJwtKey = (key: string) => key.startsWith('eyJ');
+
 const getSupabaseEnv = () => {
   const url =
     process.env.VITE_SUPABASE_URL ??
+    process.env.API_URL ??
     process.env.SUPABASE_URL ??
     'http://127.0.0.1:54321';
-  const anonKey =
-    process.env.VITE_SUPABASE_ANON_KEY ??
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0';
-  const serviceKey =
+  const anonCandidate =
+    process.env.VITE_SUPABASE_ANON_KEY ?? process.env.ANON_KEY ?? demoAnonKey;
+  const serviceCandidate =
     process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImV4cCI6MTk4MzgxMjk5Nn0.EGIM96RAZx35lJzdJsyH-qQwv8Hdp7fsn3W0YpN81IU';
-  return { url, anonKey, serviceKey };
+    process.env.SERVICE_ROLE_KEY ??
+    demoServiceRoleKey;
+
+  return {
+    url,
+    // Local Supabase CLI may export opaque sb_* keys; supabase-js admin APIs need JWTs.
+    anonKey: isJwtKey(anonCandidate) ? anonCandidate : demoAnonKey,
+    serviceKey: isJwtKey(serviceCandidate) ? serviceCandidate : demoServiceRoleKey,
+  };
 };
 
 export const getAdminClient = () => {
@@ -22,54 +36,46 @@ export const getAdminClient = () => {
   });
 };
 
-const storageKey = (url: string) =>
-  `sb-${new URL(url).hostname.split('.')[0]}-auth-token`;
-
 export type TestGroup = {
   id: string;
   slug: string;
   name: string;
 };
 
-/** Wait until the browser session is authenticated (Header shows avatar, not magic link). */
+/** Wait until the browser session is authenticated (Header shows user menu). */
 export const waitForAuthenticated = async (page: Page) => {
-  await expect(page.getByPlaceholder('you@email.com')).not.toBeVisible({
-    timeout: 15_000,
-  });
-  await expect(page.getByRole('button', { name: 'Magic link' })).not.toBeVisible({
+  await expect(page.getByTestId('user-menu-button')).toBeVisible({
     timeout: 15_000,
   });
 };
 
-/** E2E uses password sign-in (test-only); prod uses magic link. */
+/** E2E uses admin-generated magic links (test-only); prod uses email magic link. */
 export const seedTestSession = async (page: Page) => {
-  const { url, anonKey } = getSupabaseEnv();
   const admin = getAdminClient();
   const email = `e2e-${Date.now()}@quacker.test`;
-  const password = 'QuackerE2ETest99!';
+  const appOrigin =
+    process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
 
   const { data: userData, error } = await admin.auth.admin.createUser({
     email,
-    password,
     email_confirm: true,
   });
   if (error || !userData.user) throw error ?? new Error('No user');
 
-  const client = createClient(url, anonKey);
-  const { data: sessionData, error: signInError } =
-    await client.auth.signInWithPassword({ email, password });
-  if (signInError || !sessionData.session) {
-    throw signInError ?? new Error('No session');
+  const { data: linkData, error: linkError } =
+    await admin.auth.admin.generateLink({
+      type: 'magiclink',
+      email,
+      options: {
+        redirectTo: `${appOrigin}/auth/callback`,
+      },
+    });
+  if (linkError || !linkData.properties?.action_link) {
+    throw linkError ?? new Error('No magic link');
   }
 
-  await page.goto('/');
-  await page.evaluate(
-    ({ key, session }) => {
-      localStorage.setItem(key, JSON.stringify(session));
-    },
-    { key: storageKey(url), session: sessionData.session }
-  );
-  await page.reload();
+  await page.goto(linkData.properties.action_link);
+  await page.waitForURL(`${appOrigin}/**`, { timeout: 15_000 });
   await waitForAuthenticated(page);
 
   return { admin, userId: userData.user.id, email };
@@ -118,7 +124,13 @@ export const gotoGroupPage = async (
   group: Pick<TestGroup, 'id' | 'name'>
 ) => {
   await page.goto(`/${group.id}`);
-  await expect(page.getByTestId('group-title')).toHaveText(group.name, {
+  await expect(page.getByTestId('route-loading')).toBeHidden({
     timeout: 15_000,
   });
+  await expect
+    .poll(
+      async () => page.getByTestId('group-title').textContent(),
+      { timeout: 20_000 }
+    )
+    .toBe(group.name);
 };
