@@ -84,6 +84,7 @@
     "flatted": "3.4.2",
     "js-cookie": "3.0.7",
     "mdast-util-to-hast": "13.2.1",
+    "vite": "6.4.3",
     "yaml": "1.10.3"
   }
 }
