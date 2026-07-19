@@ -22,7 +22,7 @@ test('group page share modal passes a11y', async ({ page }) => {
   await page.reload();
 
   await page.goto(`/${group!.id}`);
-  await expect(page.getByText('E2E Test Group')).toBeVisible();
+  await expect(page.getByRole('heading', { name: 'E2E Test Group' })).toBeVisible();
 
   await page.getByRole('button', { name: 'Share' }).click();
   await expect(page.getByText('Copy link')).toBeVisible();
