@@ -1,4 +1,5 @@
-import { createClient } from '@supabase/supabase-js';
+import { expect, type Page } from '@playwright/test';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 
 const getSupabaseEnv = () => {
   const url =
@@ -24,8 +25,24 @@ export const getAdminClient = () => {
 const storageKey = (url: string) =>
   `sb-${new URL(url).hostname.split('.')[0]}-auth-token`;
 
+export type TestGroup = {
+  id: string;
+  slug: string;
+  name: string;
+};
+
+/** Wait until the browser session is authenticated (Header shows avatar, not magic link). */
+export const waitForAuthenticated = async (page: Page) => {
+  await expect(page.getByPlaceholder('you@email.com')).not.toBeVisible({
+    timeout: 15_000,
+  });
+  await expect(page.getByRole('button', { name: 'Magic link' })).not.toBeVisible({
+    timeout: 15_000,
+  });
+};
+
 /** E2E uses password sign-in (test-only); prod uses magic link. */
-export const seedTestSession = async (page: import('@playwright/test').Page) => {
+export const seedTestSession = async (page: Page) => {
   const { url, anonKey } = getSupabaseEnv();
   const admin = getAdminClient();
   const email = `e2e-${Date.now()}@quacker.test`;
@@ -52,6 +69,56 @@ export const seedTestSession = async (page: import('@playwright/test').Page) => 
     },
     { key: storageKey(url), session: sessionData.session }
   );
+  await page.reload();
+  await waitForAuthenticated(page);
 
   return { admin, userId: userData.user.id, email };
+};
+
+/** Create a group and wait for the creator membership trigger to finish. */
+export const seedTestGroup = async (
+  admin: SupabaseClient,
+  userId: string,
+  data: { name: string; slug: string; authorName?: string }
+): Promise<TestGroup> => {
+  const { data: group, error } = await admin
+    .from('groups')
+    .insert({
+      slug: data.slug,
+      creator_id: userId,
+      name: data.name,
+      author_name: data.authorName ?? 'Tester',
+    })
+    .select('id, slug, name')
+    .single();
+
+  if (error || !group) throw error ?? new Error('Failed to create group');
+
+  await expect
+    .poll(
+      async () => {
+        const { data: member } = await admin
+          .from('group_members')
+          .select('user_id')
+          .eq('group_id', group.id)
+          .eq('user_id', userId)
+          .maybeSingle();
+        return member?.user_id ?? null;
+      },
+      { timeout: 10_000 }
+    )
+    .toBe(userId);
+
+  return group;
+};
+
+/** Navigate to a group and wait for the page shell to render. */
+export const gotoGroupPage = async (
+  page: Page,
+  group: Pick<TestGroup, 'id' | 'name'>
+) => {
+  await page.goto(`/${group.id}`);
+  await expect(page.getByTestId('group-title')).toHaveText(group.name, {
+    timeout: 15_000,
+  });
 };

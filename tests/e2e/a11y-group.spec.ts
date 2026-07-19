@@ -1,28 +1,22 @@
 import AxeBuilder from '@axe-core/playwright';
 import { expect, test } from '@playwright/test';
 
-import { seedTestSession } from './fixtures/supabase';
+import {
+  gotoGroupPage,
+  seedTestGroup,
+  seedTestSession,
+} from './fixtures/supabase';
 
 test('group page share modal passes a11y', async ({ page }) => {
   const { admin, userId } = await seedTestSession(page);
 
-  const slug = `e2e${Date.now().toString(36).slice(-5)}`;
-  const { data: group, error } = await admin
-    .from('groups')
-    .insert({
-      slug,
-      creator_id: userId,
-      name: 'E2E Test Group',
-      author_name: 'E2E',
-    })
-    .select()
-    .single();
+  const group = await seedTestGroup(admin, userId, {
+    slug: `e2e${Date.now().toString(36).slice(-5)}`,
+    name: 'E2E Test Group',
+    authorName: 'E2E',
+  });
 
-  expect(error).toBeNull();
-  await page.reload();
-
-  await page.goto(`/${group!.id}`);
-  await expect(page.getByRole('heading', { name: 'E2E Test Group' })).toBeVisible();
+  await gotoGroupPage(page, group);
 
   await page.getByRole('button', { name: 'Share' }).click();
   await expect(page.getByText('Copy link')).toBeVisible();
