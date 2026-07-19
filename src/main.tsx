@@ -2,7 +2,7 @@ import { App } from '@@App';
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 
-if ('serviceWorker' in navigator) {
+if ('serviceWorker' in navigator && import.meta.env.PROD) {
   navigator.serviceWorker.register('/sw.js').catch(() => {
     // SW registration is optional until VAPID keys are configured
   });

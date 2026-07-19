@@ -11,7 +11,8 @@ import {
   useGroupMessages,
 } from '@@api';
 import { Header } from '@@components/Header';
-import { useAuthState } from '@@lib/supabase/auth';
+import { UserAvatar } from '@@components/UserAvatar';
+import { resolveAppUserPhotoURL, useAuthState } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
 import {
@@ -335,7 +336,7 @@ const useGroupState = (groupId: string) => {
     await addMessage({
       uid: user.uid,
       authorName: user.displayName,
-      authorPhotoURL: user.photoURL,
+      authorPhotoURL: await resolveAppUserPhotoURL(user),
       text,
       groupId,
     });
@@ -385,10 +386,10 @@ export const MessageCard: React.FC<{ message: Message }> = ({ message }) => {
       position="relative"
     >
       <UI.HStack spacing={3}>
-        <UI.Avatar
+        <UserAvatar
           bg="purple.200"
           name={message.authorName || ''}
-          src={message.authorPhotoURL || ''}
+          photoURL={message.authorPhotoURL}
           size="sm"
         />
         <UI.VStack spacing={0} align="stretch" pt={0.5}>
