@@ -24,7 +24,8 @@ test('member can post and see message in feed', async ({ page }) => {
   });
 
   const messageText = `Hello from e2e ${Date.now()}`;
-  await page.getByPlaceholder('Say something!').fill(messageText);
+  await page.getByRole('textbox', { name: 'Say something!' }).click();
+  await page.keyboard.type(messageText);
   await page.getByRole('button', { name: 'Send' }).click();
 
   await expect.poll(async () => page.getByText(messageText).count()).toBeGreaterThan(0);
