@@ -64,15 +64,17 @@ export const FieldSet: React.FC<
 
   return (
     <UI.Box {...restProps}>
-      <UI.Box
+      <UI.SxBox
         as="fieldset"
-        disabled={disabled}
-        position="relative"
-        border={unstyled ? '' : '2px solid'}
-        borderColor={isInvalid ? 'red.500' : 'purple.500'}
-        borderRadius="md"
-        px={unstyled ? '' : '6'}
-        py={unstyled ? '' : '3'}
+        {...({
+          disabled,
+          position: 'relative',
+          border: unstyled ? undefined : '2px solid',
+          borderColor: isInvalid ? 'red.500' : 'purple.500',
+          borderRadius: 'md',
+          px: unstyled ? undefined : '6',
+          py: unstyled ? undefined : '3',
+        } as React.ComponentProps<typeof UI.SxBox>)}
       >
         <UI.Box
           as="legend"
@@ -104,7 +106,7 @@ export const FieldSet: React.FC<
         ) : (
           previewElement
         )}
-      </UI.Box>
+      </UI.SxBox>
     </UI.Box>
   );
 };

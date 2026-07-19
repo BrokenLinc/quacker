@@ -27,19 +27,16 @@ const GroupCardList: React.FC = () => {
   return (
     <UI.VStack alignItems="stretch" w="full" fontWeight="bold">
       {groups?.map((group) => (
-        <UI.Card
-          as={UI.RouteLink}
-          key={group.id}
-          route={routes.group(group.id)}
-          shadow="lg"
-        >
-          <UI.CardBody>
-            <UI.HStack>
-              <UI.Text>{group.name}</UI.Text>
-              <UI.Icon icon={faChevronRight} ml="auto" />
-            </UI.HStack>
-          </UI.CardBody>
-        </UI.Card>
+        <UI.RouteLink key={group.id} route={routes.group(group.id)}>
+          <UI.Card shadow="lg">
+            <UI.CardBody>
+              <UI.HStack>
+                <UI.Text>{group.name}</UI.Text>
+                <UI.Icon icon={faChevronRight} ml="auto" />
+              </UI.HStack>
+            </UI.CardBody>
+          </UI.Card>
+        </UI.RouteLink>
       ))}
     </UI.VStack>
   );

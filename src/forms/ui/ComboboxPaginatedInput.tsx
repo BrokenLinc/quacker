@@ -99,7 +99,7 @@ export const ComboboxPaginatedInput = React.forwardRef<
   );
 
   return (
-    <UI.Box
+    <UI.SxBox
       w="full"
       sx={{
         '.has-more-options': {
@@ -110,17 +110,16 @@ export const ComboboxPaginatedInput = React.forwardRef<
       <AsyncPaginate
         selectRef={ref}
         key={resetCount}
-        useBasicStyles
         isClearable
         backspaceRemovesValue
         openMenuOnFocus
         noOptionsMessage={({ inputValue }) =>
           inputValue ? (
-            <UI.Text size="lg" fontSize="lg">
+            <UI.Text fontSize="lg">
               No results found.
             </UI.Text>
           ) : (
-            <UI.Text size="lg" fontSize="lg">
+            <UI.Text fontSize="lg">
               <UI.Icon mr={2} icon={faSearch} />
               Type to search...
             </UI.Text>
@@ -130,12 +129,14 @@ export const ComboboxPaginatedInput = React.forwardRef<
         {...chakraSelectProps}
         components={{
           ...chakraSelectProps.components,
-          ClearIndicator: restProps.isReadOnly
-            ? () => null
-            : chakraSelectProps.components?.ClearIndicator,
-          DropdownIndicator: restProps.isReadOnly
-            ? () => null
-            : chakraSelectProps.components?.DropdownIndicator,
+          ClearIndicator:
+            'readOnly' in restProps && restProps.readOnly
+              ? () => null
+              : chakraSelectProps.components?.ClearIndicator,
+          DropdownIndicator:
+            'readOnly' in restProps && restProps.readOnly
+              ? () => null
+              : chakraSelectProps.components?.DropdownIndicator,
           Menu: MenuComponent,
         }}
         // Only display defaultValue if the current value matches
@@ -151,7 +152,7 @@ export const ComboboxPaginatedInput = React.forwardRef<
         }}
         loadOptions={loadPagedOptions}
       />
-    </UI.Box>
+    </UI.SxBox>
   );
 });
 

@@ -1,4 +1,4 @@
-import * as UI from '@chakra-ui/react';
+import * as UI from '@@ui';
 import React from 'react';
 import { useFormContext } from 'react-hook-form';
 
@@ -16,7 +16,7 @@ export const SubmitButton: React.FC<UI.ButtonProps> = ({
     <UI.Button
       type="submit"
       colorScheme="purple"
-      variant="primary"
+      variant="solid"
       isDisabled={form.formState.isSubmitting}
       {...restProps}
     >

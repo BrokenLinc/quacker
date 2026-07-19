@@ -1,4 +1,4 @@
-import * as UI from '@chakra-ui/react';
+import * as UI from '@@ui';
 import React from 'react';
 
 /**
@@ -12,7 +12,7 @@ export const SwitchInput = React.forwardRef<HTMLInputElement, SwitchInputProps>(
         <UI.Switch
           ref={ref}
           my="1px"
-          colorScheme={restProps.isReadOnly ? 'purple' : undefined}
+          colorScheme={'isReadOnly' in restProps && restProps.isReadOnly ? 'purple' : undefined}
           {...restProps}
         />
         {label ? (

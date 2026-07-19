@@ -64,18 +64,17 @@ export const ComboboxInput = React.forwardRef<
 
         setDefaultOptions(results as { label: any; value: any }[]);
       }}
-      useBasicStyles
       cacheOptions // Caching turned on by default, supply a cacheKey to override
       isClearable
       backspaceRemovesValue
       openMenuOnFocus
       noOptionsMessage={({ inputValue }) =>
         inputValue ? (
-          <UI.Text size="lg" fontSize="lg">
+          <UI.Text fontSize="lg">
             No results found.
           </UI.Text>
         ) : (
-          <UI.Text size="lg" fontSize="lg">
+          <UI.Text fontSize="lg">
             <UI.Icon mr={2} icon={faSearch} />
             Type to search...
           </UI.Text>
@@ -91,8 +90,10 @@ export const ComboboxInput = React.forwardRef<
       defaultValue={value === defaultValue?.value ? defaultValue : undefined}
       {...restProps}
       components={{
-        ClearIndicator: restProps.isReadOnly ? () => null : undefined,
-        DropdownIndicator: restProps.isReadOnly ? () => null : undefined,
+        ClearIndicator:
+          'isReadOnly' in restProps && restProps.isReadOnly ? () => null : undefined,
+        DropdownIndicator:
+          'isReadOnly' in restProps && restProps.isReadOnly ? () => null : undefined,
       }}
     />
   );

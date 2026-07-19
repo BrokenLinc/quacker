@@ -22,18 +22,14 @@ export const Header: React.FC = () => {
   return (
     <UI.Box>
       <UI.HStack px={4} py={2}>
-        <UI.HStack
-          mr="auto"
-          alignItems="center"
-          color="green.500"
-          as={UI.RouteLink}
-          route={routes.home()}
-        >
-          <UI.Icon icon={faMessage} />
-          <UI.Text fontWeight="bold" fontSize="sm">
-            quacker
-          </UI.Text>
-        </UI.HStack>
+        <UI.RouteLink route={routes.home()} mr="auto" color="green.500">
+          <UI.HStack alignItems="center">
+            <UI.Icon icon={faMessage} />
+            <UI.Text fontWeight="bold" fontSize="sm">
+              quacker
+            </UI.Text>
+          </UI.HStack>
+        </UI.RouteLink>
         <ColorModeToggle />
         {user ? <UserMenu /> : <SignInForm />}
       </UI.HStack>

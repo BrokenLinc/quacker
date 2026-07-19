@@ -1,4 +1,4 @@
-import * as UI from '@chakra-ui/react';
+import * as UI from './chakra-compat';
 import { EditorContent, useEditor } from '@tiptap/react';
 import React from 'react';
 import { createRichTextExtensions } from './richText/extensions';
@@ -30,7 +30,7 @@ const RichTextDocument: React.FC<{ markdown: string }> = ({ markdown }) => {
   if (!editor) return null;
 
   return (
-    <UI.Box
+    <UI.SxBox
       sx={{
         '.ProseMirror': {
           outline: 'none',
@@ -43,7 +43,7 @@ const RichTextDocument: React.FC<{ markdown: string }> = ({ markdown }) => {
       }}
     >
       <EditorContent editor={editor} />
-    </UI.Box>
+    </UI.SxBox>
   );
 };
 

@@ -44,7 +44,7 @@ export const RouteModal: React.FC<RouteModalProps> = ({
     <UI.Modal
       isOpen={isOpen}
       onClose={onClose}
-      size="2xl"
+      size="xl"
       closeOnOverlayClick={false}
       {...restProps}
     >

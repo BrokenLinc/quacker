@@ -11,7 +11,7 @@ type UserAvatarProps = Omit<UI.AvatarProps, 'name' | 'src'> & {
   gravatarOptions?: GravatarAvatarOptions;
 };
 
-export const UserAvatar = React.forwardRef<HTMLSpanElement, UserAvatarProps>(
+export const UserAvatar = React.forwardRef<HTMLDivElement, UserAvatarProps>(
   function UserAvatar(
     { name, email, photoURL, gravatarOptions, size = 'sm', ...rest },
     ref

@@ -1,5 +1,5 @@
 import React from 'react';
-import * as UI from '@chakra-ui/react';
+import * as UI from './chakra-compat';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { usePrevious, useToggle } from 'react-use';
 import * as icons from '@fortawesome/free-solid-svg-icons';

@@ -1,6 +1,6 @@
 import { getMetaFieldName } from '@@helpers/getMetaFieldName';
 import { subtypeMetas } from '@@helpers/subtypeMetas';
-import * as UI from '@chakra-ui/react';
+import * as UI from '@@ui';
 import _ from 'lodash';
 import React from 'react';
 import {
@@ -193,7 +193,9 @@ const renderBaseInputWithRef = (
         {...input}
         ref={input?.isDisabled || disableInputRef ? undefined : ref}
         isChecked={value}
-        onChange={(e) => onChange(e.target.checked)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          onChange(e.currentTarget.checked)
+        }
       />
     );
   }
@@ -204,7 +206,9 @@ const renderBaseInputWithRef = (
         {...input}
         ref={input?.isDisabled || disableInputRef ? undefined : ref}
         isChecked={value}
-        onChange={(e) => onChange(e.target.checked)}
+        onChange={(e: React.ChangeEvent<HTMLInputElement>) =>
+          onChange(e.currentTarget.checked)
+        }
       />
     );
   }

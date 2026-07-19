@@ -1,4 +1,4 @@
-import * as UI from '@chakra-ui/react';
+import * as UI from './chakra-compat';
 
 export type QuickModalProps = UI.ModalProps & {
   headerContent?: React.ReactNode;

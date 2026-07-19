@@ -1,4 +1,4 @@
-import * as UI from '@chakra-ui/react';
+import * as UI from './chakra-compat';
 import React from 'react';
 
 /**

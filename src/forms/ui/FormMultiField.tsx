@@ -1,4 +1,4 @@
-import * as UI from '@chakra-ui/react';
+import * as UI from '@@ui';
 import _ from 'lodash';
 import React from 'react';
 import { useFormContext } from 'react-hook-form';

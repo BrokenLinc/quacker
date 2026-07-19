@@ -67,6 +67,7 @@
   },
   "devDependencies": {
     "@axe-core/playwright": "4.10.1",
+    "@chakra-ui/codemod": "3.36.0",
     "@eslint/js": "10.0.1",
     "@playwright/test": "1.55.1",
     "@types/lodash": "4.17.17",

@@ -1,4 +1,4 @@
-import * as UI from '@chakra-ui/react';
+import * as UI from '@@ui';
 import React from 'react';
 import { NumericFormat, NumericFormatProps } from 'react-number-format';
 

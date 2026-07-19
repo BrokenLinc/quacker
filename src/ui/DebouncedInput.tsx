@@ -1,4 +1,4 @@
-import * as UI from '@chakra-ui/react';
+import * as UI from './chakra-compat';
 import {
   FontAwesomeIcon,
   FontAwesomeIconProps,
@@ -14,6 +14,7 @@ export type DebouncedInputProps = {
   debounce?: number;
   leftIcon?: FontAwesomeIconProps;
   rightIcon?: FontAwesomeIconProps;
+  isDisabled?: boolean;
 } & Omit<UI.InputProps, 'value' | 'onChange'>;
 
 export const DebouncedInput: React.FC<DebouncedInputProps> = (props) => {
@@ -35,7 +36,6 @@ export const DebouncedInput: React.FC<DebouncedInputProps> = (props) => {
 
   useDebounce(
     () => {
-      // Don't fire if the value hasn't changed
       if (value === previousValue) return;
       onChange(value);
     },
@@ -43,8 +43,6 @@ export const DebouncedInput: React.FC<DebouncedInputProps> = (props) => {
     [value, previousValue]
   );
 
-  // Soft-disable the input if it's disabled
-  // This allows focus to be maintained on the input
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (!isDisabled) {
       setValue(e.target.value);
@@ -52,18 +50,20 @@ export const DebouncedInput: React.FC<DebouncedInputProps> = (props) => {
   };
 
   return (
-    <UI.InputGroup>
-      {leftIcon ? (
-        <UI.InputLeftElement>
-          <FontAwesomeIcon {...leftIcon} />
-        </UI.InputLeftElement>
-      ) : null}
-      <UI.Input {...inputProps} value={value} onChange={handleChange} />
-      {rightIcon ? (
-        <UI.InputLeftElement>
-          <FontAwesomeIcon {...rightIcon} />
-        </UI.InputLeftElement>
-      ) : null}
+    <UI.InputGroup
+      startElement={
+        leftIcon ? <FontAwesomeIcon {...leftIcon} /> : undefined
+      }
+      endElement={
+        rightIcon ? <FontAwesomeIcon {...rightIcon} /> : undefined
+      }
+    >
+      <UI.Input
+        {...inputProps}
+        disabled={isDisabled}
+        value={value}
+        onChange={handleChange}
+      />
     </UI.InputGroup>
   );
 };

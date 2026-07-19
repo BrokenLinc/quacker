@@ -1,29 +1,36 @@
-import { Icon } from '@@/ui';
-import * as UI from '@chakra-ui/react';
-import { forwardRef } from '@chakra-ui/react';
+import {
+  AccordionButton,
+  AccordionItem as ChakraAccordionItem,
+  Box,
+  type AccordionItemProps as BaseAccordionItemProps,
+} from './chakra-compat';
 import { faMinus, faPlus } from '@fortawesome/free-solid-svg-icons';
+import React from 'react';
+import { Icon } from './Icon';
 
-export type AccordionItemProps = UI.AccordionItemProps & {
+export type AccordionItemProps = BaseAccordionItemProps & {
   title?: string;
-  isExpanded: boolean;
+  isExpanded?: boolean;
 };
 
-export const AccordionItem = forwardRef<AccordionItemProps, 'div'>(
-  ({ title, isExpanded, children, ...restProps }, ref) => {
+export const AccordionItem = React.forwardRef<HTMLDivElement, AccordionItemProps>(
+  function AccordionItem({ title, children, ...restProps }, ref) {
     return (
-      <UI.AccordionItem {...restProps} ref={ref}>
-        {({ isExpanded }) => (
-          <>
-            <UI.AccordionButton>
-              <UI.Box as="span" flex="1" textAlign="left">
-                {title}
-              </UI.Box>
-              {isExpanded ? <Icon icon={faMinus} /> : <Icon icon={faPlus} />}
-            </UI.AccordionButton>
-            {children}
-          </>
-        )}
-      </UI.AccordionItem>
+      <ChakraAccordionItem {...restProps} ref={ref}>
+        {
+          (({ isExpanded }: { isExpanded: boolean }) => (
+            <>
+              <AccordionButton>
+                <Box as="span" flex="1" textAlign="left">
+                  {title}
+                </Box>
+                {isExpanded ? <Icon icon={faMinus} /> : <Icon icon={faPlus} />}
+              </AccordionButton>
+              {children}
+            </>
+          )) as unknown as React.ReactNode
+        }
+      </ChakraAccordionItem>
     );
   }
 );

@@ -1,4 +1,4 @@
-import * as UI from '@chakra-ui/react';
+import * as UI from '@@ui';
 import { faPencil, faQuestionCircle } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import React from 'react';

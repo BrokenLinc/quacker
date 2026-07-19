@@ -1,9 +1,8 @@
 /**
- * This module imports all the UI components from the Chakra UI library and
- * re-exports them. This allows us to override and add to the components in the Chakra UI
- * library with our own components.
+ * This module imports Chakra UI v3 with v2-compatible wrappers and
+ * re-exports them alongside Quacker UI components.
  */
-export * from '@chakra-ui/react';
+export * from './chakra-compat';
 /**
  * Form hooks
  */

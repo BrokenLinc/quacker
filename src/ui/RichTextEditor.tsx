@@ -1,4 +1,4 @@
-import * as UI from '@chakra-ui/react';
+import * as UI from './chakra-compat';
 import { Icon } from './Icon';
 import {
   faBold,
@@ -125,7 +125,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           onClick={setLink}
         />
       </UI.HStack>
-      <UI.Box
+      <UI.SxBox
         px={3}
         py={2}
         pr={24}
@@ -149,7 +149,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         }}
       >
         <EditorContent editor={editor} />
-      </UI.Box>
+      </UI.SxBox>
     </UI.Box>
   );
 };

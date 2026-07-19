@@ -3,7 +3,7 @@ import { formatDateOnly } from '@@helpers/dateOnlyHelpers';
 import { formatDateTime } from '@@helpers/dateTimeHelpers';
 import { formatDateTimeOnly } from '@@helpers/dateTimeOnlyHelpers';
 import { subtypeMetas, SubtypeMetaKey } from '@@helpers/subtypeMetas';
-import * as UI from '@chakra-ui/react';
+import * as UI from '@@ui';
 import { format } from 'date-fns';
 import _ from 'lodash';
 

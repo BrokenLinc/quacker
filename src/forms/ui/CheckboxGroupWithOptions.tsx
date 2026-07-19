@@ -7,12 +7,14 @@ import * as UI from '@@ui';
 
 export type CheckboxGroupWithOptionsProps = Omit<
   UI.CheckboxGroupProps,
-  'children'
+  'children' | 'onChange' | 'value'
 > & {
   options: { label: string; value: any; isDimmed?: boolean }[];
   getCheckboxValue?: (value: any) => string | number;
   getOutputValue?: (value: string | number) => any;
   stackProps?: UI.StackProps;
+  onChange?: (value: (string | number)[]) => void;
+  value?: (string | number)[];
 };
 
 export const CheckboxGroupWithOptions: React.FC<
@@ -26,12 +28,12 @@ export const CheckboxGroupWithOptions: React.FC<
   value,
   ...restProps
 }) => {
-  const handleChange: UI.CheckboxGroupProps['onChange'] = (e) => {
-    const outputValues = e.map(getOutputValue) as (string | number)[];
+  const handleChange = (values: string[]) => {
+    const outputValues = values.map(getOutputValue) as (string | number)[];
     onChange?.(outputValues);
   };
 
-  const checkboxGroupValue = value?.map(getCheckboxValue);
+  const checkboxGroupValue = value?.map((v) => String(getCheckboxValue(v)));
 
   return (
     <UI.CheckboxGroup

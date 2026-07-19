@@ -1,4 +1,4 @@
-import * as UI from '@chakra-ui/react';
+import * as UI from '@@ui';
 import React from 'react';
 
 /**
@@ -9,7 +9,7 @@ export const LinkButton: React.FC<UI.ButtonProps> = ({
   ...restProps
 }) => {
   return (
-    <UI.Button variant="link" {...restProps}>
+    <UI.Button variant="plain" {...restProps}>
       {children}
     </UI.Button>
   );

@@ -28,14 +28,10 @@ export const RouteLink = React.forwardRef<HTMLAnchorElement, RouteLinkProps>(
     }, [isActive]);
 
     return (
-      <UI.Link
-        ref={ref}
-        as={Link}
-        to={route.path}
-        {...restProps}
-        {...(isActive ? activeProps : {})}
-      >
-        {children ?? route.label}
+      <UI.Link asChild {...restProps} {...(isActive ? activeProps : {})}>
+        <Link to={route.path} ref={ref}>
+          {children ?? route.label}
+        </Link>
       </UI.Link>
     );
   }

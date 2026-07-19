@@ -1,30 +1,15 @@
-import { ChakraProvider, ColorModeScript, extendTheme } from '@chakra-ui/react';
+import { ChakraProvider } from '@chakra-ui/react';
 import React from 'react';
-
-export const theme = extendTheme({
-  components: {
-    initialColorMode: 'system',
-    useSystemColorMode: false,
-    Link: {
-      baseStyle: {
-        color: 'blue.500',
-        textDecoration: 'underline',
-        _hover: {
-          textDecoration: 'none',
-        },
-      },
-    },
-  },
-});
+import { ColorModeProvider } from '../components/ui/color-mode';
+import { system } from './system';
 
 /**
  * Customizes the Chakra theme and provides it via context.
  */
 export const ThemeProvider: React.FC<React.PropsWithChildren> = (props) => {
   return (
-    <ChakraProvider theme={theme}>
-      <ColorModeScript initialColorMode={theme.config.initialColorMode} />
-      {props.children}
+    <ChakraProvider value={system}>
+      <ColorModeProvider defaultTheme="light">{props.children}</ColorModeProvider>
     </ChakraProvider>
   );
 };

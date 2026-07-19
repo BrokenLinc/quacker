@@ -1,4 +1,4 @@
-import * as UI from '@chakra-ui/react';
+import * as UI from './chakra-compat';
 import { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 import { Icon } from './Icon';
@@ -26,13 +26,12 @@ export type ButtonProps = UI.ButtonProps & {
   preset?: ButtonPresetKey;
   iconBefore?: IconDefinition;
   iconAfter?: IconDefinition;
+  isDisabled?: boolean;
 };
 
 export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
-  ({ preset, children, iconBefore, iconAfter, ...restProps }, ref) => {
+  ({ preset, children, iconBefore, iconAfter, isDisabled, ...restProps }, ref) => {
     const spacing = restProps.size === 'sm' ? 1 : 2;
-    const { isDisabled } = restProps;
-
     const presetProps = preset ? BUTTON_PRESETS[preset] : {};
 
     if (iconBefore || iconAfter) {
@@ -41,6 +40,7 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
           ref={ref}
           {...presetProps}
           {...restProps}
+          isDisabled={isDisabled}
           pointerEvents={isDisabled ? 'none' : undefined}
         >
           {iconBefore ? <Icon icon={iconBefore} mr={spacing} /> : null}
@@ -54,8 +54,9 @@ export const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <UI.Button
         ref={ref}
         {...presetProps}
-        pointerEvents={isDisabled ? 'none' : undefined}
         {...restProps}
+        isDisabled={isDisabled}
+        pointerEvents={isDisabled ? 'none' : undefined}
       >
         {children}
       </UI.Button>
