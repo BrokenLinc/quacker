@@ -16,7 +16,9 @@ import { useMatch } from 'react-router-dom';
 type RouteModalProps = Partial<Omit<UI.ModalProps, 'children'>> & {
   route: RouteDef;
   parentRoute?: RouteDef;
-  children?: React.ReactNode | React.FC<{ onClose: () => void }>;
+  children?:
+    | React.ReactNode
+    | ((props: { onClose: () => void }) => React.ReactNode);
   header?: React.ReactNode;
   printable?: boolean;
 };
