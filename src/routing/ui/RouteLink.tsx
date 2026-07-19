@@ -16,7 +16,10 @@ export type RouteLinkProps = {
   activateOnChild?: boolean;
 } & UI.LinkProps;
 export const RouteLink = React.forwardRef<HTMLAnchorElement, RouteLinkProps>(
-  ({ route, activeProps, onActive, activateOnChild, ...restProps }, ref) => {
+  (
+    { route, activeProps, onActive, activateOnChild, children, ...restProps },
+    ref
+  ) => {
     const isActive = useIsRouteOrChildActive(route, activateOnChild);
     React.useEffect(() => {
       if (isActive) {
@@ -29,10 +32,11 @@ export const RouteLink = React.forwardRef<HTMLAnchorElement, RouteLinkProps>(
         ref={ref}
         as={Link}
         to={route.path}
-        children={route.label}
         {...restProps}
         {...(isActive ? activeProps : {})}
-      />
+      >
+        {children ?? route.label}
+      </UI.Link>
     );
   }
 );

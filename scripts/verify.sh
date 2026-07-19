@@ -85,7 +85,7 @@ if [[ "$FULL_E2E" == true ]]; then
   PLAYWRIGHT_BASE_URL="http://127.0.0.1:${PREVIEW_PORT}" yarn test:e2e "${E2E_ARGS[@]}"
 else
   echo "    Remote Supabase — running smoke e2e only (full suite in CI; VERIFY_E2E=full to override)"
-  PLAYWRIGHT_BASE_URL="http://127.0.0.1:${PREVIEW_PORT}" yarn test:e2e tests/e2e/a11y-home.spec.ts "${E2E_ARGS[@]}"
+  PLAYWRIGHT_SKIP_GLOBAL_SETUP=1 PLAYWRIGHT_BASE_URL="http://127.0.0.1:${PREVIEW_PORT}" yarn test:e2e tests/e2e/a11y-home.spec.ts "${E2E_ARGS[@]}"
 fi
 
 echo "==> verify passed"
