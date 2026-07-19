@@ -21,16 +21,40 @@ cleanup() {
 }
 trap cleanup EXIT
 
-echo "==> lint"
-yarn lint
+is_local_supabase_url() {
+  local url="${1:-}"
+  [[ "$url" =~ ^https?://(127\.0\.0\.1|localhost)(:54321)?(/|$) ]]
+}
+
+supabase_reachable() {
+  local url="${1:-}"
+  local key="${2:-}"
+  [[ -n "$url" && -n "$key" ]] && curl -sf "${url}/auth/v1/health" \
+    -H "apikey: ${key}" \
+    -H "Authorization: Bearer ${key}" \
+    >/dev/null 2>&1
+}
+
+echo "==> lint + unit tests (parallel)"
+FAIL=0
+yarn lint &
+LINT_PID=$!
+yarn test &
+UNIT_PID=$!
+wait "$LINT_PID" || FAIL=1
+wait "$UNIT_PID" || FAIL=1
+[[ "$FAIL" -eq 0 ]]
 
 echo "==> build"
 export VITE_SUPABASE_URL="${VITE_SUPABASE_URL:-http://127.0.0.1:54321}"
 export VITE_SUPABASE_ANON_KEY="${VITE_SUPABASE_ANON_KEY:-eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS1kZW1vIiwicm9sZSI6ImFub24iLCJleHAiOjE5ODM4MTI5OTZ9.CRXP1A7WOeoJeXxjNni43kdQwgnWNReilDMblYTn_I0}"
 yarn build
 
-echo "==> unit tests"
-yarn test
+if [[ "${SKIP_E2E:-}" == 1 ]]; then
+  echo "==> e2e skipped (SKIP_E2E=1)"
+  echo "==> verify passed"
+  exit 0
+fi
 
 echo "==> preview server for e2e"
 yarn preview --host 127.0.0.1 --port "$PREVIEW_PORT" &
@@ -43,23 +67,25 @@ for _ in $(seq 1 30); do
 done
 
 echo "==> e2e tests"
-# Full e2e when Supabase is reachable (remote .env.local or local supabase start)
-SUPABASE_REACHABLE=false
-if [[ -n "${VITE_SUPABASE_URL:-}" ]] && [[ -n "${VITE_SUPABASE_ANON_KEY:-}" ]]; then
-  if curl -sf "${VITE_SUPABASE_URL}/auth/v1/health" \
-    -H "apikey: ${VITE_SUPABASE_ANON_KEY}" \
-    -H "Authorization: Bearer ${VITE_SUPABASE_ANON_KEY}" \
-    >/dev/null 2>&1; then
-    SUPABASE_REACHABLE=true
-  fi
+SB_URL="${VITE_SUPABASE_URL:-}"
+SB_KEY="${VITE_SUPABASE_ANON_KEY:-}"
+E2E_ARGS=(--reporter=list)
+
+FULL_E2E=false
+if [[ "${VERIFY_E2E:-}" == full ]]; then
+  FULL_E2E=true
+elif [[ "${CI:-}" == true ]] && supabase_reachable "$SB_URL" "$SB_KEY"; then
+  FULL_E2E=true
+elif is_local_supabase_url "$SB_URL" && supabase_reachable "$SB_URL" "$SB_KEY"; then
+  FULL_E2E=true
 fi
 
-if [[ "$SUPABASE_REACHABLE" == true ]]; then
-  echo "    Supabase reachable at ${VITE_SUPABASE_URL} — running full e2e suite"
-  PLAYWRIGHT_BASE_URL="http://127.0.0.1:${PREVIEW_PORT}" yarn test:e2e
+if [[ "$FULL_E2E" == true ]]; then
+  echo "    Local Supabase or CI — running full e2e suite"
+  PLAYWRIGHT_BASE_URL="http://127.0.0.1:${PREVIEW_PORT}" yarn test:e2e "${E2E_ARGS[@]}"
 else
-  echo "    Supabase unreachable — running a11y-home only (full suite needs .env.local or CI)"
-  PLAYWRIGHT_BASE_URL="http://127.0.0.1:${PREVIEW_PORT}" yarn test:e2e tests/e2e/a11y-home.spec.ts
+  echo "    Remote Supabase — running smoke e2e only (full suite in CI; VERIFY_E2E=full to override)"
+  PLAYWRIGHT_BASE_URL="http://127.0.0.1:${PREVIEW_PORT}" yarn test:e2e tests/e2e/a11y-home.spec.ts "${E2E_ARGS[@]}"
 fi
 
 echo "==> verify passed"

@@ -19,7 +19,9 @@ test('member can post and see message in feed', async ({ page }) => {
 
   await page.reload();
   await page.goto(`/${group!.id}`);
-  await expect(page.getByText('Messaging Test')).toBeVisible({ timeout: 10_000 });
+  await expect(page.getByRole('heading', { name: 'Messaging Test' })).toBeVisible({
+    timeout: 10_000,
+  });
 
   const messageText = `Hello from e2e ${Date.now()}`;
   await page.getByRole('textbox', { name: 'Say something!' }).click();
