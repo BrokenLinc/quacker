@@ -9,8 +9,8 @@ import type { SignInPlacement } from './signInPlacementContext';
 export const SignInPlacementFromAuth: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const [user, loading] = useAuthState();
-  const value: SignInPlacement = !loading && !user ? 'inline' : 'header';
+  const [user] = useAuthState();
+  const value: SignInPlacement = user ? 'header' : 'inline';
   return (
     <SignInPlacementProvider value={value}>{children}</SignInPlacementProvider>
   );
