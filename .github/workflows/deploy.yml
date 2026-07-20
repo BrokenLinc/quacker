@@ -27,12 +27,20 @@ jobs:
 
       - name: Set Twilio Edge Function secrets (production)
         run: |
-          supabase secrets set --project-ref ${{ secrets.SUPABASE_PROJECT_ID_PROD }} \
-            TWILIO_ACCOUNT_SID="${{ secrets.TWILIO_ACCOUNT_SID }}" \
-            TWILIO_AUTH_TOKEN="${{ secrets.TWILIO_AUTH_TOKEN }}" \
-            TWILIO_VERIFY_SERVICE_SID="${{ secrets.TWILIO_VERIFY_SERVICE_SID }}"
+          if [[ -z "$TWILIO_ACCOUNT_SID" || -z "$TWILIO_AUTH_TOKEN" || -z "$TWILIO_VERIFY_SERVICE_SID" ]]; then
+            echo "Skipping Twilio secret update because one or more TWILIO_* secrets are missing"
+            exit 0
+          fi
+          supabase secrets set --project-ref "$SUPABASE_PROJECT_ID_PROD" \
+            TWILIO_ACCOUNT_SID="$TWILIO_ACCOUNT_SID" \
+            TWILIO_AUTH_TOKEN="$TWILIO_AUTH_TOKEN" \
+            TWILIO_VERIFY_SERVICE_SID="$TWILIO_VERIFY_SERVICE_SID"
         env:
           SUPABASE_ACCESS_TOKEN: ${{ secrets.SUPABASE_ACCESS_TOKEN }}
+          SUPABASE_PROJECT_ID_PROD: ${{ secrets.SUPABASE_PROJECT_ID_PROD }}
+          TWILIO_ACCOUNT_SID: ${{ secrets.TWILIO_ACCOUNT_SID }}
+          TWILIO_AUTH_TOKEN: ${{ secrets.TWILIO_AUTH_TOKEN }}
+          TWILIO_VERIFY_SERVICE_SID: ${{ secrets.TWILIO_VERIFY_SERVICE_SID }}
 
       - name: Deploy auth Edge Functions (production)
         run: |

@@ -22,7 +22,7 @@ const findUserByPhone = async (
   admin: ReturnType<typeof getAdminClient>,
   phone: string
 ): Promise<User | null> => {
-  for (let page = 1; page <= 5; page++) {
+  for (let page = 1; ; page++) {
     const { data, error } = await admin.auth.admin.listUsers({
       page,
       perPage: 1000,

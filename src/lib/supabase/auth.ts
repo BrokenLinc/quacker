@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import type { Session, User } from '@supabase/supabase-js';
 
 import { resolvePhotoURL } from '@@lib/gravatar';
@@ -46,6 +47,22 @@ export const resolveAppUserPhotoURL = (
 
 export const signOut = () => supabase.auth.signOut();
 
+const getFunctionError = async (
+  data: { error?: unknown } | null,
+  error: Error | null
+): Promise<Error | null> => {
+  if (data?.error) return new Error(String(data.error));
+  if (error instanceof FunctionsHttpError) {
+    try {
+      const body = (await error.context.json()) as { error?: unknown };
+      if (body.error) return new Error(String(body.error));
+    } catch {
+      // Preserve the invoke error when the response body is not valid JSON.
+    }
+  }
+  return error;
+};
+
 export const normalizePhoneInput = (input: string): string | null => {
   const trimmed = input.trim();
   if (/^\+[1-9]\d{6,14}$/.test(trimmed.replace(/\s/g, ''))) {
@@ -61,8 +78,8 @@ export const requestSmsOtp = async (phone: string) => {
   const { data, error } = await supabase.functions.invoke('auth-send-otp', {
     body: { phone },
   });
-  if (error) return { error };
-  if (data?.error) return { error: new Error(String(data.error)) };
+  const functionError = await getFunctionError(data, error);
+  if (functionError) return { error: functionError };
   return { error: null };
 };
 
@@ -70,8 +87,8 @@ export const verifySmsOtp = async (phone: string, code: string) => {
   const { data, error } = await supabase.functions.invoke('auth-verify-otp', {
     body: { phone, code },
   });
-  if (error) return { error };
-  if (data?.error) return { error: new Error(String(data.error)) };
+  const functionError = await getFunctionError(data, error);
+  if (functionError) return { error: functionError };
   if (!data?.token_hash) {
     return { error: new Error('No session token returned') };
   }
