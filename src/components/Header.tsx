@@ -3,14 +3,13 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { addGroup, useGroups } from '@@api';
+import { SignInForm } from '@@components/auth/SignInForm';
+import { useSignInPlacement } from '@@components/auth/useSignInPlacement';
 import { UserAvatar } from '@@components/UserAvatar';
 import {
-  normalizePhoneInput,
-  requestSmsOtp,
   resolveAppUserPhotoURL,
   signOut,
   useAuthState,
-  verifySmsOtp,
 } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 import { faMessage } from '@fortawesome/free-solid-svg-icons';
@@ -37,147 +36,35 @@ export const Header: React.FC = () => {
           </UI.Text>
         </UI.HStack>
         <ColorModeToggle />
-        {user ? <UserMenu /> : <SignInForm />}
+        {user ? <UserMenu /> : <HeaderSignIn />}
       </UI.HStack>
       <UI.Divider />
     </UI.Box>
   );
 };
 
-const SignInForm: React.FC = () => {
-  const [phoneInput, setPhoneInput] = React.useState('');
-  const [normalizedPhone, setNormalizedPhone] = React.useState<string | null>(
-    null
-  );
-  const [verificationSid, setVerificationSid] = React.useState<string | null>(
-    null
-  );
-  const [code, setCode] = React.useState('');
-  const [step, setStep] = React.useState<'phone' | 'code'>('phone');
-  const [loading, setLoading] = React.useState(false);
-  const [error, setError] = React.useState<string | null>(null);
-  const sendInFlight = React.useRef(false);
+const HeaderSignIn: React.FC = () => {
+  const placement = useSignInPlacement();
+  const signInModal = UI.useDisclosure();
 
-  const sendCode = async (phone: string) => {
-    if (sendInFlight.current || loading) return false;
-    sendInFlight.current = true;
-    setLoading(true);
-    setError(null);
-    const { error: sendError, verificationSid: sid } = await requestSmsOtp(phone);
-    sendInFlight.current = false;
-    setLoading(false);
-    if (sendError) {
-      setError(sendError.message);
-      return false;
-    }
-    setNormalizedPhone(phone);
-    setVerificationSid(sid);
-    setCode('');
-    setStep('code');
-    return true;
-  };
-
-  const handlePhoneSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    const phone = normalizePhoneInput(phoneInput);
-    if (!phone) {
-      setError('Enter a valid US phone number');
-      return;
-    }
-    await sendCode(phone);
-  };
-
-  const handleCodeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!normalizedPhone || !verificationSid || loading) return;
-    setLoading(true);
-    setError(null);
-    const { error: verifyError } = await verifySmsOtp(
-      normalizedPhone,
-      code.trim(),
-      verificationSid
-    );
-    setLoading(false);
-    if (verifyError) {
-      setError(verifyError.message);
-    }
-  };
-
-  if (step === 'code') {
-    return (
-      <UI.HStack as="form" onSubmit={handleCodeSubmit} spacing={2}>
-        <UI.Input
-          size="sm"
-          type="text"
-          inputMode="numeric"
-          autoComplete="one-time-code"
-          placeholder="6-digit code"
-          value={code}
-          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
-          required
-          w="100px"
-          data-testid="sign-in-code"
-        />
-        <UI.Button type="submit" variant="outline" size="sm" disabled={loading}>
-          {loading ? 'Verifying…' : 'Verify'}
-        </UI.Button>
-        <UI.Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          disabled={loading}
-          onClick={() => normalizedPhone && sendCode(normalizedPhone)}
-        >
-          Resend
-        </UI.Button>
-        <UI.Button
-          type="button"
-          variant="ghost"
-          size="sm"
-          onClick={() => {
-            setStep('phone');
-            setCode('');
-            setVerificationSid(null);
-            setError(null);
-          }}
-        >
-          Change
-        </UI.Button>
-        {error && (
-          <UI.Text fontSize="xs" color="red.500">
-            {error}
-          </UI.Text>
-        )}
-        {!error && (
-          <UI.Text fontSize="xs" color="gray.500">
-            Use the code from your latest text
-          </UI.Text>
-        )}
-      </UI.HStack>
-    );
-  }
+  if (placement === 'inline') return null;
 
   return (
-    <UI.HStack as="form" onSubmit={handlePhoneSubmit} spacing={2}>
-      <UI.Input
+    <React.Fragment>
+      <UI.Button
         size="sm"
-        type="tel"
-        placeholder="(555) 555-5555"
-        value={phoneInput}
-        onChange={(e) => setPhoneInput(e.target.value)}
-        required
-        w="140px"
-        data-testid="sign-in-phone"
-      />
-      <UI.Button type="submit" variant="outline" size="sm" disabled={loading}>
-        {loading ? 'Sending…' : 'Text me a code'}
+        variant="outline"
+        onClick={signInModal.onOpen}
+        data-testid="header-log-in"
+      >
+        Log in
       </UI.Button>
-      {error && (
-        <UI.Text fontSize="xs" color="red.500">
-          {error}
-        </UI.Text>
-      )}
-    </UI.HStack>
+      <UI.QuickModal {...signInModal} headerContent="Sign in">
+        <UI.ModalBody>
+          <SignInForm onSuccess={signInModal.onClose} />
+        </UI.ModalBody>
+      </UI.QuickModal>
+    </React.Fragment>
   );
 };
 

@@ -22,6 +22,7 @@ Quacker is a private, ad-hoc group chat for trips and conferences.
 ## Auth (MVP)
 
 - **SMS OTP** — enter phone, verify 6-digit code via Twilio Verify
+- **Sign-in UI** — header **Log in** opens a modal; protected pages show the same form inline until authenticated
 - Display name defaults to last 4 digits of phone (`···1234`)
 - Gravatar module retained under `src/lib/avatars/gravatar.ts` for future email auth
 

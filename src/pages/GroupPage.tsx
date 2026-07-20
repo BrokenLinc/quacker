@@ -10,6 +10,8 @@ import {
   useGroup,
   useGroupMessages,
 } from '@@api';
+import { RequireAuth } from '@@components/auth/RequireAuth';
+import { SignInPlacementFromAuth } from '@@components/auth/SignInPlacementFromAuth';
 import { Header } from '@@components/Header';
 import { UserAvatar } from '@@components/UserAvatar';
 import { resolveAppUserPhotoURL, useAuthState } from '@@lib/supabase/auth';
@@ -36,10 +38,12 @@ const GroupPage: React.FC = () => {
   const { groupId } = useParams() as { groupId: string };
 
   return (
-    <React.Fragment>
+    <SignInPlacementFromAuth>
       <Header />
-      <GroupPageContents groupId={groupId} />
-    </React.Fragment>
+      <RequireAuth>
+        <GroupPageContents groupId={groupId} />
+      </RequireAuth>
+    </SignInPlacementFromAuth>
   );
 };
 export default GroupPage;
