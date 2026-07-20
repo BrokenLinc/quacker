@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import type { Message } from '@@api';
 
-const DEFAULT_TITLE = 'Quacker';
+const DEFAULT_TITLE = 'Hork';
 
 /** Flashes document title when new messages arrive while tab is in background. */
 export const useChirpOnNewMessages = (
@@ -29,7 +29,7 @@ export const useChirpOnNewMessages = (
 
       const interval = window.setInterval(() => {
         document.title = flash
-          ? `🦆 ${author} quacked!`
+          ? `🦆 ${author} horked!`
           : original;
         flash = !flash;
       }, 800);

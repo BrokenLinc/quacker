@@ -1,6 +1,6 @@
 {
-  "name": "Quacker",
-  "short_name": "Quacker",
+  "name": "Hork",
+  "short_name": "Hork",
   "description": "Ad-hoc group chat for trips and conferences",
   "start_url": "/",
   "scope": "/",

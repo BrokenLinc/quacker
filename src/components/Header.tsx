@@ -32,7 +32,7 @@ export const Header: React.FC = () => {
         >
           <UI.Icon icon={faMessage} />
           <UI.Text fontWeight="bold" fontSize="sm">
-            quacker
+            hork
           </UI.Text>
         </UI.HStack>
         <ColorModeToggle />
