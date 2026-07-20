@@ -365,7 +365,7 @@ const useGroupState = (
     await addMessage({
       uid: user.uid,
       authorName: user.displayName,
-      authorPhotoURL: await resolveAppUserPhotoURL(user),
+      authorPhotoURL: resolveAppUserPhotoURL(user),
       text,
       groupId,
     });
@@ -417,8 +417,8 @@ export const MessageCard: React.FC<{ message: Message }> = ({ message }) => {
     >
       <UI.HStack spacing={3}>
         <UserAvatar
-          bg="purple.200"
           name={message.authorName || ''}
+          seed={message.uid}
           photoURL={message.authorPhotoURL}
           size="sm"
         />

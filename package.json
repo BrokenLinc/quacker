@@ -39,6 +39,7 @@
     "@tiptap/pm": "3.28.0",
     "@tiptap/react": "3.28.0",
     "@tiptap/starter-kit": "3.28.0",
+    "boring-avatars": "2.0.4",
     "chakra-react-select": "4.10.1",
     "countries-and-timezones": "3.8.0",
     "date-fns": "4.1.0",
