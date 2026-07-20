@@ -3,7 +3,7 @@ import React from 'react';
 
 export const theme = extendTheme({
   config: {
-    initialColorMode: 'dark',
+    initialColorMode: 'system',
     useSystemColorMode: true,
   },
   components: {
