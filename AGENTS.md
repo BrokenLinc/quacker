@@ -30,6 +30,8 @@ supabase link --project-ref $SUPABASE_PROJECT_ID
 supabase db push                  # apply to cloud
 ```
 
+`supabase link` writes `supabase/.temp/` (and branch metadata under `supabase/.branches/`). Both are gitignored — do not commit them. When stack or CLI workflows change, update `.gitignore` in the same change.
+
 ## Deploy sequence
 
 1. Ensure migrations committed

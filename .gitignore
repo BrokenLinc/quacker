@@ -7,3 +7,6 @@ playwright-report
 test-results
 .vercel
 .supabase
+.yarn-global
+supabase/.temp/
+supabase/.branches/

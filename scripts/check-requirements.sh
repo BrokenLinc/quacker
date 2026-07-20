@@ -87,6 +87,16 @@ else
 fi
 
 echo
+echo "Repository (.gitignore)"
+for path in supabase/.temp supabase/.branches; do
+  if git check-ignore -q "${path}/probe" 2>/dev/null; then
+    ok "${path}/ gitignored"
+  else
+    warn "${path}/ not gitignored" "Add Supabase CLI paths to .gitignore — see .cursor/rules/supabase.mdc"
+  fi
+done
+
+echo
 echo "Secrets (.env.local)"
 if [[ ! -f .env.local ]]; then
   miss ".env.local missing" "cp .env.example .env.local and fill values — see docs/prerequisites.md"

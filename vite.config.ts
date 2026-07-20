@@ -3,6 +3,9 @@ import { defineConfig } from 'vite';
 
 export default defineConfig({
   plugins: [react()],
+  build: {
+    chunkSizeWarningLimit: 1600,
+  },
   resolve: {
     alias: [{ find: /@@(.*)/, replacement: '/src/$1' }],
   },

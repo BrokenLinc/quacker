@@ -67,6 +67,17 @@ Do not ask the user to perform steps 2–6.
 | E2e auth fails | Check dev `SUPABASE_SERVICE_ROLE_KEY`; remote Supabase reachable |
 | Magic link redirect 404 | Agent: PATCH auth `uri_allow_list` — see `docs/environments.md` |
 | Realtime not updating | Confirm tables in `supabase_realtime` publication |
+| Accidentally committed `supabase/.temp/` | `git rm -r --cached supabase/.temp` and ensure `.gitignore` entries exist |
+
+## Repository hygiene
+
+When adding tools, CLIs, or deploy targets, extend `.gitignore` for generated local paths in the same PR. Supabase CLI state:
+
+- `supabase/.temp/` — linked project ref (created by `supabase link`)
+- `supabase/.branches/` — branch metadata
+- `.supabase/` — local Docker stack data
+
+`yarn check:requirements` validates these patterns are present.
 
 ## User gates
 

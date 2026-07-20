@@ -25,7 +25,7 @@ export const RouteLink = React.forwardRef<HTMLAnchorElement, RouteLinkProps>(
       if (isActive) {
         onActive?.();
       }
-    }, [isActive]);
+    }, [isActive, onActive]);
 
     return (
       <UI.Link

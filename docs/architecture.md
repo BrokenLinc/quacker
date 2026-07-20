@@ -2,7 +2,7 @@
 
 ## Stack
 
-- **Frontend:** React 18, Vite 6, SWC, Chakra UI v2, FontAwesome
+- **Frontend:** React 19, Vite 6, SWC, Chakra UI v2, FontAwesome
 - **Backend:** Supabase (Postgres, Auth, Realtime, Edge Functions)
 - **Deploy:** Vercel (static SPA) + GitHub Actions
 
@@ -54,5 +54,7 @@ src/
 supabase/
   migrations/    # schema + RLS
   functions/     # edge functions
+  .temp/         # CLI local state (gitignored)
+  .branches/     # CLI branch metadata (gitignored)
 tests/e2e/       # Playwright + Axe
 ```
