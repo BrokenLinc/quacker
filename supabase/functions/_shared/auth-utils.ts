@@ -10,6 +10,14 @@ export const jsonResponse = (body: unknown, status = 200) =>
     headers: { ...corsHeaders, 'Content-Type': 'application/json' },
   });
 
+export const formatError = (error: unknown): string => {
+  if (error instanceof Error) return error.message;
+  if (typeof error === 'object' && error !== null && 'message' in error) {
+    return String((error as { message: unknown }).message);
+  }
+  return String(error);
+};
+
 /** Normalize US and E.164 phone input to E.164 (+1XXXXXXXXXX). */
 export const normalizePhone = (input: string): string | null => {
   const trimmed = input.trim();

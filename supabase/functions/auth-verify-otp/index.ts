@@ -4,6 +4,7 @@ import type { User } from 'https://esm.sh/@supabase/supabase-js@2.110.7';
 import {
   corsHeaders,
   displayNameFromPhone,
+  formatError,
   jsonResponse,
   normalizePhone,
   syntheticEmail,
@@ -146,6 +147,6 @@ Deno.serve(async (req) => {
     return jsonResponse({ token_hash: linkData.properties.hashed_token });
   } catch (e) {
     console.error(e);
-    return jsonResponse({ error: String(e) }, 500);
+    return jsonResponse({ error: formatError(e) }, 500);
   }
 });

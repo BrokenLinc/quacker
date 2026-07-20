@@ -2,6 +2,7 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.110.7';
 
 import {
   corsHeaders,
+  formatError,
   jsonResponse,
   normalizePhone,
   twilioAuthHeader,
@@ -107,6 +108,6 @@ Deno.serve(async (req) => {
     });
   } catch (e) {
     console.error(e);
-    return jsonResponse({ error: String(e) }, 500);
+    return jsonResponse({ error: formatError(e) }, 500);
   }
 });
