@@ -56,11 +56,15 @@ const SignInForm: React.FC = () => {
   const [step, setStep] = React.useState<'phone' | 'code'>('phone');
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const sendInFlight = React.useRef(false);
 
   const sendCode = async (phone: string) => {
+    if (sendInFlight.current) return false;
+    sendInFlight.current = true;
     setLoading(true);
     setError(null);
     const { error: sendError, verificationSid: sid } = await requestSmsOtp(phone);
+    sendInFlight.current = false;
     setLoading(false);
     if (sendError) {
       setError(sendError.message);
