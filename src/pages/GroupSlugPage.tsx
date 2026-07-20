@@ -1,11 +1,25 @@
 import * as UI from '@@ui';
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useGroupBySlug } from '@@api';
+import { RequireAuth } from '@@components/auth/RequireAuth';
+import { SignInPlacementFromAuth } from '@@components/auth/SignInPlacementFromAuth';
+import { Header } from '@@components/Header';
 import { routes } from '@@routing/routes';
 
 const GroupSlugPage: React.FC = () => {
+  return (
+    <SignInPlacementFromAuth>
+      <Header />
+      <RequireAuth heading="Sign in to join this group">
+        <GroupSlugRedirect />
+      </RequireAuth>
+    </SignInPlacementFromAuth>
+  );
+};
+
+const GroupSlugRedirect: React.FC = () => {
   const { slug } = useParams() as { slug: string };
   const navigate = useNavigate();
   const [group, loading, error] = useGroupBySlug(slug);
