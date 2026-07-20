@@ -47,15 +47,24 @@ export const resolveAppUserPhotoURL = (
 
 export const signOut = () => supabase.auth.signOut();
 
+const formatUnknownError = (value: unknown): string => {
+  if (typeof value === 'string') return value;
+  if (value instanceof Error) return value.message;
+  if (typeof value === 'object' && value !== null && 'message' in value) {
+    return String((value as { message: unknown }).message);
+  }
+  return String(value);
+};
+
 const getFunctionError = async (
   data: { error?: unknown } | null,
   error: Error | null
 ): Promise<Error | null> => {
-  if (data?.error) return new Error(String(data.error));
+  if (data?.error) return new Error(formatUnknownError(data.error));
   if (error instanceof FunctionsHttpError) {
     try {
       const body = (await error.context.json()) as { error?: unknown };
-      if (body.error) return new Error(String(body.error));
+      if (body.error) return new Error(formatUnknownError(body.error));
     } catch {
       // Preserve the invoke error when the response body is not valid JSON.
     }
