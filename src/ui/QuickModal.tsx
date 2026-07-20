@@ -97,17 +97,7 @@ export const QuickModal: React.FC<QuickModalProps> = ({
   ...props
 }) => {
   const isMobile = UI.useBreakpointValue({ base: true, md: false });
-  const shellRef = React.useRef<Shell | null>(null);
-
-  if (isOpen) {
-    if (shellRef.current === null) {
-      shellRef.current = isMobile ? 'drawer' : 'modal';
-    }
-  } else {
-    shellRef.current = null;
-  }
-
-  const shell = shellRef.current ?? (isMobile ? 'drawer' : 'modal');
+  const shell = isMobile ? 'drawer' : 'modal';
 
   const adaptedChildren = adaptQuickModalChildren(children, shell);
   const disclosureProps: QuickModalShellProps = { ...props, isOpen };
