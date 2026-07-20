@@ -2,9 +2,11 @@ import { ChakraProvider, ColorModeScript, extendTheme } from '@chakra-ui/react';
 import React from 'react';
 
 export const theme = extendTheme({
+  config: {
+    initialColorMode: 'dark',
+    useSystemColorMode: true,
+  },
   components: {
-    initialColorMode: 'system',
-    useSystemColorMode: false,
     Link: {
       baseStyle: {
         color: 'blue.500',

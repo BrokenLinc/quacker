@@ -42,12 +42,12 @@ export const InstallPrompt: React.FC = () => {
           />
           <UI.Box flex="1">
             <UI.Text fontWeight="bold" fontSize="sm">
-              Install Quacker
+              Install Hork
             </UI.Text>
             <UI.Text fontSize="sm" opacity={0.95}>
               {showIosHint
                 ? 'Tap Share, then Add to Home Screen for a full-screen app experience.'
-                : 'Add Quacker to your home screen for quick access during your trip.'}
+                : 'Add Hork to your home screen for quick access during your trip.'}
             </UI.Text>
           </UI.Box>
           <UI.IconButton

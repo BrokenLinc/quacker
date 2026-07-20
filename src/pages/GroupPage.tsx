@@ -111,7 +111,7 @@ const GroupSharer: React.FC<UI.ButtonProps & { group?: Group }> = ({
   const nativeShare = async () => {
     if (navigator.share) {
       await navigator.share({
-        title: group?.name ?? 'Quacker group',
+        title: group?.name ?? 'Hork group',
         url: shareUrl,
       });
     } else {
