@@ -59,7 +59,7 @@ const SignInForm: React.FC = () => {
   const sendInFlight = React.useRef(false);
 
   const sendCode = async (phone: string) => {
-    if (sendInFlight.current) return false;
+    if (sendInFlight.current || loading) return false;
     sendInFlight.current = true;
     setLoading(true);
     setError(null);
@@ -72,6 +72,7 @@ const SignInForm: React.FC = () => {
     }
     setNormalizedPhone(phone);
     setVerificationSid(sid);
+    setCode('');
     setStep('code');
     return true;
   };
@@ -88,7 +89,7 @@ const SignInForm: React.FC = () => {
 
   const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!normalizedPhone || !verificationSid) return;
+    if (!normalizedPhone || !verificationSid || loading) return;
     setLoading(true);
     setError(null);
     const { error: verifyError } = await verifySmsOtp(
@@ -145,6 +146,11 @@ const SignInForm: React.FC = () => {
         {error && (
           <UI.Text fontSize="xs" color="red.500">
             {error}
+          </UI.Text>
+        )}
+        {!error && (
+          <UI.Text fontSize="xs" color="gray.500">
+            Use the code from your latest text
           </UI.Text>
         )}
       </UI.HStack>

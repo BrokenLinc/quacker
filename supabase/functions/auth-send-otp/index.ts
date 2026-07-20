@@ -105,6 +105,7 @@ Deno.serve(async (req) => {
       ok: true,
       status: payload.status,
       verification_sid: payload.sid,
+      to: payload.to ?? phone,
     });
   } catch (e) {
     console.error(e);
