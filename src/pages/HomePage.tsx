@@ -1,4 +1,6 @@
 import { useGroups } from '@@api';
+import { RequireAuth } from '@@components/auth/RequireAuth';
+import { SignInPlacementFromAuth } from '@@components/auth/SignInPlacementFromAuth';
 import { Header } from '@@components/Header';
 import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
@@ -7,12 +9,14 @@ import React from 'react';
 
 const HomePage: React.FC = () => {
   return (
-    <React.Fragment>
+    <SignInPlacementFromAuth>
       <Header />
-      <UI.Box maxW="480px" mx="auto" p={4}>
-        <GroupCardList />
-      </UI.Box>
-    </React.Fragment>
+      <RequireAuth>
+        <UI.Box maxW="480px" mx="auto" p={4}>
+          <GroupCardList />
+        </UI.Box>
+      </RequireAuth>
+    </SignInPlacementFromAuth>
   );
 };
 export default HomePage;
