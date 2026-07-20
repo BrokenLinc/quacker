@@ -25,7 +25,7 @@ export const RouteButton = React.forwardRef<
     if (isActive) {
       onActive?.();
     }
-  }, [isActive]);
+  }, [isActive, onActive]);
 
   return (
     <UI.Button

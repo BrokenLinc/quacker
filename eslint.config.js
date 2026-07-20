@@ -53,5 +53,16 @@ export default tseslint.config(
     languageOptions: {
       globals: globals.node,
     },
-  }
+  },
+  {
+    files: [
+      'src/ui/index.tsx',
+      'src/api/index.tsx',
+      'src/**/ThemeProvider.tsx',
+      'src/**/RefreshProvider.tsx',
+    ],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 );

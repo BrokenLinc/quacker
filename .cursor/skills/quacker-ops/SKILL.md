@@ -76,6 +76,8 @@ supabase start
 
 Local anon URL/key are printed by `supabase start`. Use them in `.env.local` for local dev.
 
+`supabase link` creates `supabase/.temp/` and `supabase/.branches/` — both gitignored. Update `.gitignore` when adding new CLI-generated paths.
+
 ## User gate unblocking
 
 Ask the user **only** when MCP/CLI cannot proceed. Otherwise execute the setup yourself.

@@ -24,7 +24,7 @@ export const RouteMenuItem = React.forwardRef<
     if (isActive) {
       onActive?.();
     }
-  }, [isActive]);
+  }, [isActive, onActive]);
 
   return (
     <UI.MenuItem
