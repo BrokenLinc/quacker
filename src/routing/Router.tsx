@@ -16,7 +16,6 @@ const appRoutes: AppRoute[] = [
   { ...routes.home(), component: Pages.HomePage },
   { ...routes.group(), component: Pages.GroupPage },
   { ...routes.groupBySlug(), component: Pages.GroupSlugPage },
-  { ...routes.authCallback(), component: Pages.AuthCallbackPage },
 ];
 
 const RouteError: React.FC = () => {

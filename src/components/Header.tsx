@@ -5,10 +5,12 @@ import { useNavigate } from 'react-router-dom';
 import { addGroup, useGroups } from '@@api';
 import { UserAvatar } from '@@components/UserAvatar';
 import {
+  normalizePhoneInput,
+  requestSmsOtp,
   resolveAppUserPhotoURL,
   signOut,
-  signInWithMagicLink,
   useAuthState,
+  verifySmsOtp,
 } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 import { faMessage } from '@fortawesome/free-solid-svg-icons';
@@ -43,45 +45,116 @@ export const Header: React.FC = () => {
 };
 
 const SignInForm: React.FC = () => {
-  const [email, setEmail] = React.useState('');
-  const [sent, setSent] = React.useState(false);
+  const [phoneInput, setPhoneInput] = React.useState('');
+  const [normalizedPhone, setNormalizedPhone] = React.useState<string | null>(
+    null
+  );
+  const [code, setCode] = React.useState('');
+  const [step, setStep] = React.useState<'phone' | 'code'>('phone');
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const sendCode = async (phone: string) => {
     setLoading(true);
     setError(null);
-    const { error: signInError } = await signInWithMagicLink(email.trim());
+    const { error: sendError } = await requestSmsOtp(phone);
     setLoading(false);
-    if (signInError) {
-      setError(signInError.message);
-    } else {
-      setSent(true);
+    if (sendError) {
+      setError(sendError.message);
+      return false;
+    }
+    setNormalizedPhone(phone);
+    setStep('code');
+    return true;
+  };
+
+  const handlePhoneSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const phone = normalizePhoneInput(phoneInput);
+    if (!phone) {
+      setError('Enter a valid US phone number');
+      return;
+    }
+    await sendCode(phone);
+  };
+
+  const handleCodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!normalizedPhone) return;
+    setLoading(true);
+    setError(null);
+    const { error: verifyError } = await verifySmsOtp(
+      normalizedPhone,
+      code.trim()
+    );
+    setLoading(false);
+    if (verifyError) {
+      setError(verifyError.message);
     }
   };
 
-  if (sent) {
+  if (step === 'code') {
     return (
-      <UI.Text fontSize="sm" color="green.500">
-        Check your email for a magic link
-      </UI.Text>
+      <UI.HStack as="form" onSubmit={handleCodeSubmit} spacing={2}>
+        <UI.Input
+          size="sm"
+          type="text"
+          inputMode="numeric"
+          autoComplete="one-time-code"
+          placeholder="6-digit code"
+          value={code}
+          onChange={(e) => setCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+          required
+          w="100px"
+          data-testid="sign-in-code"
+        />
+        <UI.Button type="submit" variant="outline" size="sm" disabled={loading}>
+          {loading ? 'Verifying…' : 'Verify'}
+        </UI.Button>
+        <UI.Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          disabled={loading}
+          onClick={() => normalizedPhone && sendCode(normalizedPhone)}
+        >
+          Resend
+        </UI.Button>
+        <UI.Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => {
+            setStep('phone');
+            setCode('');
+            setError(null);
+          }}
+        >
+          Change
+        </UI.Button>
+        {error && (
+          <UI.Text fontSize="xs" color="red.500">
+            {error}
+          </UI.Text>
+        )}
+      </UI.HStack>
     );
   }
 
   return (
-    <UI.HStack as="form" onSubmit={handleSubmit} spacing={2}>
+    <UI.HStack as="form" onSubmit={handlePhoneSubmit} spacing={2}>
       <UI.Input
         size="sm"
-        type="email"
-        placeholder="you@email.com"
-        value={email}
-        onChange={(e) => setEmail(e.target.value)}
+        type="tel"
+        placeholder="(555) 555-5555"
+        value={phoneInput}
+        onChange={(e) => setPhoneInput(e.target.value)}
         required
-        w="160px"
+        w="140px"
+        data-testid="sign-in-phone"
       />
       <UI.Button type="submit" variant="outline" size="sm" disabled={loading}>
-        {loading ? 'Sending…' : 'Magic link'}
+        {loading ? 'Sending…' : 'Text me a code'}
       </UI.Button>
       {error && (
         <UI.Text fontSize="xs" color="red.500">
@@ -115,7 +188,7 @@ const UserMenu: React.FC = () => {
         <UI.Box as="span" display="inline-flex" data-testid="user-menu-button">
           <UI.MenuButton
             as={UserAvatar}
-            name={user.displayName || user.email || ''}
+            name={user.displayName || user.phone || user.email || ''}
             email={user.email}
             photoURL={user.photoURL}
             cursor="pointer"
@@ -132,7 +205,7 @@ const UserMenu: React.FC = () => {
             New group
           </UI.MenuItem>
           <UI.MenuItem fontSize="sm" onClick={() => signOut()}>
-            Log out {user.displayName?.split(' ')[0] ?? user.email}
+            Log out {user.displayName ?? user.phone ?? user.email}
           </UI.MenuItem>
         </UI.MenuList>
       </UI.Menu>

@@ -13,7 +13,6 @@
 | `/` | Home — group list |
 | `/:groupId` | Group chat |
 | `/g/:slug` | Short link → resolves to group |
-| `/auth/callback` | Magic-link session exchange |
 
 ## Data model
 
@@ -37,8 +36,8 @@ Supabase `postgres_changes` on `messages` and `groups` tables. Hooks in `src/api
 
 ## Auth flow
 
-1. User enters email → `signInWithOtp`
-2. Email link → `/auth/callback` → session stored
+1. User enters phone → Twilio Verify SMS OTP via Edge Functions
+2. Code verified → Supabase session minted (`auth-verify-otp`)
 3. RLS policies enforce membership for writes
 
 ## Folder layout

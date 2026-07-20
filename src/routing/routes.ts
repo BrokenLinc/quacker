@@ -12,8 +12,4 @@ export const routes = {
     path: `/g/${slug}`,
     label: 'Group',
   }),
-  authCallback: () => ({
-    path: '/auth/callback',
-    label: 'Auth',
-  }),
 };
