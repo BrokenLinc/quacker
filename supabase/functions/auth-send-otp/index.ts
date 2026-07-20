@@ -4,7 +4,10 @@ import {
   corsHeaders,
   formatError,
   jsonResponse,
+  logAuthOtp,
+  maskPhone,
   normalizePhone,
+  summarizeTwilioVerification,
   twilioAuthHeader,
   verifyServiceSid,
 } from '../_shared/auth-utils.ts';
@@ -94,12 +97,30 @@ Deno.serve(async (req) => {
 
     const payload = await res.json();
     if (!res.ok) {
-      console.error('Twilio send error', payload);
+      logAuthOtp(
+        'send_failed',
+        {
+          http_status: res.status,
+          phone: maskPhone(phone),
+          service_sid: serviceSid,
+          ...summarizeTwilioVerification(payload),
+        },
+        'error'
+      );
       return jsonResponse(
         { error: payload.message ?? 'Failed to send code' },
         res.status
       );
     }
+
+    logAuthOtp('send_ok', {
+      http_status: res.status,
+      phone: maskPhone(String(payload.to ?? phone)),
+      service_sid: serviceSid,
+      verification_sid: payload.sid ?? null,
+      status: payload.status ?? null,
+      channel: payload.channel ?? null,
+    });
 
     return jsonResponse({
       ok: true,
@@ -108,7 +129,7 @@ Deno.serve(async (req) => {
       to: payload.to ?? phone,
     });
   } catch (e) {
-    console.error(e);
+    logAuthOtp('send_exception', { error: formatError(e) }, 'error');
     return jsonResponse({ error: formatError(e) }, 500);
   }
 });

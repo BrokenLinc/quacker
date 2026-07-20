@@ -7,7 +7,10 @@ import {
   formatError,
   isVerificationSid,
   jsonResponse,
+  logAuthOtp,
+  maskPhone,
   normalizePhone,
+  summarizeTwilioVerification,
   syntheticEmail,
   twilioAuthHeader,
   verifyServiceSid,
@@ -95,6 +98,17 @@ Deno.serve(async (req) => {
     if (hasValidVerificationSid) {
       checkBody.set('VerificationSid', verificationSid);
     }
+
+    logAuthOtp('verify_request', {
+      phone: maskPhone(phone),
+      code_length: otp.length,
+      verification_sid: hasValidVerificationSid ? verificationSid : null,
+      verification_sid_valid: hasValidVerificationSid,
+      check_includes_to: Boolean(phone),
+      check_includes_verification_sid: hasValidVerificationSid,
+      service_sid: serviceSid,
+    });
+
     const checkRes = await fetch(
       `https://verify.twilio.com/v2/Services/${serviceSid}/VerificationChecks`,
       {
@@ -108,8 +122,22 @@ Deno.serve(async (req) => {
     );
 
     const checkPayload = await checkRes.json();
+    const twilioSummary = summarizeTwilioVerification(checkPayload);
+
     if (!checkRes.ok) {
-      console.error('Twilio verify error', checkPayload);
+      logAuthOtp(
+        'verify_twilio_error',
+        {
+          http_status: checkRes.status,
+          phone: maskPhone(phone),
+          request_verification_sid: hasValidVerificationSid
+            ? verificationSid
+            : null,
+          service_sid: serviceSid,
+          ...twilioSummary,
+        },
+        'error'
+      );
       const status =
         checkRes.status === 404 ? 401 : checkRes.status >= 500 ? 500 : 400;
       return jsonResponse(
@@ -124,6 +152,20 @@ Deno.serve(async (req) => {
     }
 
     if (checkPayload.status !== 'approved') {
+      logAuthOtp(
+        'verify_not_approved',
+        {
+          http_status: checkRes.status,
+          phone: maskPhone(String(checkPayload.to ?? phone)),
+          request_verification_sid: hasValidVerificationSid
+            ? verificationSid
+            : null,
+          response_verification_sid: checkPayload.sid ?? null,
+          service_sid: serviceSid,
+          ...twilioSummary,
+        },
+        'error'
+      );
       return jsonResponse(
         {
           error:
@@ -138,6 +180,14 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Invalid phone number' }, 400);
     }
 
+    logAuthOtp('verify_ok', {
+      phone: maskPhone(String(checkPayload.to ?? phone)),
+      verification_sid: checkPayload.sid ?? verificationSid,
+      service_sid: serviceSid,
+      status: checkPayload.status,
+      valid: checkPayload.valid ?? null,
+    });
+
     const admin = getAdminClient();
     const user = await ensurePhoneUser(admin, verifiedPhone);
     const email = user.email ?? syntheticEmail(verifiedPhone);
@@ -149,13 +199,21 @@ Deno.serve(async (req) => {
       });
 
     if (linkError || !linkData.properties?.hashed_token) {
-      console.error('generateLink error', linkError);
+      logAuthOtp(
+        'session_create_failed',
+        {
+          phone: maskPhone(verifiedPhone),
+          verification_sid: checkPayload.sid ?? verificationSid,
+          error: formatError(linkError),
+        },
+        'error'
+      );
       return jsonResponse({ error: 'Failed to create session' }, 500);
     }
 
     return jsonResponse({ token_hash: linkData.properties.hashed_token });
   } catch (e) {
-    console.error(e);
+    logAuthOtp('verify_exception', { error: formatError(e) }, 'error');
     return jsonResponse({ error: formatError(e) }, 500);
   }
 });
