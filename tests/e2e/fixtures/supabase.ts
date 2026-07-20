@@ -49,12 +49,13 @@ export const waitForAuthenticated = async (page: Page) => {
   });
 };
 
-/** E2E uses admin-generated magic links (test-only); prod uses email magic link. */
+/** E2E uses admin-generated session tokens (test-only); prod uses Twilio SMS OTP. */
 export const seedTestSession = async (page: Page) => {
   const admin = getAdminClient();
   const email = `e2e-${Date.now()}@quacker.test`;
   const appOrigin =
     process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
+  const { url, anonKey } = getSupabaseEnv();
 
   const { data: userData, error } = await admin.auth.admin.createUser({
     email,
@@ -66,16 +67,35 @@ export const seedTestSession = async (page: Page) => {
     await admin.auth.admin.generateLink({
       type: 'magiclink',
       email,
-      options: {
-        redirectTo: `${appOrigin}/auth/callback`,
-      },
     });
-  if (linkError || !linkData.properties?.action_link) {
-    throw linkError ?? new Error('No magic link');
+  const tokenHash = linkData?.properties?.hashed_token;
+  if (linkError || !tokenHash) {
+    throw linkError ?? new Error('No session token');
   }
 
-  await page.goto(linkData.properties.action_link);
-  await page.waitForURL(`${appOrigin}/**`, { timeout: 15_000 });
+  await page.goto(appOrigin);
+  await page.evaluate(
+    async ({
+      tokenHash: hash,
+      supabaseUrl,
+      supabaseKey,
+    }: {
+      tokenHash: string;
+      supabaseUrl: string;
+      supabaseKey: string;
+    }) => {
+      const { createClient } = await import(
+        'https://esm.sh/@supabase/supabase-js@2.110.7'
+      );
+      const client = createClient(supabaseUrl, supabaseKey);
+      const { error: otpError } = await client.auth.verifyOtp({
+        token_hash: hash,
+        type: 'email',
+      });
+      if (otpError) throw otpError;
+    },
+    { tokenHash, supabaseUrl: url, supabaseKey: anonKey }
+  );
   await waitForAuthenticated(page);
 
   return { admin, userId: userData.user.id, email };

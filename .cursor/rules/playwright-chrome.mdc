@@ -22,7 +22,7 @@ yarn test:e2e
 yarn verify
 
 # Smoke against production
-PLAYWRIGHT_BASE_URL=https://quacker-five.vercel.app yarn test:e2e --config=playwright.smoke.config.ts
+PLAYWRIGHT_BASE_URL=https://hork.us yarn test:e2e --config=playwright.smoke.config.ts
 ```
 
 ## Troubleshooting

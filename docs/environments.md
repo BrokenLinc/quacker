@@ -26,7 +26,7 @@ No `develop` branch — solo workflow: PR preview → merge to `main` → prod d
 - `SUPABASE_PROJECT_ID_PROD`
 - `VITE_APP_URL`
 
-Shared: `SUPABASE_ACCESS_TOKEN`, `VERCEL_*`.
+Shared: `SUPABASE_ACCESS_TOKEN`, `VERCEL_*`, `TWILIO_*` (Edge Function secrets only).
 
 See [`.env.example`](../.env.example).
 
@@ -36,14 +36,16 @@ See [`.env.example`](../.env.example).
 | -------- | ------- | ---------- |
 | `VITE_SUPABASE_URL` | dev project URL | prod project URL |
 | `VITE_SUPABASE_ANON_KEY` | dev anon key | prod anon key |
-| `VITE_APP_URL` | omit (uses origin) | `https://quacker-five.vercel.app` |
+| `VITE_APP_URL` | omit (uses origin) | `https://hork.us` |
 
-## Supabase auth redirects
+## Supabase auth
 
-| Project | `site_url` | Redirect URLs |
-| ------- | ---------- | ------------- |
-| **dev** | `http://127.0.0.1:5173` | localhost + `https://*.vercel.app/auth/callback` |
-| **prod** | `https://quacker-five.vercel.app` | prod URL + `https://*.vercel.app/auth/callback` |
+| Project | `site_url` |
+| ------- | ---------- |
+| **dev** | `http://127.0.0.1:5173` |
+| **prod** | `https://hork.us` |
+
+Sign-in uses **Twilio Verify SMS OTP** via Edge Functions (`auth-send-otp`, `auth-verify-otp`). Magic-link `/auth/callback` is removed.
 
 ## Workflows
 
@@ -63,6 +65,7 @@ Use **production** values for deploy secrets:
 - `SUPABASE_PROJECT_ID` → prod ref (`wcbxopujwnsxdrmdbofc`)
 - `SUPABASE_ACCESS_TOKEN`
 - `SUPABASE_SERVICE_ROLE_KEY` → prod service role
+- `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID` → Edge Function secrets
 - `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
 
 CI verify does not need cloud secrets (local ephemeral Supabase).

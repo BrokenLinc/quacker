@@ -115,6 +115,13 @@ else
       warn "$var not set" "Needed for deploy — see docs/environments.md"
     fi
   done
+  for var in TWILIO_ACCOUNT_SID TWILIO_AUTH_TOKEN TWILIO_VERIFY_SERVICE_SID; do
+    if [[ -n "${!var:-}" ]]; then
+      ok "$var set (Twilio Verify)"
+    else
+      warn "$var not set" "Needed for SMS auth Edge Functions — see .env.example"
+    fi
+  done
 fi
 
 echo

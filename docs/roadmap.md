@@ -5,6 +5,7 @@
 - Short slug URLs (`/g/:slug`) + share sheet
 - Chirp tab notifications (zero permission)
 - Web Push scaffold (SW + subscriptions table + edge function stub)
+- Twilio Verify SMS OTP auth + `hork.us` production domain
 
 ## Tier 1 — next
 
@@ -17,7 +18,7 @@
 | Feature | Gate |
 | ------- | ---- |
 | Google OAuth | Google Cloud OAuth app |
-| SMS OTP / nudges | Twilio account + billing |
+| SMS nudges / notifications | Twilio Messaging (beyond Verify) |
 | Full Web Push delivery | VAPID keys + edge function web-push lib |
 
 ## Tier 3 — ideas

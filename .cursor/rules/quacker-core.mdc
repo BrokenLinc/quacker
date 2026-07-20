@@ -11,7 +11,7 @@ Quacker is a private, ad-hoc group chat for trips and conferences — short-live
 
 - Vite + `@vitejs/plugin-react-swc` (SWC, not Babel)
 - React 18, Chakra UI v2, FontAwesome
-- Supabase (Postgres + Realtime + magic-link auth)
+- Supabase (Postgres + Realtime + Twilio Verify SMS auth)
 - Path alias: `@@*` → `src/*`
 
 ## Conventions

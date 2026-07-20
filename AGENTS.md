@@ -60,7 +60,7 @@ Do **not** ask the user to create projects, use dashboards, run `yarn dev`, appl
 
 ## Auth
 
-Magic link only (MVP). Google OAuth and SMS are deferred — see [`docs/roadmap.md`](docs/roadmap.md).
+Twilio Verify SMS OTP (MVP). Google OAuth is deferred — see [`docs/roadmap.md`](docs/roadmap.md).
 
 ## Cursor Cloud specific instructions
 
@@ -73,8 +73,9 @@ Docker runs rootless-in-VM and is not started automatically:
 
 `.env.local` is created during setup from `.env.example` with the standard local Supabase demo keys (`http://127.0.0.1:54321`). It is gitignored, so recreate it if missing: `cp .env.example .env.local` and fill `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`/`SUPABASE_SERVICE_ROLE_KEY` with the values printed by `supabase start`.
 
-### Auth / magic-link testing
-Magic-link emails are not really sent locally — they are captured by Mailpit at `http://127.0.0.1:54324`. To log in: enter an email on the app, open Mailpit, open the newest message, and follow the "Log In" link (or paste its `/auth/v1/verify?...` URL into the app tab).
+### Auth / SMS OTP testing
+
+Production and dev Supabase use Twilio Verify via Edge Functions (`auth-send-otp`, `auth-verify-otp`). E2E tests bypass Twilio via admin session seeding in `tests/e2e/fixtures/supabase.ts`.
 
 ### Running e2e
 `yarn test:e2e` uses the installed Google **Chrome** (`channel: 'chrome'`), not bundled Chromium. Start a preview server first (`yarn preview --host 127.0.0.1 --port 4173`) and run with `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173`; `yarn verify` wires this up automatically.
