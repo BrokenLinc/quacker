@@ -175,6 +175,11 @@ Deno.serve(async (req) => {
       );
     }
 
+    const verifiedPhone = normalizePhone(String(checkPayload.to ?? phone ?? ''));
+    if (!verifiedPhone) {
+      return jsonResponse({ error: 'Invalid phone number' }, 400);
+    }
+
     logAuthOtp('verify_ok', {
       phone: maskPhone(String(checkPayload.to ?? phone)),
       verification_sid: checkPayload.sid ?? verificationSid,
@@ -182,11 +187,6 @@ Deno.serve(async (req) => {
       status: checkPayload.status,
       valid: checkPayload.valid ?? null,
     });
-
-    const verifiedPhone = normalizePhone(String(checkPayload.to ?? phone ?? ''));
-    if (!verifiedPhone) {
-      return jsonResponse({ error: 'Invalid phone number' }, 400);
-    }
 
     const admin = getAdminClient();
     const user = await ensurePhoneUser(admin, verifiedPhone);
