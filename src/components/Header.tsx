@@ -205,7 +205,7 @@ const UserMenu: React.FC = () => {
           <UI.MenuButton
             as={UserAvatar}
             name={user.displayName || user.phone || user.email || ''}
-            email={user.email}
+            seed={user.uid}
             photoURL={user.photoURL}
             cursor="pointer"
             size="sm"
@@ -281,7 +281,7 @@ const AddGroupForm: React.FC<{ onCreated: () => void }> = ({ onCreated }) => {
       const { id } = await addGroup({
         uid: user.uid,
         authorName: user.displayName,
-        authorPhotoURL: await resolveAppUserPhotoURL(user),
+        authorPhotoURL: resolveAppUserPhotoURL(user),
         name: name.trim(),
       });
       onCreated();

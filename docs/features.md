@@ -7,7 +7,7 @@ Quacker is a private, ad-hoc group chat for trips and conferences.
 | Feature | Description |
 | ------- | ----------- |
 | SMS OTP auth | Twilio Verify sign-in via phone number |
-| User avatars | Gravatar v3 SHA256 avatars from sign-in email; Chakra initials fallback |
+| User avatars | Boring Avatars (beam) from user id; explicit photo URL when set |
 | Group list | Browse all groups on home page |
 | Create group | Name a group; auto short slug for sharing |
 | Group chat | Markdown messages with live realtime feed |
@@ -23,7 +23,7 @@ Quacker is a private, ad-hoc group chat for trips and conferences.
 
 - **SMS OTP** — enter phone, verify 6-digit code via Twilio Verify
 - Display name defaults to last 4 digits of phone (`···1234`)
-- Legacy email users keep Gravatar avatars; phone users use initials
+- Gravatar module retained under `src/lib/avatars/gravatar.ts` for future email auth
 
 ## Deferred
 

@@ -2,8 +2,6 @@ import { useEffect, useState } from 'react';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 import type { Session, User } from '@supabase/supabase-js';
 
-import { resolvePhotoURL } from '@@lib/gravatar';
-
 import { supabase } from './client';
 
 const SYNTHETIC_EMAIL_DOMAIN = '@phone.hork.us';
@@ -42,8 +40,8 @@ export const toAppUser = (user: User | null): AppUser | null => {
 };
 
 export const resolveAppUserPhotoURL = (
-  user: Pick<AppUser, 'photoURL' | 'email'>
-) => resolvePhotoURL(user.photoURL, user.email);
+  user: Pick<AppUser, 'photoURL'>
+): string | null => user.photoURL ?? null;
 
 export const signOut = () => supabase.auth.signOut();
 
