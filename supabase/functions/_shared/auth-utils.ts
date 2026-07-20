@@ -18,6 +18,9 @@ export const formatError = (error: unknown): string => {
   return String(error);
 };
 
+export const isVerificationSid = (value: string) =>
+  /^VE[0-9a-fA-F]{32}$/.test(value);
+
 /** Normalize US and E.164 phone input to E.164 (+1XXXXXXXXXX). */
 export const normalizePhone = (input: string): string | null => {
   const trimmed = input.trim();

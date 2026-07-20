@@ -5,6 +5,7 @@ import {
   corsHeaders,
   displayNameFromPhone,
   formatError,
+  isVerificationSid,
   jsonResponse,
   normalizePhone,
   syntheticEmail,
@@ -77,8 +78,9 @@ Deno.serve(async (req) => {
     const phone = normalizePhone(String(rawPhone ?? ''));
     const otp = String(code ?? '').trim();
     const verificationSid = String(rawVerificationSid ?? '').trim();
+    const hasValidVerificationSid = isVerificationSid(verificationSid);
 
-    if (!verificationSid && !phone) {
+    if (!hasValidVerificationSid && !phone) {
       return jsonResponse({ error: 'Invalid phone number' }, 400);
     }
     if (!/^\d{4,10}$/.test(otp)) {
@@ -87,10 +89,11 @@ Deno.serve(async (req) => {
 
     const serviceSid = verifyServiceSid();
     const checkBody = new URLSearchParams({ Code: otp });
-    if (verificationSid) {
-      checkBody.set('VerificationSid', verificationSid);
-    } else if (phone) {
+    if (phone) {
       checkBody.set('To', phone);
+    }
+    if (hasValidVerificationSid) {
+      checkBody.set('VerificationSid', verificationSid);
     }
     const checkRes = await fetch(
       `https://verify.twilio.com/v2/Services/${serviceSid}/VerificationChecks`,
@@ -113,7 +116,7 @@ Deno.serve(async (req) => {
         {
           error:
             checkRes.status === 404
-              ? 'Invalid or expired code'
+              ? 'Code expired or too many attempts. Text yourself a new code.'
               : (checkPayload.message ?? 'Verification failed'),
         },
         status
@@ -121,7 +124,13 @@ Deno.serve(async (req) => {
     }
 
     if (checkPayload.status !== 'approved') {
-      return jsonResponse({ error: 'Invalid or expired code' }, 401);
+      return jsonResponse(
+        {
+          error:
+            'Incorrect code. Use the latest text message or request a new code.',
+        },
+        401
+      );
     }
 
     const verifiedPhone = normalizePhone(String(checkPayload.to ?? phone ?? ''));
