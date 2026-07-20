@@ -100,7 +100,11 @@ Deno.serve(async (req) => {
       );
     }
 
-    return jsonResponse({ ok: true, status: payload.status });
+    return jsonResponse({
+      ok: true,
+      status: payload.status,
+      verification_sid: payload.sid,
+    });
   } catch (e) {
     console.error(e);
     return jsonResponse({ error: String(e) }, 500);

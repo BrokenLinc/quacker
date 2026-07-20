@@ -49,21 +49,29 @@ const SignInForm: React.FC = () => {
   const [normalizedPhone, setNormalizedPhone] = React.useState<string | null>(
     null
   );
+  const [verificationSid, setVerificationSid] = React.useState<string | null>(
+    null
+  );
   const [code, setCode] = React.useState('');
   const [step, setStep] = React.useState<'phone' | 'code'>('phone');
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
+  const sendInFlight = React.useRef(false);
 
   const sendCode = async (phone: string) => {
+    if (sendInFlight.current) return false;
+    sendInFlight.current = true;
     setLoading(true);
     setError(null);
-    const { error: sendError } = await requestSmsOtp(phone);
+    const { error: sendError, verificationSid: sid } = await requestSmsOtp(phone);
+    sendInFlight.current = false;
     setLoading(false);
     if (sendError) {
       setError(sendError.message);
       return false;
     }
     setNormalizedPhone(phone);
+    setVerificationSid(sid);
     setStep('code');
     return true;
   };
@@ -80,12 +88,13 @@ const SignInForm: React.FC = () => {
 
   const handleCodeSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!normalizedPhone) return;
+    if (!normalizedPhone || !verificationSid) return;
     setLoading(true);
     setError(null);
     const { error: verifyError } = await verifySmsOtp(
       normalizedPhone,
-      code.trim()
+      code.trim(),
+      verificationSid
     );
     setLoading(false);
     if (verifyError) {
@@ -127,6 +136,7 @@ const SignInForm: React.FC = () => {
           onClick={() => {
             setStep('phone');
             setCode('');
+            setVerificationSid(null);
             setError(null);
           }}
         >

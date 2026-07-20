@@ -71,11 +71,13 @@ Deno.serve(async (req) => {
   }
 
   try {
-    const { phone: rawPhone, code } = await req.json();
+    const { phone: rawPhone, code, verification_sid: rawVerificationSid } =
+      await req.json();
     const phone = normalizePhone(String(rawPhone ?? ''));
     const otp = String(code ?? '').trim();
+    const verificationSid = String(rawVerificationSid ?? '').trim();
 
-    if (!phone) {
+    if (!verificationSid && !phone) {
       return jsonResponse({ error: 'Invalid phone number' }, 400);
     }
     if (!/^\d{4,10}$/.test(otp)) {
@@ -83,7 +85,12 @@ Deno.serve(async (req) => {
     }
 
     const serviceSid = verifyServiceSid();
-    const checkBody = new URLSearchParams({ To: phone, Code: otp });
+    const checkBody = new URLSearchParams({ Code: otp });
+    if (verificationSid) {
+      checkBody.set('VerificationSid', verificationSid);
+    } else if (phone) {
+      checkBody.set('To', phone);
+    }
     const checkRes = await fetch(
       `https://verify.twilio.com/v2/Services/${serviceSid}/VerificationChecks`,
       {
@@ -99,9 +106,16 @@ Deno.serve(async (req) => {
     const checkPayload = await checkRes.json();
     if (!checkRes.ok) {
       console.error('Twilio verify error', checkPayload);
+      const status =
+        checkRes.status === 404 ? 401 : checkRes.status >= 500 ? 500 : 400;
       return jsonResponse(
-        { error: checkPayload.message ?? 'Verification failed' },
-        checkRes.status
+        {
+          error:
+            checkRes.status === 404
+              ? 'Invalid or expired code'
+              : (checkPayload.message ?? 'Verification failed'),
+        },
+        status
       );
     }
 
@@ -109,9 +123,14 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Invalid or expired code' }, 401);
     }
 
+    const verifiedPhone = normalizePhone(String(checkPayload.to ?? phone ?? ''));
+    if (!verifiedPhone) {
+      return jsonResponse({ error: 'Invalid phone number' }, 400);
+    }
+
     const admin = getAdminClient();
-    const user = await ensurePhoneUser(admin, phone);
-    const email = user.email ?? syntheticEmail(phone);
+    const user = await ensurePhoneUser(admin, verifiedPhone);
+    const email = user.email ?? syntheticEmail(verifiedPhone);
 
     const { data: linkData, error: linkError } =
       await admin.auth.admin.generateLink({

@@ -79,13 +79,25 @@ export const requestSmsOtp = async (phone: string) => {
     body: { phone },
   });
   const functionError = await getFunctionError(data, error);
-  if (functionError) return { error: functionError };
-  return { error: null };
+  if (functionError) return { error: functionError, verificationSid: null };
+  const verificationSid =
+    typeof data?.verification_sid === 'string' ? data.verification_sid : null;
+  if (!verificationSid) {
+    return {
+      error: new Error('No verification id returned'),
+      verificationSid: null,
+    };
+  }
+  return { error: null, verificationSid };
 };
 
-export const verifySmsOtp = async (phone: string, code: string) => {
+export const verifySmsOtp = async (
+  phone: string,
+  code: string,
+  verificationSid: string
+) => {
   const { data, error } = await supabase.functions.invoke('auth-verify-otp', {
-    body: { phone, code },
+    body: { phone, code, verification_sid: verificationSid },
   });
   const functionError = await getFunctionError(data, error);
   if (functionError) return { error: functionError };
