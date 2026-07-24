@@ -111,7 +111,7 @@ else
       miss "$var not set in .env.local" "See docs/environments.md"
     fi
   done
-  for var in VITE_SUPABASE_URL_PROD VITE_SUPABASE_ANON_KEY_PROD SUPABASE_SERVICE_ROLE_KEY_PROD SUPABASE_PROJECT_ID_PROD VITE_APP_URL; do
+  for var in VITE_SUPABASE_URL_PROD VITE_SUPABASE_ANON_KEY_PROD SUPABASE_SERVICE_ROLE_KEY_PROD SUPABASE_PROJECT_ID_PROD SUPABASE_DB_PASSWORD_PROD VITE_APP_URL; do
     if [[ -n "${!var:-}" ]]; then
       ok "$var set (prod)"
     else

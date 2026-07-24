@@ -24,6 +24,7 @@ No `develop` branch — solo workflow: PR preview → merge to `main` → prod d
 - `VITE_SUPABASE_ANON_KEY_PROD`
 - `SUPABASE_SERVICE_ROLE_KEY_PROD`
 - `SUPABASE_PROJECT_ID_PROD`
+- `SUPABASE_DB_PASSWORD_PROD` (Postgres password; CI secret name `SUPABASE_DB_PASSWORD`)
 - `VITE_APP_URL`
 
 Shared: `SUPABASE_ACCESS_TOKEN`, `VERCEL_*`, `TWILIO_*` (Edge Function secrets only).

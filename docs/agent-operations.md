@@ -39,6 +39,7 @@ From `.env.local`:
 ```bash
 yarn sync:vercel-env
 gh secret set SUPABASE_PROJECT_ID_PROD
+gh secret set SUPABASE_DB_PASSWORD < <(grep SUPABASE_DB_PASSWORD_PROD .env.local | cut -d= -f2-)
 gh secret set SUPABASE_ACCESS_TOKEN
 gh secret set SUPABASE_SERVICE_ROLE_KEY_PROD
 gh secret set VERCEL_TOKEN

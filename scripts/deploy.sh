@@ -13,12 +13,13 @@ fi
 
 : "${SUPABASE_PROJECT_ID_PROD:?Set SUPABASE_PROJECT_ID_PROD in .env.local}"
 : "${SUPABASE_ACCESS_TOKEN:?Set SUPABASE_ACCESS_TOKEN in .env.local}"
+: "${SUPABASE_DB_PASSWORD_PROD:?Set SUPABASE_DB_PASSWORD_PROD in .env.local}"
 
 echo "==> Linking Supabase production project"
-supabase link --project-ref "$SUPABASE_PROJECT_ID_PROD"
+supabase link --project-ref "$SUPABASE_PROJECT_ID_PROD" --password "$SUPABASE_DB_PASSWORD_PROD" --yes
 
 echo "==> Pushing migrations to production"
-supabase db push
+SUPABASE_DB_PASSWORD="$SUPABASE_DB_PASSWORD_PROD" supabase db push --yes
 
 if [[ -n "${TWILIO_ACCOUNT_SID:-}" && -n "${TWILIO_AUTH_TOKEN:-}" && -n "${TWILIO_VERIFY_SERVICE_SID:-}" ]]; then
   echo "==> Setting Twilio Edge Function secrets (production)"

@@ -16,6 +16,7 @@ yarn sync:vercel-env   # Preview → dev Supabase; Production → prod Supabase
 ## GitHub Actions secrets (production deploy)
 
 - `SUPABASE_PROJECT_ID_PROD`
+- `SUPABASE_DB_PASSWORD` (prod Postgres password; maps from `SUPABASE_DB_PASSWORD_PROD` in `.env.local`)
 - `SUPABASE_ACCESS_TOKEN`
 - `SUPABASE_SERVICE_ROLE_KEY_PROD` (optional for deploy workflow)
 - `VERCEL_TOKEN`, `VERCEL_ORG_ID`, `VERCEL_PROJECT_ID`
@@ -36,8 +37,8 @@ Update `supabase/config.toml` `site_url` and `additional_redirect_urls` for prod
 Secrets required:
 
 - `SUPABASE_ACCESS_TOKEN`
-- `SUPABASE_PROJECT_ID`
-- `SUPABASE_SERVICE_ROLE_KEY`
+- `SUPABASE_PROJECT_ID_PROD`
+- `SUPABASE_DB_PASSWORD`
 - `VERCEL_TOKEN`
 - `VERCEL_ORG_ID`
 - `VERCEL_PROJECT_ID`
