@@ -13,5 +13,15 @@ if (!supabaseUrl || !supabaseAnonKey) {
 
 export const supabase: SupabaseClient<Database> = createClient<Database>(
   supabaseUrl ?? 'http://127.0.0.1:54321',
-  supabaseAnonKey ?? 'placeholder'
+  supabaseAnonKey ?? 'placeholder',
+  {
+    auth: {
+      // Persist + auto-refresh so users stay signed in across visits.
+      // Access JWTs last up to 1 week (project jwt_exp); refresh tokens
+      // do not expire unless time-box / inactivity timeouts are set.
+      persistSession: true,
+      autoRefreshToken: true,
+      detectSessionInUrl: true,
+    },
+  }
 );

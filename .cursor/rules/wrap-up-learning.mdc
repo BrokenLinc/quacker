@@ -1,0 +1,32 @@
+---
+description: Before ending a task, capture learnings into project docs/rules/scripts
+alwaysApply: true
+---
+
+# Wrap-up learning loop
+
+When work on a task is substantially complete — and **before ending the turn** — reflect briefly and leave the project smarter for the next agent.
+
+## Do this last
+
+1. **Reflect** — What was non-obvious, error-prone, slow, or easy to get wrong? What command, path, MCP tool, or convention would have saved time?
+2. **Capture** — Update the lightest durable place that future agents will actually see:
+   - `.cursor/rules/*.mdc` — recurring constraints, pitfalls, or workflows
+   - `AGENTS.md` / `docs/` — runbooks, shortcuts, env gotchas
+   - `scripts/` or `package.json` — if a multi-step dance should be one command
+3. **Prefer deltas** — Amend existing docs/rules; don't invent parallel guides. Keep additions short and actionable (hints, commands, "don't do X — do Y").
+4. **Skip when empty** — If nothing transferable was learned, do not pad docs.
+
+## Good captures
+
+- Exact CLI/MCP sequences that worked (with project-specific flags)
+- Footguns discovered (wrong env, wrong project-ref, hanging Playwright, etc.)
+- "If you see error Y, check Z" troubleshooting lines
+- Generated-path / gitignore notes when tooling layout changes
+
+## Anti-patterns
+
+- Restating the whole task in prose
+- Duplicating the same tip across many files
+- Committing secrets or one-off session state
+- Delaying the user's answer while writing essays — a few tight bullets or a script is enough

@@ -2,6 +2,8 @@
 
 Private, ad-hoc group chat for trips and conferences — a lightweight way for organic groups to sync during chaotic, short-lived moments.
 
+> **Naming:** _Quacker_ is the internal code name (infrastructure, configs, this repo). The app ships to users as **Hork** (`hork.us`) — use "Hork" in all user-facing copy. See [AGENTS.md](AGENTS.md#naming-code-name-vs-brand).
+
 ## Status
 
 Agent-operated prototype. See [docs/features.md](docs/features.md) for capabilities.
