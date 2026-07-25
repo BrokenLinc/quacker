@@ -11,6 +11,8 @@ export type ConfirmationOptions = {
   message?: React.ReactNode;
   confirmLabel?: string;
   cancelLabel?: string;
+  /** Destructive actions get a red confirm button. */
+  isDestructive?: boolean;
   onConfirm?: () => any;
   onCancel?: () => any;
 };
@@ -59,12 +61,14 @@ export const ConfirmationProvider: React.FC<React.PropsWithChildren> = ({
           ) : null}
           <UI.ModalFooter justifyContent="center">
             <UI.ButtonGroup isDisabled={running}>
-              {options?.onCancel ? (
-                <UI.Button onClick={modal.onClose}>
-                  {options?.cancelLabel || 'Cancel'}
-                </UI.Button>
-              ) : null}
-              <UI.Button colorScheme="purple" onClick={onConfirm}>
+              <UI.Button variant="ghost" onClick={modal.onClose}>
+                {options?.cancelLabel || 'Cancel'}
+              </UI.Button>
+              <UI.Button
+                colorScheme={options?.isDestructive ? 'red' : 'action'}
+                onClick={onConfirm}
+                isLoading={running}
+              >
                 {options?.confirmLabel || 'Confirm'}
               </UI.Button>
             </UI.ButtonGroup>

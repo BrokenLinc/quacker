@@ -38,7 +38,10 @@ const RichTextDocument: React.FC<{ markdown: string }> = ({ markdown }) => {
           '& p + p': { mt: 2 },
           '& h1': { fontSize: 'lg', fontWeight: 'bold', lineHeight: 'short' },
           '& h2, & h3': { fontSize: 'md', fontWeight: 'semibold', lineHeight: 'short' },
-          '& a': { color: 'var(--chakra-colors-purple-500)', textDecoration: 'underline' },
+          '& a': {
+            color: 'var(--chakra-colors-action-600)',
+            textDecoration: 'underline',
+          },
         },
       }}
     >

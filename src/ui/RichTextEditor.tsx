@@ -1,11 +1,6 @@
 import * as UI from '@chakra-ui/react';
 import { Icon } from './Icon';
-import {
-  faBold,
-  faHeading,
-  faItalic,
-  faLink,
-} from '@fortawesome/free-solid-svg-icons';
+import { faBold, faItalic } from '@fortawesome/free-solid-svg-icons';
 import { EditorContent, useEditor } from '@tiptap/react';
 import React from 'react';
 import { createRichTextExtensions } from './richText/extensions';
@@ -13,6 +8,8 @@ import { createRichTextExtensions } from './richText/extensions';
 export type RichTextEditorProps = {
   value: string;
   onChange: (markdown: string) => void;
+  /** Called on Enter (Shift+Enter inserts a newline). */
+  onSubmit?: () => void;
   placeholder?: string;
   minH?: UI.BoxProps['minH'];
 };
@@ -20,16 +17,21 @@ export type RichTextEditorProps = {
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   value,
   onChange,
+  onSubmit,
   placeholder = 'Say something!',
   minH = 10,
 }) => {
-  const borderColor = UI.useColorModeValue('gray.200', 'gray.600');
-  const toolbarBg = UI.useColorModeValue('gray.50', 'gray.700');
   const placeholderColor = UI.useColorModeValue('gray.400', 'gray.500');
   const extensions = React.useMemo(
     () => createRichTextExtensions({ placeholder }),
     [placeholder],
   );
+
+  // Keep the latest onSubmit without re-creating the editor.
+  const onSubmitRef = React.useRef(onSubmit);
+  React.useEffect(() => {
+    onSubmitRef.current = onSubmit;
+  }, [onSubmit]);
 
   const editor = useEditor({
     extensions,
@@ -39,6 +41,18 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       attributes: {
         'aria-label': placeholder,
         'data-testid': 'message-editor',
+      },
+      handleKeyDown: (_view, event) => {
+        if (
+          event.key === 'Enter' &&
+          !event.shiftKey &&
+          !event.isComposing &&
+          onSubmitRef.current
+        ) {
+          onSubmitRef.current();
+          return true;
+        }
+        return false;
       },
     },
     onUpdate: ({ editor: currentEditor }) => {
@@ -54,45 +68,28 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     }
   }, [editor, value]);
 
-  const setLink = () => {
-    if (!editor) return;
-
-    const previousUrl = editor.getAttributes('link').href as string | undefined;
-    const url = window.prompt('Link URL', previousUrl ?? 'https://');
-
-    if (url === null) return;
-
-    if (url === '') {
-      editor.chain().focus().extendMarkRange('link').unsetLink().run();
-      return;
-    }
-
-    editor.chain().focus().extendMarkRange('link').setLink({ href: url }).run();
-  };
-
   if (!editor) return null;
 
   return (
     <UI.Box
       border="1px solid"
-      borderColor={borderColor}
-      borderRadius="md"
+      borderColor="border.subtle"
+      borderRadius="xl"
       overflow="hidden"
-      bg="chakra-body-bg"
+      bg="surface.raised"
+      transitionProperty="border-color, box-shadow"
+      transitionDuration="150ms"
+      _focusWithin={{
+        borderColor: 'action.500',
+        boxShadow: '0 0 0 1px var(--chakra-colors-action-500)',
+      }}
     >
-      <UI.HStack
-        px={2}
-        py={1}
-        spacing={1}
-        bg={toolbarBg}
-        borderBottom="1px solid"
-        borderColor={borderColor}
-      >
+      <UI.HStack px={2} py={1} spacing={1}>
         <UI.IconButton
           aria-label="Bold"
           size="xs"
           variant={editor.isActive('bold') ? 'solid' : 'ghost'}
-          colorScheme={editor.isActive('bold') ? 'green' : undefined}
+          colorScheme={editor.isActive('bold') ? 'action' : undefined}
           icon={<Icon icon={faBold} />}
           onClick={() => editor.chain().focus().toggleBold().run()}
         />
@@ -100,35 +97,15 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           aria-label="Italic"
           size="xs"
           variant={editor.isActive('italic') ? 'solid' : 'ghost'}
-          colorScheme={editor.isActive('italic') ? 'green' : undefined}
+          colorScheme={editor.isActive('italic') ? 'action' : undefined}
           icon={<Icon icon={faItalic} />}
           onClick={() => editor.chain().focus().toggleItalic().run()}
-        />
-        <UI.IconButton
-          aria-label="Heading"
-          size="xs"
-          variant={editor.isActive('heading', { level: 1 }) ? 'solid' : 'ghost'}
-          colorScheme={
-            editor.isActive('heading', { level: 1 }) ? 'green' : undefined
-          }
-          icon={<Icon icon={faHeading} />}
-          onClick={() =>
-            editor.chain().focus().toggleHeading({ level: 1 }).run()
-          }
-        />
-        <UI.IconButton
-          aria-label="Link"
-          size="xs"
-          variant={editor.isActive('link') ? 'solid' : 'ghost'}
-          colorScheme={editor.isActive('link') ? 'green' : undefined}
-          icon={<Icon icon={faLink} />}
-          onClick={setLink}
         />
       </UI.HStack>
       <UI.Box
         px={3}
         py={2}
-        pr={24}
+        pr={14}
         minH={minH}
         sx={{
           '.ProseMirror': {
@@ -137,7 +114,10 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             '& p': { margin: 0 },
             '& p + p': { mt: 2 },
             '& h1': { fontSize: 'lg', fontWeight: 'bold', lineHeight: 'short' },
-            '& a': { color: 'var(--chakra-colors-purple-500)', textDecoration: 'underline' },
+            '& a': {
+              color: 'var(--chakra-colors-action-600)',
+              textDecoration: 'underline',
+            },
           },
           '.ProseMirror p.is-editor-empty:first-child::before': {
             color: placeholderColor,

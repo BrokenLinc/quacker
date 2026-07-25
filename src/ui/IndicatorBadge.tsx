@@ -2,20 +2,18 @@ import * as UI from '@@ui';
 import React from 'react';
 
 const defaultIndicatorProps: UI.BadgeProps = {
-  variant: 'block',
+  variant: 'subtle',
 };
 
 const defaultActiveProps: UI.BadgeProps = {
   ...defaultIndicatorProps,
   opacity: 1,
-  colorScheme: 'purple',
+  colorScheme: 'brand',
 };
 
 const defaultInactiveProps: UI.BadgeProps = {
   ...defaultIndicatorProps,
-  bg: 'purple.600',
-  color: 'purple.300',
-  // colorScheme: 'gray',
+  colorScheme: 'gray',
 };
 
 export type IndicatorBadgeProps = UI.BadgeProps & {

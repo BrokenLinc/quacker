@@ -16,14 +16,15 @@ export const useChirpOnNewMessages = (
 
     const count = messages.length;
     const prev = prevCountRef.current;
+    const latest = messages[messages.length - 1];
 
     if (
       prev !== null &&
       count > prev &&
       document.hidden &&
-      messages[0]?.groupId === groupId
+      latest?.groupId === groupId
     ) {
-      const author = messages[0]?.authorName ?? 'Someone';
+      const author = latest?.authorName ?? 'Someone';
       const original = document.title;
       let flash = true;
 

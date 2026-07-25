@@ -24,7 +24,7 @@ export const InstallPrompt: React.FC = () => {
       <UI.Box
         maxW="480px"
         mx="auto"
-        bg="green.500"
+        bg="brand.600"
         color="white"
         borderRadius="lg"
         shadow="lg"
@@ -68,7 +68,7 @@ export const InstallPrompt: React.FC = () => {
             colorScheme="whiteAlpha"
             variant="solid"
             bg="white"
-            color="green.600"
+            color="brand.600"
             _hover={{ bg: 'whiteAlpha.900' }}
             onClick={() => void install()}
           >

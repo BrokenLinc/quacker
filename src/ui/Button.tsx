@@ -3,20 +3,22 @@ import { IconDefinition } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 import { Icon } from './Icon';
 
+/**
+ * Presets follow the app color roles: teal = action, purple-tinted gray =
+ * quiet chrome. See src/theming/ThemeProvider.tsx.
+ */
 const BUTTON_PRESETS = {
   primary: {
-    colorScheme: 'purple',
+    colorScheme: 'action',
   },
   secondary: {
-    colorScheme: 'purple',
     variant: 'outline',
   },
   subtle: {
-    colorScheme: 'purple',
     variant: 'ghost',
-    bg: 'purple.100',
+    bg: 'surface.sunken',
     _hover: {
-      bg: 'purple.200',
+      bg: 'border.subtle',
     },
   },
 };

@@ -43,6 +43,24 @@ export const resolveAppUserPhotoURL = (
   user: Pick<AppUser, 'photoURL'>
 ): string | null => user.photoURL ?? null;
 
+/** True when the user picked a real name (vs the `···1234` phone fallback). */
+export const hasChosenDisplayName = (user: User | null): boolean =>
+  Boolean(user?.user_metadata?.display_name);
+
+export const updateDisplayName = async (displayName: string) => {
+  const { error } = await supabase.auth.updateUser({
+    data: { display_name: displayName.trim() },
+  });
+  if (error) throw error;
+};
+
+export const getCurrentAuthUser = async (): Promise<User | null> => {
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  return session?.user ?? null;
+};
+
 export const signOut = () => supabase.auth.signOut();
 
 const formatUnknownError = (value: unknown): string => {

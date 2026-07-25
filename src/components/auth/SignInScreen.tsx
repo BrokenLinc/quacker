@@ -11,16 +11,18 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   heading = 'Sign in to Hork',
 }) => {
   return (
-    <UI.Box maxW="480px" mx="auto" p={4} data-testid="sign-in-screen">
-      <UI.VStack align="stretch" spacing={6}>
-        <UI.VStack align="stretch" spacing={1}>
-          <UI.Heading size="md">{heading}</UI.Heading>
-          <UI.Text fontSize="sm" color="gray.500">
-            We'll text you a 6-digit code
-          </UI.Text>
+    <UI.Box flex={1} overflowY="auto" w="full">
+      <UI.Box maxW="480px" mx="auto" p={4} pt={10} data-testid="sign-in-screen">
+        <UI.VStack align="stretch" spacing={6}>
+          <UI.VStack align="stretch" spacing={1}>
+            <UI.Heading size="md">{heading}</UI.Heading>
+            <UI.Text fontSize="sm" color="text.muted">
+              We'll text you a 6-digit code
+            </UI.Text>
+          </UI.VStack>
+          <SignInForm />
         </UI.VStack>
-        <SignInForm />
-      </UI.VStack>
+      </UI.Box>
     </UI.Box>
   );
 };

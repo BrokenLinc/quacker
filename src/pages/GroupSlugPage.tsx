@@ -1,28 +1,24 @@
 import * as UI from '@@ui';
+import { faComments } from '@fortawesome/free-solid-svg-icons';
 import React, { useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { useGroupBySlug } from '@@api';
 import { RequireAuth } from '@@components/auth/RequireAuth';
-import { SignInPlacementFromAuth } from '@@components/auth/SignInPlacementFromAuth';
-import { Header } from '@@components/Header';
 import { routes } from '@@routing/routes';
 
 const GroupSlugPage: React.FC = () => {
   return (
-    <SignInPlacementFromAuth>
-      <Header />
-      <RequireAuth heading="Sign in to join this group">
-        <GroupSlugRedirect />
-      </RequireAuth>
-    </SignInPlacementFromAuth>
+    <RequireAuth heading="Sign in to join this group">
+      <GroupSlugRedirect />
+    </RequireAuth>
   );
 };
 
 const GroupSlugRedirect: React.FC = () => {
   const { slug } = useParams() as { slug: string };
   const navigate = useNavigate();
-  const [group, loading, error] = useGroupBySlug(slug);
+  const [group, loading] = useGroupBySlug(slug);
 
   useEffect(() => {
     if (group?.id) {
@@ -30,23 +26,28 @@ const GroupSlugRedirect: React.FC = () => {
     }
   }, [group, navigate]);
 
-  if (loading) {
+  if (loading || group) {
     return (
-      <UI.Box p={8} textAlign="center">
+      <UI.Box flex={1} overflowY="auto" p={8} textAlign="center">
         <UI.Spinner />
       </UI.Box>
     );
   }
 
-  if (error || !group) {
-    return (
-      <UI.Box p={8} textAlign="center">
-        <UI.Text>Group not found.</UI.Text>
-      </UI.Box>
-    );
-  }
-
-  return null;
+  return (
+    <UI.Box flex={1} overflowY="auto">
+      <UI.EmptyState
+        icon={faComments}
+        title="Group not found"
+        description="This invite link may have expired, or the group was deleted."
+        action={
+          <UI.RouteButton route={routes.home()} variant="outline">
+            Back home
+          </UI.RouteButton>
+        }
+      />
+    </UI.Box>
+  );
 };
 
 export default GroupSlugPage;
