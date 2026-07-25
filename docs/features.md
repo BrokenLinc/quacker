@@ -1,6 +1,6 @@
 # Features
 
-Quacker is a private, ad-hoc group chat for trips and conferences.
+Quacker (code name) is a private, ad-hoc group chat for trips and conferences. It ships to users as **Hork** — all user-facing copy uses the Hork brand; "Quacker" stays in infra and config only.
 
 ## Implemented
 

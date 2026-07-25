@@ -10,6 +10,7 @@ import {
   logAuthOtp,
   maskPhone,
   normalizePhone,
+  phonesMatch,
   summarizeTwilioVerification,
   syntheticEmail,
   twilioAuthHeader,
@@ -23,17 +24,26 @@ const getAdminClient = () =>
     { auth: { autoRefreshToken: false, persistSession: false } }
   );
 
-const findUserByPhone = async (
+/**
+ * Find an existing SMS user by phone digits or synthetic email.
+ * GoTrue often stores `phone` without a leading `+`, so exact-string
+ * match against E.164 fails on the second login and createUser then
+ * errors with "already registered".
+ */
+const findPhoneUser = async (
   admin: ReturnType<typeof getAdminClient>,
   phone: string
 ): Promise<User | null> => {
+  const email = syntheticEmail(phone);
   for (let page = 1; ; page++) {
     const { data, error } = await admin.auth.admin.listUsers({
       page,
       perPage: 1000,
     });
     if (error) throw error;
-    const match = data.users.find((u) => u.phone === phone);
+    const match = data.users.find(
+      (u) => phonesMatch(u.phone, phone) || u.email === email
+    );
     if (match) return match;
     if (data.users.length < 1000) break;
   }
@@ -44,10 +54,21 @@ const ensurePhoneUser = async (
   admin: ReturnType<typeof getAdminClient>,
   phone: string
 ): Promise<User> => {
-  const existing = await findUserByPhone(admin, phone);
-  if (existing) return existing;
-
   const email = syntheticEmail(phone);
+  const existing = await findPhoneUser(admin, phone);
+  if (existing) {
+    // Normalize stored phone to E.164 when GoTrue stripped the `+`.
+    if (existing.phone !== phone) {
+      const { data: updated, error: updateError } =
+        await admin.auth.admin.updateUserById(existing.id, {
+          phone,
+          phone_confirm: true,
+        });
+      if (!updateError && updated.user) return updated.user;
+    }
+    return existing;
+  }
+
   const { data, error } = await admin.auth.admin.createUser({
     phone,
     phone_confirm: true,
@@ -57,7 +78,8 @@ const ensurePhoneUser = async (
   });
 
   if (error) {
-    const retry = await findUserByPhone(admin, phone);
+    // Race or format mismatch — treat duplicate as sign-in.
+    const retry = await findPhoneUser(admin, phone);
     if (retry) return retry;
     throw error;
   }

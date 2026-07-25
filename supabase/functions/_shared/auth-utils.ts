@@ -80,8 +80,21 @@ export const normalizePhone = (input: string): string | null => {
 export const syntheticEmail = (phone: string) =>
   `${phone.replace(/\D/g, '')}@phone.hork.us`;
 
+/** Digits only — GoTrue may store phone with or without a leading `+`. */
+export const phoneDigits = (phone: string | null | undefined) =>
+  (phone ?? '').replace(/\D/g, '');
+
+export const phonesMatch = (
+  a: string | null | undefined,
+  b: string | null | undefined
+) => {
+  const da = phoneDigits(a);
+  const db = phoneDigits(b);
+  return da.length > 0 && da === db;
+};
+
 export const displayNameFromPhone = (phone: string) => {
-  const digits = phone.replace(/\D/g, '');
+  const digits = phoneDigits(phone);
   return `···${digits.slice(-4)}`;
 };
 

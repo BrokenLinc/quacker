@@ -8,7 +8,7 @@ export type SignInScreenProps = {
 };
 
 export const SignInScreen: React.FC<SignInScreenProps> = ({
-  heading = 'Sign in to Quacker',
+  heading = 'Sign in to Hork',
 }) => {
   return (
     <UI.Box maxW="480px" mx="auto" p={4} data-testid="sign-in-screen">

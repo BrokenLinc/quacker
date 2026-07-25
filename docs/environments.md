@@ -48,6 +48,14 @@ See [`.env.example`](../.env.example).
 
 Sign-in uses **Twilio Verify SMS OTP** via Edge Functions (`auth-send-otp`, `auth-verify-otp`). Magic-link `/auth/callback` is removed.
 
+Session longevity (agent-configured via Management API + `supabase/config.toml`):
+
+- `jwt_exp` / `jwt_expiry` = **604800** (1 week — maximum allowed for access tokens)
+- No session time-box or inactivity timeout — refresh tokens keep users signed in indefinitely across visits
+- Client: `persistSession` + `autoRefreshToken` enabled in `src/lib/supabase/client.ts`
+
+When looking up SMS users in `auth-verify-otp`, match by **digits** (and synthetic email `*@phone.hork.us`), not exact E.164 strings — GoTrue may store `phone` without a leading `+`.
+
 ## Workflows
 
 | Command / workflow | Target |
