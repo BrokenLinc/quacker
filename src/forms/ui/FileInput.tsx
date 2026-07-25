@@ -68,7 +68,7 @@ export const FileInput = (props: FileInputProps) => {
         <UI.InputRightElement>
           <UI.IconButton
             aria-label="remove"
-            icon={<UI.Icon icon={faTimes} />}
+            icon={faTimes}
             variant="ghost"
             onClick={() => onChange?.(null)}
           />

@@ -8,6 +8,7 @@ import { SignInForm } from '@@components/auth/SignInForm';
 import { useSignInPlacement } from '@@components/auth/useSignInPlacement';
 import { SignInPlacementFromAuth } from '@@components/auth/SignInPlacementFromAuth';
 import { useAuthState } from '@@lib/supabase/auth';
+import { useVisualViewportHeight } from '@@lib/pwa/useVisualViewportHeight';
 import { routes } from '@@routing/routes';
 
 import { NewGroupButton } from './NewGroupModal';
@@ -15,11 +16,14 @@ import { UserMenu } from './UserMenu';
 
 /**
  * App frame: fixed-viewport shell with internal scrolling (chat-app pattern).
+ * Height tracks visualViewport (`--app-height`) so the keyboard does not cover
+ * the composer. Safe-area insets pad chrome, not a letterboxed body.
  * Desktop (md+): persistent left sidebar with group nav.
  * Mobile: compact top header on non-group routes; group pages render their
  * own single bar.
  */
 export const AppLayout: React.FC = () => {
+  useVisualViewportHeight();
   const isMobile = UI.useBreakpointValue(
     { base: true, md: false },
     { ssr: false }
@@ -32,7 +36,10 @@ export const AppLayout: React.FC = () => {
     <SignInPlacementFromAuth>
       <UI.Flex
         direction="column"
-        h="calc(100dvh - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))"
+        h="var(--app-height, 100dvh)"
+        maxH="var(--app-height, 100dvh)"
+        overflow="hidden"
+        bg="surface.canvas"
       >
         {isMobile && !isGroupRoute ? <MobileHeader /> : null}
         <UI.Flex flex={1} minH={0}>
@@ -77,10 +84,12 @@ const MobileHeader: React.FC = () => {
   return (
     <UI.HStack
       px={4}
-      py={2}
+      pt="calc(0.5rem + env(safe-area-inset-top, 0px))"
+      pb={2}
       borderBottom="1px solid"
       borderColor="border.subtle"
       flexShrink={0}
+      bg="surface.raised"
     >
       <BrandLink mr="auto" />
       {user ? <UserMenu showGroups showColorMode /> : <HeaderSignIn />}
@@ -99,6 +108,8 @@ const Sidebar: React.FC = () => {
       bg="surface.sunken"
       borderRight="1px solid"
       borderColor="border.subtle"
+      pt="env(safe-area-inset-top, 0px)"
+      pb="env(safe-area-inset-bottom, 0px)"
     >
       <UI.HStack px={4} py={3}>
         <BrandLink mr="auto" />
@@ -195,7 +206,7 @@ const ColorModeIconButton: React.FC = () => {
       aria-label={
         colorMode === 'light' ? 'Switch to dark mode' : 'Switch to light mode'
       }
-      icon={<UI.Icon icon={colorMode === 'light' ? faMoon : faSun} />}
+      icon={colorMode === 'light' ? faMoon : faSun}
       onClick={toggleColorMode}
       size="sm"
       variant="ghost"

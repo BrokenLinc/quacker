@@ -89,3 +89,48 @@ onto `group_members` for the roster and onto `messages` at send time.
 
 Blank screens are bugs. `return null` on error/empty is banned in page-level
 components.
+
+## Native / PWA
+
+Hork installs as a standalone PWA. Treat phones like a native shell: edge-to-edge
+chrome, keyboard-safe chat, and touch-first overlays — not a shrunk desktop page.
+
+### Viewport and keyboard
+
+- The app frame tracks the **visible** viewport (`visualViewport` height when
+  available; `100dvh` fallback). Never rely on `100vh` alone.
+- The composer must stay **above the keyboard**. On focus / viewport resize,
+  keep the focused input in view.
+- Prefer `interactive-widget=resizes-content` in the viewport meta where
+  supported (Chrome).
+
+### Safe areas and system chrome blending
+
+- Paint `html` / `body` / `#root` with `surface.canvas` so status bar and home
+  indicator gutters match the app, not a white letterbox.
+- Extend UI under safe areas; pad **chrome** (headers, composer, fixed banners,
+  drawer footers) with `env(safe-area-inset-*)` — do not double-subtract insets
+  from both body padding and shell height.
+- `theme-color`, manifest `theme_color`, and `background_color` track canvas
+  (light + dark). Sync `theme-color` when the in-app color mode changes.
+- With edge-to-edge painting, use `apple-mobile-web-app-status-bar-style` =
+  `black-translucent`.
+
+### Overlays
+
+- Every overlay has an obvious dismiss (X and/or Cancel). Overlay tap and Esc
+  remain available unless a flow intentionally requires an explicit choice —
+  still keep Cancel.
+- Content sheets use `QuickModal` (modal ≥ md, bottom drawer on mobile).
+- Confirmations use the **same** mobile drawer shell as `QuickModal`, not a
+  centered desktop modal on phones.
+
+### Menus
+
+- **Desktop (md+):** Chakra `Menu` popovers are fine for short action lists.
+- **Mobile:** short action lists → floating **action sheet** (inset from edges,
+  fully rounded corners; group options open from the **top** under the title);
+  longer navigational lists (groups in the avatar menu) → floating bottom
+  sheet. Do not leave dense nav lists in floating popovers on small screens.
+- On group pages, the **title is the options control** (name + chevron) — no
+  separate ⋯ button.

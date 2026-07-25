@@ -28,6 +28,21 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
   (Shift+Enter newline), optimistic pending bubbles
 - Overlays use `QuickModal` (modal on md+, bottom drawer on mobile)
 
+## Native / PWA
+
+- **Viewport:** drive shell height from `visualViewport` (CSS `--app-height`);
+  fallback `100dvh`. Composer must stay above the keyboard; scroll focused
+  inputs into view on VV resize
+- **Edges:** paint `html`/`body`/`#root` with `surface.canvas`; pad chrome with
+  `env(safe-area-inset-*)` (no body+shell double-subtract). `theme-color` +
+  manifest colors track canvas (incl. in-app color-mode sync);
+  `apple-mobile-web-app-status-bar-style` = `black-translucent` when edge-to-edge
+- **Overlays:** every sheet/dialog has X and/or Cancel; confirmations use the
+  same mobile drawer shell as `QuickModal`
+- **Menus:** mobile short actions → floating bottom/top action sheet
+  (inset, rounded); mobile nav lists (groups) → floating drawer — not `Menu`
+  popovers. Desktop may keep `Menu`
+
 ## States — never blank
 
 - No `if (error) return null` — use `UI.ErrorState` (with retry) or a toast

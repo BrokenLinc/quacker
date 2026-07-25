@@ -1,5 +1,6 @@
 import { useChirpOnNewMessages } from '@@lib/notifications/chirp';
 import { getShareUrl } from '@@lib/share';
+import { scrollFocusedIntoView } from '@@lib/pwa/useVisualViewportHeight';
 import {
   Group,
   Message,
@@ -34,7 +35,7 @@ import {
   faPenToSquare,
   faQrcode,
   faRightFromBracket,
-  faShareNodes,
+  faShareFromSquare,
   faTrash,
   faUserPlus,
   faUsers,
@@ -179,7 +180,11 @@ const GroupBar: React.FC<{
   return (
     <UI.HStack
       px={3}
-      py={2}
+      pt={{
+        base: 'calc(0.5rem + env(safe-area-inset-top, 0px))',
+        md: 2,
+      }}
+      pb={2}
       spacing={2}
       flexShrink={0}
       borderBottom="1px solid"
@@ -191,19 +196,22 @@ const GroupBar: React.FC<{
           as={UI.RouteLink}
           route={routes.home()}
           aria-label="Back to home"
-          icon={<UI.Icon icon={faArrowLeft} />}
+          icon={faArrowLeft}
           size="sm"
           variant="ghost"
           color="inherit"
         />
       ) : null}
-      <UI.Heading size="sm" noOfLines={1} mr="auto">
-        <UI.Text as="span" data-testid="group-title">
-          {group.name}
-        </UI.Text>
-      </UI.Heading>
+      {isMember ? (
+        <GroupOverflowMenu group={group} user={user} />
+      ) : (
+        <UI.Heading size="sm" noOfLines={1} mr="auto">
+          <UI.Text as="span" data-testid="group-title">
+            {group.name}
+          </UI.Text>
+        </UI.Heading>
+      )}
       <ShareButton group={group} />
-      {isMember ? <GroupOverflowMenu group={group} user={user} /> : null}
       {isMobile ? <UserMenu showGroups showColorMode /> : null}
     </UI.HStack>
   );
@@ -229,9 +237,13 @@ const ShareButton: React.FC<{ group: Group }> = ({ group }) => {
 
   return (
     <React.Fragment>
-      <UI.Button iconBefore={faQrcode} size="sm" onClick={modal.onOpen}>
-        Share
-      </UI.Button>
+      <UI.IconButton
+        aria-label="Share"
+        icon={faShareFromSquare}
+        variant="ghost"
+        size="sm"
+        onClick={modal.onOpen}
+      />
 
       <UI.QuickModal
         headerContent={
@@ -268,7 +280,7 @@ const ShareButton: React.FC<{ group: Group }> = ({ group }) => {
               </UI.Button>
               <UI.Button
                 variant="outline"
-                leftIcon={<UI.Icon icon={faShareNodes} />}
+                leftIcon={<UI.Icon icon={faShareFromSquare} />}
                 onClick={nativeShare}
               >
                 Share
@@ -288,9 +300,14 @@ const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
   const isCreator = group.uid === user.uid;
   const membersModal = UI.useDisclosure();
   const renameModal = UI.useDisclosure();
+  const sheet = UI.useDisclosure();
   const confirmation = useConfirmation();
   const toast = UI.useToast();
   const navigate = useNavigate();
+  const isMobile = UI.useBreakpointValue(
+    { base: true, md: false },
+    { ssr: false }
+  );
 
   const handleLeave = () => {
     confirmation.open({
@@ -330,16 +347,114 @@ const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
     });
   };
 
+  const sheetItems: UI.ActionSheetItem[] = [
+    {
+      id: 'members',
+      label: 'Members',
+      icon: faUsers,
+      onClick: membersModal.onOpen,
+    },
+  ];
+  if (isCreator) {
+    sheetItems.push({
+      id: 'rename',
+      label: 'Rename group',
+      icon: faPenToSquare,
+      onClick: renameModal.onOpen,
+    });
+    sheetItems.push({
+      id: 'delete',
+      label: 'Delete group',
+      icon: faTrash,
+      isDestructive: true,
+      onClick: handleDelete,
+    });
+  } else {
+    sheetItems.push({
+      id: 'leave',
+      label: 'Leave group',
+      icon: faRightFromBracket,
+      isDestructive: true,
+      onClick: handleLeave,
+    });
+  }
+
+  const modals = (
+    <React.Fragment>
+      <MembersModal
+        group={group}
+        user={user}
+        isOpen={membersModal.isOpen}
+        onClose={membersModal.onClose}
+      />
+      <RenameGroupModal
+        group={group}
+        isOpen={renameModal.isOpen}
+        onClose={renameModal.onClose}
+      />
+    </React.Fragment>
+  );
+
+  if (isMobile) {
+    return (
+      <React.Fragment>
+        <UI.Button
+          variant="ghost"
+          size="sm"
+          flex={1}
+          minW={0}
+          px={2}
+          h="auto"
+          py={1}
+          fontWeight="bold"
+          fontSize="md"
+          justifyContent="flex-start"
+          rightIcon={
+            <UI.Icon icon={faEllipsisVertical} boxSize={3} color="text.muted" />
+          }
+          onClick={sheet.onOpen}
+          aria-label={`${group.name} options`}
+        >
+          <UI.Text as="span" noOfLines={1} data-testid="group-title">
+            {group.name}
+          </UI.Text>
+        </UI.Button>
+        <UI.ActionSheet
+          isOpen={sheet.isOpen}
+          onClose={sheet.onClose}
+          headerContent={group.name}
+          items={sheetItems}
+          mobilePlacement="top"
+        />
+        {modals}
+      </React.Fragment>
+    );
+  }
+
   return (
     <React.Fragment>
       <UI.Menu>
         <UI.MenuButton
-          as={UI.IconButton}
-          aria-label="Group options"
-          icon={<UI.Icon icon={faEllipsisVertical} />}
-          size="sm"
+          as={UI.Button}
           variant="ghost"
-        />
+          size="sm"
+          flex={1}
+          minW={0}
+          px={2}
+          h="auto"
+          py={1}
+          fontWeight="bold"
+          fontSize="md"
+          justifyContent="flex-start"
+          rightIcon={
+            <UI.Icon icon={faEllipsisVertical} boxSize={3} color="text.muted" />
+          }
+          aria-label={`${group.name} options`}
+        >
+          <UI.Text as="span" noOfLines={1} data-testid="group-title">
+            {group.name}
+          </UI.Text>
+        </UI.MenuButton>
         <UI.MenuList>
           <UI.MenuItem
             fontSize="sm"
@@ -379,18 +494,7 @@ const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
           )}
         </UI.MenuList>
       </UI.Menu>
-
-      <MembersModal
-        group={group}
-        user={user}
-        isOpen={membersModal.isOpen}
-        onClose={membersModal.onClose}
-      />
-      <RenameGroupModal
-        group={group}
-        isOpen={renameModal.isOpen}
-        onClose={renameModal.onClose}
-      />
+      {modals}
     </React.Fragment>
   );
 };
@@ -479,7 +583,7 @@ const MembersList: React.FC<{ group: Group; user: AppUser }> = ({
             {isCreator && member.uid !== user.uid ? (
               <UI.IconButton
                 aria-label={`Remove ${name}`}
-                icon={<UI.Icon icon={faXmark} />}
+                icon={faXmark}
                 size="xs"
                 variant="ghost"
                 ml="auto"
@@ -528,7 +632,12 @@ const RenameGroupModal: React.FC<{
       headerContent="Rename group"
     >
       <UI.ModalBody pb={6}>
-        <UI.VStack as="form" onSubmit={handleSubmit} align="stretch" spacing={3}>
+        <UI.VStack
+          as="form"
+          onSubmit={handleSubmit}
+          align="stretch"
+          spacing={3}
+        >
           <UI.FormControl>
             <UI.FormLabel>Group name</UI.FormLabel>
             <UI.Input
@@ -677,7 +786,8 @@ const GroupChat: React.FC<{
       <UI.Box
         flexShrink={0}
         px={4}
-        py={3}
+        pt={3}
+        pb="calc(0.75rem + env(safe-area-inset-bottom, 0px))"
         borderTop="1px solid"
         borderColor="border.subtle"
         bg="surface.raised"
@@ -705,8 +815,7 @@ const ChatScrollArea: React.FC<{
     const el = scrollRef.current;
     if (!el || !items.length) return;
 
-    const nearBottom =
-      el.scrollHeight - el.scrollTop - el.clientHeight < 160;
+    const nearBottom = el.scrollHeight - el.scrollTop - el.clientHeight < 160;
     const ownMessageArrived = lastItem?.uid === currentUid;
 
     if (!didInitialScroll.current) {
@@ -837,6 +946,23 @@ const Composer: React.FC<{ onSend: (text: string) => Promise<void> }> = ({
   const [text, setText] = React.useState('');
   const toast = UI.useToast();
   const canSend = !!text.trim();
+  const hostRef = React.useRef<HTMLDivElement>(null);
+
+  React.useEffect(() => {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const onViewportChange = () => {
+      const active = document.activeElement;
+      if (!hostRef.current || !active || !hostRef.current.contains(active)) {
+        return;
+      }
+      scrollFocusedIntoView();
+    };
+
+    vv.addEventListener('resize', onViewportChange);
+    return () => vv.removeEventListener('resize', onViewportChange);
+  }, []);
 
   const handleSend = async () => {
     if (!canSend) return;
@@ -856,12 +982,22 @@ const Composer: React.FC<{ onSend: (text: string) => Promise<void> }> = ({
   };
 
   return (
-    <UI.Box position="relative">
-      <UI.RichTextEditor value={text} onChange={setText} onSubmit={handleSend} />
+    <UI.Box
+      ref={hostRef}
+      position="relative"
+      onFocusCapture={() => {
+        scrollFocusedIntoView();
+      }}
+    >
+      <UI.RichTextEditor
+        value={text}
+        onChange={setText}
+        onSubmit={handleSend}
+      />
       <UI.Box position="absolute" bottom={2} right={2}>
         <UI.IconButton
           aria-label="Send"
-          icon={<UI.Icon icon={faPaperPlane} />}
+          icon={faPaperPlane}
           colorScheme="action"
           variant="solid"
           size="sm"

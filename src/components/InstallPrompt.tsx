@@ -52,7 +52,7 @@ export const InstallPrompt: React.FC = () => {
           </UI.Box>
           <UI.IconButton
             aria-label="Dismiss install prompt"
-            icon={<UI.Icon icon={faXmark} />}
+            icon={faXmark}
             size="sm"
             variant="ghost"
             color="white"

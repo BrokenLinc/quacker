@@ -6,6 +6,11 @@ export type QuickModalProps = UI.ModalProps & {
   footerContent?: React.ReactNode;
   /** Drawer placement when viewport < md (default: 'bottom') */
   mobilePlacement?: UI.DrawerProps['placement'];
+  /**
+   * Inset the mobile drawer from the screen edges with rounded corners
+   * (floating sheet). Default false for full-bleed content sheets.
+   */
+  floating?: boolean;
 };
 
 type Shell = 'modal' | 'drawer';
@@ -88,11 +93,34 @@ function pickDrawerProps(
   return drawerProps;
 }
 
+const floatingDrawerContentSx = (
+  placement: UI.DrawerProps['placement']
+): UI.SystemStyleObject => {
+  const inset = '0.75rem';
+  const safeTop = `calc(${inset} + env(safe-area-inset-top, 0px))`;
+  const safeBottom = `calc(${inset} + env(safe-area-inset-bottom, 0px))`;
+
+  return {
+    borderRadius: 'xl',
+    mx: inset,
+    maxW: `calc(100% - ${inset} * 2) !important`, // override the inline style
+    ...(placement === 'top'
+      ? { mt: safeTop, mb: inset }
+      : placement === 'bottom'
+        ? { mb: safeBottom, mt: inset }
+        : { my: inset }),
+    // Keep height content-sized for action sheets; avoid stretching full viewport.
+    h: 'auto',
+    maxH: `calc(100dvh - ${inset} * 2 - env(safe-area-inset-top, 0px) - env(safe-area-inset-bottom, 0px))`,
+  };
+};
+
 export const QuickModal: React.FC<QuickModalProps> = ({
   headerContent,
   footerContent,
   children,
-  mobilePlacement = 'bottom',
+  mobilePlacement = 'top',
+  floating = true,
   isOpen,
   ...props
 }) => {
@@ -108,7 +136,10 @@ export const QuickModal: React.FC<QuickModalProps> = ({
     return (
       <UI.Drawer {...drawerProps}>
         <UI.DrawerOverlay />
-        <UI.DrawerContent borderTopRadius="xl">
+        <UI.DrawerContent
+          borderTopRadius={floating ? undefined : 'xl'}
+          sx={floating ? floatingDrawerContentSx(mobilePlacement) : undefined}
+        >
           <UI.DrawerHeader>
             {headerContent ? headerContent : null}
             <UI.DrawerCloseButton />

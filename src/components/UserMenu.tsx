@@ -31,8 +31,113 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   const { colorMode, toggleColorMode } = UI.useColorMode();
   const newGroupModal = UI.useDisclosure();
   const editNameModal = UI.useDisclosure();
+  const sheet = UI.useDisclosure();
+  const isMobile = UI.useBreakpointValue(
+    { base: true, md: false },
+    { ssr: false }
+  );
+
+  const [groups] = useGroups({
+    userId: showGroups ? user?.uid : undefined,
+    channelId: 'user-menu',
+  });
 
   if (!user) return null;
+
+  const identityLabel = user.displayName || user.phone || user.email || '';
+
+  const openEditName = () => editNameModal.onOpen();
+  const openNewGroup = () => newGroupModal.onOpen();
+
+  const sheetItems: UI.ActionSheetItem[] = [];
+  if (showGroups) {
+    for (const group of groups ?? []) {
+      sheetItems.push({
+        id: `group-${group.id}`,
+        label: group.name,
+        route: routes.group(group.id),
+      });
+    }
+    sheetItems.push({
+      id: 'new-group',
+      label: 'New group',
+      icon: faPlus,
+      onClick: openNewGroup,
+    });
+  }
+  sheetItems.push({
+    id: 'change-name',
+    label: 'Change name',
+    icon: faPenToSquare,
+    onClick: openEditName,
+  });
+  if (showColorMode) {
+    sheetItems.push({
+      id: 'color-mode',
+      label: colorMode === 'light' ? 'Dark mode' : 'Light mode',
+      icon: colorMode === 'light' ? faMoon : faSun,
+      onClick: toggleColorMode,
+    });
+  }
+  sheetItems.push({
+    id: 'log-out',
+    label: 'Log out',
+    icon: faRightFromBracket,
+    onClick: () => void signOut(),
+  });
+
+  const avatar = (
+    <UserAvatar
+      name={identityLabel}
+      seed={user.uid}
+      photoURL={user.photoURL}
+      cursor="pointer"
+      size="sm"
+      onClick={isMobile ? sheet.onOpen : undefined}
+      data-testid="user-menu-button"
+    />
+  );
+
+  const modals = (
+    <React.Fragment>
+      <NewGroupModal
+        isOpen={newGroupModal.isOpen}
+        onClose={newGroupModal.onClose}
+      />
+      <UI.QuickModal
+        isOpen={editNameModal.isOpen}
+        onClose={editNameModal.onClose}
+        headerContent="Change name"
+      >
+        <UI.ModalBody pb={6}>
+          <DisplayNameForm onDone={editNameModal.onClose} />
+        </UI.ModalBody>
+      </UI.QuickModal>
+    </React.Fragment>
+  );
+
+  if (isMobile) {
+    return (
+      <React.Fragment>
+        <UI.Box as="span" display="inline-flex">
+          {avatar}
+        </UI.Box>
+        <UI.ActionSheet
+          isOpen={sheet.isOpen}
+          onClose={sheet.onClose}
+          headerContent="Account"
+          items={sheetItems}
+        >
+          <UI.Box px={4} pb={2}>
+            <UI.Text fontSize="sm" fontWeight="bold" noOfLines={1}>
+              {identityLabel}
+            </UI.Text>
+          </UI.Box>
+        </UI.ActionSheet>
+        {modals}
+      </React.Fragment>
+    );
+  }
 
   return (
     <React.Fragment>
@@ -40,7 +145,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         <UI.Box as="span" display="inline-flex" data-testid="user-menu-button">
           <UI.MenuButton
             as={UserAvatar}
-            name={user.displayName || user.phone || user.email || ''}
+            name={identityLabel}
             seed={user.uid}
             photoURL={user.photoURL}
             cursor="pointer"
@@ -50,17 +155,17 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         <UI.MenuList>
           <UI.Box px={3} py={1.5}>
             <UI.Text fontSize="sm" fontWeight="bold" noOfLines={1}>
-              {user.displayName || user.phone || user.email}
+              {identityLabel}
             </UI.Text>
           </UI.Box>
           <UI.MenuDivider />
           {showGroups ? (
-            <GroupMenuItems onNewGroup={newGroupModal.onOpen} />
+            <GroupMenuItems onNewGroup={openNewGroup} groups={groups} />
           ) : null}
           <UI.MenuItem
             fontSize="sm"
             icon={<UI.Icon icon={faPenToSquare} />}
-            onClick={editNameModal.onOpen}
+            onClick={openEditName}
           >
             Change name
           </UI.MenuItem>
@@ -83,33 +188,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           </UI.MenuItem>
         </UI.MenuList>
       </UI.Menu>
-
-      <NewGroupModal
-        isOpen={newGroupModal.isOpen}
-        onClose={newGroupModal.onClose}
-      />
-      <UI.QuickModal
-        isOpen={editNameModal.isOpen}
-        onClose={editNameModal.onClose}
-        headerContent="Change name"
-      >
-        <UI.ModalBody pb={6}>
-          <DisplayNameForm onDone={editNameModal.onClose} />
-        </UI.ModalBody>
-      </UI.QuickModal>
+      {modals}
     </React.Fragment>
   );
 };
 
-const GroupMenuItems: React.FC<{ onNewGroup: () => void }> = ({
-  onNewGroup,
-}) => {
-  const [user] = useAuthState();
-  const [groups] = useGroups({
-    userId: user?.uid,
-    channelId: 'user-menu',
-  });
-
+const GroupMenuItems: React.FC<{
+  onNewGroup: () => void;
+  groups: ReturnType<typeof useGroups>[0];
+}> = ({ onNewGroup, groups }) => {
   return (
     <React.Fragment>
       {groups?.map((group) => (
