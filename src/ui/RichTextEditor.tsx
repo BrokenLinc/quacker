@@ -1,9 +1,10 @@
 import * as UI from '@chakra-ui/react';
-import { Icon } from './Icon';
 import { faBold, faItalic } from '@fortawesome/free-solid-svg-icons';
 import { EditorContent, useEditor } from '@tiptap/react';
 import React from 'react';
+
 import { createRichTextExtensions } from './richText/extensions';
+import { IconButton } from './IconButton';
 
 export type RichTextEditorProps = {
   value: string;
@@ -85,20 +86,20 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       }}
     >
       <UI.HStack px={2} py={1} spacing={1}>
-        <UI.IconButton
+        <IconButton
           aria-label="Bold"
           size="xs"
           variant={editor.isActive('bold') ? 'solid' : 'ghost'}
           colorScheme={editor.isActive('bold') ? 'action' : undefined}
-          icon={<Icon icon={faBold} />}
+          icon={faBold}
           onClick={() => editor.chain().focus().toggleBold().run()}
         />
-        <UI.IconButton
+        <IconButton
           aria-label="Italic"
           size="xs"
           variant={editor.isActive('italic') ? 'solid' : 'ghost'}
           colorScheme={editor.isActive('italic') ? 'action' : undefined}
-          icon={<Icon icon={faItalic} />}
+          icon={faItalic}
           onClick={() => editor.chain().focus().toggleItalic().run()}
         />
       </UI.HStack>

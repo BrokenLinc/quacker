@@ -5,26 +5,44 @@
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
     <link rel="manifest" href="/manifest.webmanifest" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <meta
+      name="viewport"
+      content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content"
+    />
     <meta name="description" content="Hork — ad-hoc group chat for trips and conferences" />
-    <meta name="theme-color" content="#7443CC" media="(prefers-color-scheme: light)" />
+    <!-- theme-color tracks surface.canvas (gray.50 / gray.900); synced at runtime for in-app color mode -->
+    <meta name="theme-color" content="#FAF9FC" media="(prefers-color-scheme: light)" />
     <meta name="theme-color" content="#221D33" media="(prefers-color-scheme: dark)" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
-    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Hork" />
     <title>Hork</title>
     <style>
       html,
       body,
       #root {
+        height: 100%;
         min-height: 100%;
+        /* surface.canvas light — overwritten by Chakra once hydrated */
+        background-color: #faf9fc;
+      }
+
+      @media (prefers-color-scheme: dark) {
+        html,
+        body,
+        #root {
+          background-color: #221d33;
+        }
       }
 
       body {
         margin: 0;
-        padding: env(safe-area-inset-top, 0px) env(safe-area-inset-right, 0px)
-          env(safe-area-inset-bottom, 0px) env(safe-area-inset-left, 0px);
+      }
+
+      #root {
+        /* visualViewport-driven; fallback 100dvh */
+        min-height: var(--app-height, 100dvh);
       }
     </style>
   </head>

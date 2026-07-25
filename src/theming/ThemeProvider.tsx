@@ -1,6 +1,8 @@
 import { ChakraProvider, ColorModeScript, extendTheme } from '@chakra-ui/react';
 import React from 'react';
 
+import { useThemeColorMeta } from '@@lib/pwa/useThemeColorMeta';
+
 /**
  * Hork visual system:
  * - Purple is the brand/neutral foundation: the `gray` scale is purple-tinted
@@ -82,8 +84,9 @@ export const theme = extendTheme({
   },
   styles: {
     global: {
-      body: {
+      'html, body, #root': {
         bg: 'surface.canvas',
+        height: '100%',
       },
     },
   },
@@ -187,6 +190,11 @@ export const theme = extendTheme({
   },
 });
 
+const ThemeColorSync: React.FC = () => {
+  useThemeColorMeta();
+  return null;
+};
+
 /**
  * Customizes the Chakra theme and provides it via context.
  */
@@ -194,6 +202,7 @@ export const ThemeProvider: React.FC<React.PropsWithChildren> = (props) => {
   return (
     <ChakraProvider theme={theme}>
       <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+      <ThemeColorSync />
       {props.children}
     </ChakraProvider>
   );
