@@ -1,7 +1,11 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { supabase } from '@@lib/supabase/client';
-import type { Database, GroupRow } from '@@lib/supabase/types';
+import type {
+  Database,
+  GroupMemberRow,
+  GroupRow,
+} from '@@lib/supabase/types';
 import { generateSlug } from '@@lib/share';
 
 type GroupUpdate = Database['public']['Tables']['groups']['Update'];
@@ -17,6 +21,15 @@ export interface Group {
   name: string;
 }
 
+export interface GroupMember {
+  groupId: string;
+  uid: string;
+  role: 'creator' | 'member';
+  displayName: string | null;
+  photoURL: string | null;
+  joinedAt: number;
+}
+
 const rowToGroup = (row: GroupRow): Group => ({
   id: row.id,
   uid: row.creator_id,
@@ -27,7 +40,25 @@ const rowToGroup = (row: GroupRow): Group => ({
   name: row.name,
 });
 
+const rowToGroupMember = (row: GroupMemberRow): GroupMember => ({
+  groupId: row.group_id,
+  uid: row.user_id,
+  role: row.role,
+  displayName: row.display_name,
+  photoURL: row.photo_url,
+  joinedAt: new Date(row.joined_at).getTime(),
+});
+
 type HookResult<T> = [T | undefined, boolean, Error | undefined];
+
+/** Broadcast so every mounted useGroups refetches after local mutations. */
+const GROUPS_CHANGED_EVENT = 'quacker:groups-changed';
+
+const notifyGroupsChanged = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(GROUPS_CHANGED_EVENT));
+  }
+};
 
 export const useGroup = (
   id: string,
@@ -112,47 +143,122 @@ export const useGroupBySlug = (slug: string): HookResult<Group> => {
   return [group, loading, error];
 };
 
-export const useGroups = (options?: {
+/**
+ * Groups the given user belongs to (never the global list — membership is the
+ * privacy boundary for a private chat product).
+ */
+export const useGroups = (options: {
+  userId: string | undefined;
   limit?: number;
   /** Unique Realtime channel suffix — required when multiple hooks subscribe in one view. */
   channelId?: string;
 }): HookResult<Group[]> => {
-  const limit = options?.limit ?? 1000;
-  const channelId = options?.channelId ?? 'default';
+  const { userId } = options;
+  const limit = options.limit ?? 100;
+  const channelId = options.channelId ?? 'default';
   const [groups, setGroups] = useState<Group[] | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
 
   const fetchGroups = useCallback(async () => {
+    if (!userId) return;
     const { data, error: fetchError } = await supabase
       .from('groups')
-      .select('*')
+      .select('*, group_members!inner(user_id)')
+      .eq('group_members.user_id', userId)
       .order('created_at', { ascending: false })
       .limit(limit);
 
     if (fetchError) setError(fetchError);
     else setGroups(data?.map(rowToGroup) ?? []);
     setLoading(false);
-  }, [limit]);
+  }, [limit, userId]);
 
   useEffect(() => {
+    if (!userId) {
+      setGroups(undefined);
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
     fetchGroups();
 
+    const onLocalChange = () => fetchGroups();
+    window.addEventListener(GROUPS_CHANGED_EVENT, onLocalChange);
+
     const channel = supabase
-      .channel(`groups-list:${channelId}`)
+      .channel(`groups-list:${userId}:${channelId}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'groups' },
         () => fetchGroups()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'group_members',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => fetchGroups()
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener(GROUPS_CHANGED_EVENT, onLocalChange);
+      supabase.removeChannel(channel);
+    };
+  }, [channelId, fetchGroups, userId]);
+
+  return [groups, loading, error];
+};
+
+export const useGroupMembers = (
+  groupId: string,
+  options?: { channelId?: string }
+): HookResult<GroupMember[]> => {
+  const channelId = options?.channelId ?? 'default';
+  const [members, setMembers] = useState<GroupMember[] | undefined>();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | undefined>();
+
+  const fetchMembers = useCallback(async () => {
+    const { data, error: fetchError } = await supabase
+      .from('group_members')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('joined_at', { ascending: true });
+
+    if (fetchError) setError(fetchError);
+    else setMembers(data?.map(rowToGroupMember) ?? []);
+    setLoading(false);
+  }, [groupId]);
+
+  useEffect(() => {
+    if (!groupId) return;
+    fetchMembers();
+
+    const channel = supabase
+      .channel(`group-members:${groupId}:${channelId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'group_members',
+          filter: `group_id=eq.${groupId}`,
+        },
+        () => fetchMembers()
       )
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [channelId, fetchGroups]);
+  }, [channelId, fetchMembers, groupId]);
 
-  return [groups, loading, error];
+  return [members, loading, error];
 };
 
 export const addGroup = async (data: {
@@ -176,6 +282,16 @@ export const addGroup = async (data: {
     .single();
 
   if (error) throw error;
+
+  // The creator-membership trigger runs in the same transaction, but Realtime
+  // can lag a beat — wait until the membership is queryable so the sidebar
+  // join is never empty, then broadcast so every useGroups remounts.
+  for (let i = 0; i < 20; i++) {
+    if (await isGroupMember(row.id, data.uid)) break;
+    await new Promise((r) => setTimeout(r, 50));
+  }
+  notifyGroupsChanged();
+
   return { id: row.id, slug: row.slug };
 };
 
@@ -188,14 +304,53 @@ export const updateGroup = async (id: string, data: Partial<Group>) => {
   if (error) throw error;
 };
 
-export const ensureGroupMember = async (groupId: string, userId: string) => {
+export const deleteGroup = async (id: string) => {
+  const { error } = await supabase.from('groups').delete().eq('id', id);
+  if (error) throw error;
+  notifyGroupsChanged();
+};
+
+export const joinGroup = async (
+  groupId: string,
+  member: { uid: string; displayName: string | null; photoURL: string | null }
+) => {
   const { error } = await supabase.from('group_members').insert({
     group_id: groupId,
-    user_id: userId,
+    user_id: member.uid,
     role: 'member',
+    display_name: member.displayName,
+    photo_url: member.photoURL,
   });
   // Creator already inserted by trigger; ignore duplicate member rows
   if (error && error.code !== '23505') throw error;
+  notifyGroupsChanged();
+};
+
+export const leaveGroup = async (groupId: string, userId: string) => {
+  const { error } = await supabase
+    .from('group_members')
+    .delete()
+    .eq('group_id', groupId)
+    .eq('user_id', userId);
+  if (error) throw error;
+  notifyGroupsChanged();
+};
+
+export const removeGroupMember = leaveGroup;
+
+/** Sync denormalized member profile fields across all groups (after rename). */
+export const updateMyMemberProfile = async (
+  userId: string,
+  profile: { displayName: string | null; photoURL: string | null }
+) => {
+  const { error } = await supabase
+    .from('group_members')
+    .update({
+      display_name: profile.displayName,
+      photo_url: profile.photoURL,
+    })
+    .eq('user_id', userId);
+  if (error) throw error;
 };
 
 export const isGroupMember = async (

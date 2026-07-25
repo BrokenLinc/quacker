@@ -16,20 +16,26 @@ export type Database = {
     Tables: {
       group_members: {
         Row: {
+          display_name: string | null;
           group_id: string;
           joined_at: string;
+          photo_url: string | null;
           role: Database['public']['Enums']['group_role'];
           user_id: string;
         };
         Insert: {
+          display_name?: string | null;
           group_id: string;
           joined_at?: string;
+          photo_url?: string | null;
           role?: Database['public']['Enums']['group_role'];
           user_id: string;
         };
         Update: {
+          display_name?: string | null;
           group_id?: string;
           joined_at?: string;
+          photo_url?: string | null;
           role?: Database['public']['Enums']['group_role'];
           user_id?: string;
         };
@@ -295,3 +301,5 @@ export const Constants = {
 
 export type GroupRow = Database['public']['Tables']['groups']['Row'];
 export type MessageRow = Database['public']['Tables']['messages']['Row'];
+export type GroupMemberRow =
+  Database['public']['Tables']['group_members']['Row'];

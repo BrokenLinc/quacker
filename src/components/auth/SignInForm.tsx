@@ -2,10 +2,13 @@ import * as UI from '@@ui';
 import React from 'react';
 
 import {
+  getCurrentAuthUser,
+  hasChosenDisplayName,
   normalizePhoneInput,
   requestSmsOtp,
   verifySmsOtp,
 } from '@@lib/supabase/auth';
+import { DisplayNameForm } from '@@components/DisplayNameForm';
 
 export type SignInFormProps = {
   onSuccess?: () => void;
@@ -20,7 +23,7 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
     null
   );
   const [code, setCode] = React.useState('');
-  const [step, setStep] = React.useState<'phone' | 'code'>('phone');
+  const [step, setStep] = React.useState<'phone' | 'code' | 'name'>('phone');
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const sendInFlight = React.useRef(false);
@@ -65,13 +68,29 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
       code.trim(),
       verificationSid
     );
-    setLoading(false);
     if (verifyError) {
+      setLoading(false);
       setError(verifyError.message);
+      return;
+    }
+
+    // First session: ask for a real name before dropping into chat.
+    const authUser = await getCurrentAuthUser();
+    setLoading(false);
+    if (!hasChosenDisplayName(authUser)) {
+      setStep('name');
       return;
     }
     onSuccess?.();
   };
+
+  if (step === 'name') {
+    return (
+      <UI.Box w="full" maxW="320px">
+        <DisplayNameForm allowSkip onDone={() => onSuccess?.()} />
+      </UI.Box>
+    );
+  }
 
   if (step === 'code') {
     return (
@@ -97,7 +116,9 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
             required
             data-testid="sign-in-code"
           />
-          <UI.FormHelperText>Use the code from your latest text</UI.FormHelperText>
+          <UI.FormHelperText>
+            Use the code from your latest text
+          </UI.FormHelperText>
         </UI.FormControl>
         {error && (
           <UI.Text fontSize="sm" color="red.500">
@@ -106,7 +127,7 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
         )}
         <UI.Button
           type="submit"
-          colorScheme="green"
+          preset="primary"
           isLoading={loading}
           loadingText="Verifying…"
         >
@@ -159,7 +180,9 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
           required
           data-testid="sign-in-phone"
         />
-        <UI.FormHelperText>US numbers only — we'll text you a code</UI.FormHelperText>
+        <UI.FormHelperText>
+          US numbers only — we'll text you a code
+        </UI.FormHelperText>
       </UI.FormControl>
       {error && (
         <UI.Text fontSize="sm" color="red.500">
@@ -168,7 +191,7 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
       )}
       <UI.Button
         type="submit"
-        colorScheme="green"
+        preset="primary"
         isLoading={loading}
         loadingText="Sending…"
       >

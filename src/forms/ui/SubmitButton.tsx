@@ -15,9 +15,8 @@ export const SubmitButton: React.FC<UI.ButtonProps> = ({
   return (
     <UI.Button
       type="submit"
-      colorScheme="purple"
-      variant="primary"
-      isDisabled={form.formState.isSubmitting}
+      colorScheme="action"
+      isLoading={form.formState.isSubmitting}
       {...restProps}
     >
       {children}

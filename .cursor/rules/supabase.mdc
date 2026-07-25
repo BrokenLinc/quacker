@@ -24,6 +24,17 @@ Use **Supabase Cursor Plugin** (`plugin-supabase-supabase`) or CLI with `SUPABAS
 
 Never ask the user to create a project or paste URL/keys you can fetch. See [`.cursor/rules/mcp-first-ops.mdc`](mcp-first-ops.mdc).
 
+## API keys
+
+- Browser: publishable / anon (`sb_publishable_…` or JWT `anon`)
+- Admin / GoTrue Management (`/auth/v1/admin/*`, e2e session seeding): **JWT `service_role`** (`eyJ…`). Opaque `sb_secret_…` keys are rejected by Admin Auth with “Invalid API key”.
+- Fetch both: `supabase projects api-keys --project-ref REF -o json` — prefer the entry named `service_role` for admin, not `default`/`sb_secret_*`.
+
+## Membership lists + Realtime
+
+- App group lists are membership-scoped (`useGroups({ userId })` with `group_members!inner`). Keep `group_members` in the `supabase_realtime` publication so join/leave refresh sidebars.
+- After `addGroup`, wait until the creator membership row is queryable before navigating — Realtime alone can lag a beat behind the insert trigger.
+
 ## SMS auth (Edge Functions)
 
 - `auth-verify-otp` must treat **new and returning** phone users as sign-in. Look up by digit-normalized phone **or** synthetic email (`{digits}@phone.hork.us`) before `createUser`.

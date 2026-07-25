@@ -1,52 +1,97 @@
 import { useGroups } from '@@api';
 import { RequireAuth } from '@@components/auth/RequireAuth';
-import { SignInPlacementFromAuth } from '@@components/auth/SignInPlacementFromAuth';
-import { Header } from '@@components/Header';
+import { NewGroupButton } from '@@components/NewGroupModal';
+import { useAuthState } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
-import { faChevronRight } from '@fortawesome/free-solid-svg-icons';
+import {
+  faChevronRight,
+  faComments,
+} from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 
 const HomePage: React.FC = () => {
   return (
-    <SignInPlacementFromAuth>
-      <Header />
-      <RequireAuth>
-        <UI.Box maxW="480px" mx="auto" p={4}>
-          <GroupCardList />
+    <RequireAuth>
+      <UI.Box flex={1} overflowY="auto">
+        <UI.Box maxW="560px" mx="auto" p={4}>
+          <UI.HStack mb={4}>
+            <UI.Heading size="md" mr="auto">
+              Your groups
+            </UI.Heading>
+            <NewGroupButton />
+          </UI.HStack>
+          <GroupList />
         </UI.Box>
-      </RequireAuth>
-    </SignInPlacementFromAuth>
+      </UI.Box>
+    </RequireAuth>
   );
 };
 export default HomePage;
 
-const GroupCardList: React.FC = () => {
-  const [groups, groupLoading, groupError] = useGroups({
-    limit: 100,
+const GroupList: React.FC = () => {
+  const [user] = useAuthState();
+  const [groups, loading, error] = useGroups({
+    userId: user?.uid,
     channelId: 'home',
   });
 
-  if (groupLoading) return <UI.Spinner />;
-  if (groupError) return null;
-  if (!groups?.length) return null;
+  if (loading) {
+    return (
+      <UI.VStack align="stretch" spacing={2}>
+        <UI.Skeleton h={12} borderRadius="lg" />
+        <UI.Skeleton h={12} borderRadius="lg" />
+        <UI.Skeleton h={12} borderRadius="lg" />
+      </UI.VStack>
+    );
+  }
+
+  if (error) {
+    return (
+      <UI.ErrorState
+        title="Couldn't load your groups"
+        onRetry={() => window.location.reload()}
+      />
+    );
+  }
+
+  if (!groups?.length) {
+    return (
+      <UI.EmptyState
+        icon={faComments}
+        title="No groups yet"
+        description="Start a group for your trip or conference and share the link — friends join in one tap."
+        action={<NewGroupButton size="md" />}
+      />
+    );
+  }
 
   return (
-    <UI.VStack alignItems="stretch" w="full" fontWeight="bold">
-      {groups?.map((group) => (
-        <UI.Card
+    <UI.VStack
+      align="stretch"
+      spacing={0}
+      borderRadius="xl"
+      borderWidth="1px"
+      borderColor="border.subtle"
+      bg="surface.raised"
+      overflow="hidden"
+      divider={<UI.Divider borderColor="border.subtle" />}
+    >
+      {groups.map((group) => (
+        <UI.HStack
           as={UI.RouteLink}
           key={group.id}
           route={routes.group(group.id)}
-          shadow="lg"
+          px={4}
+          py={3}
+          color="inherit"
+          textDecoration="none"
+          fontWeight="semibold"
+          _hover={{ bg: 'surface.sunken', textDecoration: 'none' }}
         >
-          <UI.CardBody>
-            <UI.HStack>
-              <UI.Text>{group.name}</UI.Text>
-              <UI.Icon icon={faChevronRight} ml="auto" />
-            </UI.HStack>
-          </UI.CardBody>
-        </UI.Card>
+          <UI.Text noOfLines={1}>{group.name}</UI.Text>
+          <UI.Icon icon={faChevronRight} ml="auto" color="text.muted" />
+        </UI.HStack>
       ))}
     </UI.VStack>
   );

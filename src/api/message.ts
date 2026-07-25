@@ -25,6 +25,7 @@ const rowToMessage = (row: MessageRow): Message => ({
 
 type HookResult<T> = [T | undefined, boolean, Error | undefined];
 
+/** Messages in chronological order (oldest first) — chat display order. */
 export const useGroupMessages = (
   groupId: string,
   options?: { limit: number }
@@ -35,6 +36,7 @@ export const useGroupMessages = (
   const [error, setError] = useState<Error | undefined>();
 
   const fetchMessages = useCallback(async () => {
+    // Fetch the newest N, then reverse into chronological order for display.
     const { data, error: fetchError } = await supabase
       .from('messages')
       .select('*')
@@ -43,7 +45,7 @@ export const useGroupMessages = (
       .limit(limit);
 
     if (fetchError) setError(fetchError);
-    else setMessages(data?.map(rowToMessage) ?? []);
+    else setMessages(data?.map(rowToMessage).reverse() ?? []);
     setLoading(false);
   }, [groupId, limit]);
 

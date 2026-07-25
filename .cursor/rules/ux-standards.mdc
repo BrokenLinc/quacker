@@ -1,0 +1,58 @@
+---
+description: Hork UX standards — color roles, layout contract, state handling, motion budget
+alwaysApply: true
+---
+
+# UX Standards
+
+Hork is a Slack-baseline utility chat: snappy, device-appropriate, lovable
+because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
+
+## Color roles (never mix)
+
+- **Purple = brand/neutral foundation** — the `gray` scale is purple-tinted;
+  `brand.*` for identity moments and selected nav (`nav.selected`)
+- **Teal = action** — `action.*` / `preset="primary"` for buttons, links,
+  switches, focus rings. Only on things the user can do
+- **Status stays semantic** — green success, red error/destructive, amber
+  warning, blue info. Never use purple/teal for status, or status hues for chrome
+- Use semantic tokens (`surface.canvas|raised|sunken`, `border.subtle`,
+  `text.muted`) — not raw hex or component-local colors
+
+## Layout contract
+
+- App frame is fixed-viewport (`AppLayout` in `src/components/AppShell.tsx`):
+  desktop (md+) = persistent sidebar; mobile = compact header, group pages
+  render their own single top bar. Pages scroll internally (`flex={1} overflowY="auto"`)
+- Chat: chronological messages, composer pinned to bottom, Enter sends
+  (Shift+Enter newline), optimistic pending bubbles
+- Overlays use `QuickModal` (modal on md+, bottom drawer on mobile)
+
+## States — never blank
+
+- No `if (error) return null` — use `UI.ErrorState` (with retry) or a toast
+- No empty `return null` for lists — use `UI.EmptyState` with a CTA
+- Loading: `Skeleton` matching final layout, not bare full-screen spinners
+- Submits: button `isLoading` + double-submit guard; failed sends restore input
+
+## Product rules
+
+- Group lists are **membership-scoped** (`useGroups({ userId })`) — never list
+  all groups
+- Joining is **explicit consent** (join prompt), never a silent side effect
+- Ask for a display name right after first sign-in; `···1234` is a fallback,
+  not an identity
+- Destructive actions (leave/delete/remove) go through `useConfirmation` with
+  `isDestructive: true`; never confirm create/send
+
+## Motion budget
+
+2–3 intentional micro-motions only (message appear ~160ms, pressed-state
+translate, Chakra modal/drawer defaults). Respect `prefers-reduced-motion`.
+No decorative animation, gradients, or gloss.
+
+## Copy
+
+- User-facing strings say **Hork**, never Quacker; no developer copy in error
+  screens (no "Vite", "dev server")
+- Errors are human + actionable ("Check your connection and try again.")
