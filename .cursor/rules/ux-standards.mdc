@@ -32,13 +32,13 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
 
 ## Native / PWA
 
-- **Viewport:** `#root` is `position: fixed; top: 0; height: var(--app-height)`;
-  `--app-height` = `visualViewport.height` (fallback `100dvh`). No offset var /
-  `translateY` / scale. Do not use `inset: 0` / `bottom: 0` on `#root` — that
-  fills the layout viewport and leaves a blank canvas gap above the keyboard.
-  Composer stays above the keyboard via the shrinking
-  fixed shell. Cancel iOS layout pan: on VV `resize`/`scroll` + `focusout`,
-  `scrollTo(0,0)` then re-apply `--app-height` (never document-scroll to inputs)
+- **Viewport:** `#root` is fixed. Browser: `inset: 0`. iOS standalone: classic
+  `height: 100vh` + `bottom: auto` (WebKit 254868 — `bottom:0`/`dvh` leave a
+  canvas gap under every page). App shell is `absolute; inset: 0`. Keyboard open
+  only when VV shrinks **and** an editable is focused — then override
+  `top`/`height` from VV, `--app-composer-pb: 0`. Closed: composer
+  `0.75rem + safe-area-inset-bottom` once. On VV/focus change, `scrollTo(0,0)`
+  then re-apply. Never document-scroll to inputs
 - **Edges:** paint `html`/`body`/`#root` with `surface.canvas`; pad chrome with
   `env(safe-area-inset-*)` (no body+shell double-subtract). `theme-color` +
   manifest colors track canvas (incl. in-app color-mode sync);

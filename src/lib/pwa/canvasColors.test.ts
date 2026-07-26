@@ -1,10 +1,44 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
+  COMPOSER_PADDING_CLOSED,
   applyAppHeightVar,
   canvasColorForMode,
   getVisibleViewportHeight,
+  isVirtualKeyboardOpen,
 } from './canvasColors';
+
+function stubWindow(overrides: Record<string, unknown> = {}) {
+  vi.stubGlobal('window', {
+    visualViewport: { height: 800, offsetTop: 0 },
+    innerHeight: 800,
+    screen: { height: 800, width: 400 },
+    matchMedia: () => ({ matches: false }),
+    navigator: { standalone: false },
+    ...overrides,
+  });
+}
+
+function stubDocument(
+  root: { style: Record<string, string> } | null = null,
+  classListContains = false
+) {
+  vi.stubGlobal('document', {
+    activeElement: { tagName: 'BODY', isContentEditable: false },
+    documentElement: {
+      classList: {
+        contains: () => classListContains,
+        add: vi.fn(),
+      },
+      style: {
+        setProperty: vi.fn(),
+        getPropertyValue: vi.fn(),
+        removeProperty: vi.fn(),
+      },
+    },
+    getElementById: vi.fn(() => root),
+  });
+}
 
 describe('canvasColorForMode', () => {
   it('returns canvas light/dark hexes', () => {
@@ -15,19 +49,8 @@ describe('canvasColorForMode', () => {
 
 describe('visible viewport height', () => {
   beforeEach(() => {
-    vi.stubGlobal('window', {
-      visualViewport: { height: 640 },
-      innerHeight: 800,
-    });
-    vi.stubGlobal('document', {
-      documentElement: {
-        style: {
-          setProperty: vi.fn(),
-          getPropertyValue: vi.fn(),
-          removeProperty: vi.fn(),
-        },
-      },
-    });
+    stubWindow();
+    stubDocument();
   });
 
   afterEach(() => {
@@ -35,33 +58,21 @@ describe('visible viewport height', () => {
   });
 
   it('reads height from visualViewport when present', () => {
-    expect(getVisibleViewportHeight()).toBe(640);
-    applyAppHeightVar();
-    expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
-      '--app-height',
-      '640px'
-    );
-  });
-
-  it('shrinks with the keyboard (uses raw VV height, no scale)', () => {
-    vi.stubGlobal('window', {
-      visualViewport: { height: 320 },
-      innerHeight: 800,
-    });
-    expect(getVisibleViewportHeight()).toBe(320);
-    applyAppHeightVar();
-    expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
-      '--app-height',
-      '320px'
-    );
+    expect(getVisibleViewportHeight()).toBe(800);
   });
 
   it('falls back to window.innerHeight when visualViewport is missing', () => {
-    vi.stubGlobal('window', {
-      visualViewport: null,
+    stubWindow({ visualViewport: null, innerHeight: 800 });
+    expect(getVisibleViewportHeight()).toBe(800);
+  });
+
+  it('does not treat a VV shrink alone as keyboard open (standalone PWA)', () => {
+    stubWindow({
+      visualViewport: { height: 320, offsetTop: 0 },
       innerHeight: 800,
     });
-    expect(getVisibleViewportHeight()).toBe(800);
+    stubDocument();
+    expect(isVirtualKeyboardOpen()).toBe(false);
     applyAppHeightVar();
     expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
       '--app-height',
@@ -69,15 +80,83 @@ describe('visible viewport height', () => {
     );
   });
 
-  it('rounds fractional heights', () => {
-    vi.stubGlobal('window', {
-      visualViewport: { height: 639.6 },
+  it('clears #root overrides when the keyboard is closed (browser)', () => {
+    const rootStyle: Record<string, string> = {
+      top: '12px',
+      bottom: 'auto',
+      height: '320px',
+    };
+    stubDocument({ style: rootStyle });
+    applyAppHeightVar();
+    expect(rootStyle.top).toBe('');
+    expect(rootStyle.bottom).toBe('');
+    expect(rootStyle.height).toBe('');
+    expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
+      '--app-composer-pb',
+      COMPOSER_PADDING_CLOSED
+    );
+  });
+
+  it('uses 100vh on #root in standalone (WebKit lying viewport)', () => {
+    const rootStyle: Record<string, string> = {
+      top: '',
+      bottom: '',
+      height: '',
+    };
+    stubWindow({
+      innerHeight: 812,
+      screen: { height: 874, width: 402 },
+      matchMedia: (q: string) => ({ matches: q.includes('standalone') }),
+    });
+    stubDocument({ style: rootStyle });
+    applyAppHeightVar();
+    expect(rootStyle.height).toBe('100vh');
+    expect(rootStyle.bottom).toBe('auto');
+    expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
+      '--app-height',
+      '874px'
+    );
+    expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
+      '--app-composer-pb',
+      COMPOSER_PADDING_CLOSED
+    );
+  });
+
+  it('overrides #root when VV shrinks and an editable is focused', () => {
+    const rootStyle: Record<string, string> = {
+      top: '',
+      bottom: '',
+      height: '',
+    };
+    const input = { tagName: 'INPUT', isContentEditable: false };
+    stubWindow({
+      visualViewport: { height: 320.4, offsetTop: 12 },
       innerHeight: 800,
     });
+    vi.stubGlobal('document', {
+      activeElement: input,
+      documentElement: {
+        classList: { contains: () => false, add: vi.fn() },
+        style: {
+          setProperty: vi.fn(),
+          getPropertyValue: vi.fn(),
+          removeProperty: vi.fn(),
+        },
+      },
+      getElementById: vi.fn(() => ({ style: rootStyle })),
+    });
+    expect(isVirtualKeyboardOpen()).toBe(true);
     applyAppHeightVar();
     expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
       '--app-height',
-      '640px'
+      '320px'
     );
+    expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
+      '--app-composer-pb',
+      '0px'
+    );
+    expect(rootStyle.top).toBe('12px');
+    expect(rootStyle.bottom).toBe('auto');
+    expect(rootStyle.height).toBe('320px');
   });
 });

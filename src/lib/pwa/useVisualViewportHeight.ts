@@ -3,21 +3,22 @@ import React from 'react';
 import { applyAppHeightVar } from './canvasColors';
 
 /**
- * Keeps CSS `--app-height` in sync with the visible viewport so the fixed app
- * shell shrinks above the virtual keyboard (esp. iOS Safari / standalone PWA).
+ * Keeps the fixed app shell sized for the soft keyboard.
  *
- * The shell is `position: fixed; top: 0; height: var(--app-height)`, so it never
- * needs a translate offset. iOS still pans the layout viewport when an input
- * focuses; we cancel that by resetting document scroll on every viewport change
- * and on blur. Falls back to `window.innerHeight` when VV is missing.
+ * `#root` defaults to CSS `inset: 0`. While an editable is focused and the
+ * visual viewport has shrunk, JS overrides top/height from `visualViewport`.
+ * `scrollTo(0,0)` cancels Safari's focus pan.
  */
 export function useVisualViewportHeight(): void {
   React.useEffect(() => {
     let rafId = 0;
 
     const sync = () => {
-      window.scrollTo(0, 0);
       applyAppHeightVar();
+      window.scrollTo(0, 0);
+      requestAnimationFrame(() => {
+        applyAppHeightVar();
+      });
     };
 
     const onChange = () => {
@@ -36,6 +37,8 @@ export function useVisualViewportHeight(): void {
       vv.addEventListener('scroll', onChange);
     }
     window.addEventListener('resize', onChange);
+    // Focus changes flip the editable+VV keyboard heuristic.
+    document.addEventListener('focusin', onChange);
     document.addEventListener('focusout', onChange);
 
     return () => {
@@ -45,6 +48,7 @@ export function useVisualViewportHeight(): void {
         vv.removeEventListener('scroll', onChange);
       }
       window.removeEventListener('resize', onChange);
+      document.removeEventListener('focusin', onChange);
       document.removeEventListener('focusout', onChange);
     };
   }, []);

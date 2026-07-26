@@ -1,47 +1,12 @@
-# Standalone PWA group-chat keyboard — light then dark in one run (install once).
+# Standalone PWA group-chat keyboard — light then dark in one run.
+# Prefers an existing Home Screen icon; installs only if missing.
 # Screenshots: artifacts/maestro-pwa-keyboard-{,dark-}{closed,open,closed-after}
 #
 #   yarn test:maestro:pwa:keyboard
 #
 appId: com.apple.mobilesafari
 ---
-- launchApp
-- openLink: ${APP_URL}
-- runFlow:
-    when:
-      visible: "Close"
-    commands:
-      - tapOn: "Close"
-- runFlow:
-    when:
-      visible: "Dismiss install prompt"
-    commands:
-      - tapOn: "Dismiss install prompt"
-- extendedWaitUntil:
-    visible: ".*Sign in to Hork|Your groups.*"
-    timeout: 20000
-- tapOn: "More"
-- tapOn:
-    id: "ShareButton"
-- extendedWaitUntil:
-    visible: "Copy"
-    timeout: 10000
-- waitForAnimationToEnd
-# Expand actions without relying on flaky "View More" hit targets.
-- swipe:
-    start: 50%, 88%
-    end: 50%, 45%
-- waitForAnimationToEnd
-- extendedWaitUntil:
-    visible: "Add to Home Screen"
-    timeout: 15000
-- tapOn: "Add to Home Screen"
-- waitForAnimationToEnd
-# iOS 26 Add-to-Home dialog: name field focuses keyboard; a11y tree often omits Add.
-# Tap Add by position — below status bar, top-right of the sheet (not 7% — that hits the status bar).
-- tapOn:
-    point: "92%,12%"
-- waitForAnimationToEnd
+# --- Launch standalone Hork ---
 - pressKey: Home
 - runFlow:
     when:
@@ -55,18 +20,107 @@ appId: com.apple.mobilesafari
     commands:
       - swipe:
           direction: LEFT
-- extendedWaitUntil:
-    visible: "Hork"
-    timeout: 20000
-- tapOn: "Hork"
-- extendedWaitUntil:
-    visible: ".*Sign in to Hork|Your groups.*"
-    timeout: 45000
+- runFlow:
+    when:
+      visible: "Hork"
+    commands:
+      - tapOn: "Hork"
+      - extendedWaitUntil:
+          visible: ".*Sign in to Hork|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          timeout: 45000
+- runFlow:
+    when:
+      notVisible: ".*Sign in to Hork|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+    commands:
+      - launchApp
+      - openLink: ${APP_URL}
+      - runFlow:
+          when:
+            visible: "Close"
+          commands:
+            - tapOn: "Close"
+      - runFlow:
+          when:
+            visible: "Dismiss install prompt"
+          commands:
+            - tapOn: "Dismiss install prompt"
+      - extendedWaitUntil:
+          visible: ".*Sign in to Hork|Your groups.*"
+          timeout: 20000
+      - tapOn: "More"
+      - tapOn:
+          id: "ShareButton"
+      - extendedWaitUntil:
+          visible: "Copy"
+          timeout: 10000
+      - waitForAnimationToEnd
+      - swipe:
+          start: 50%, 88%
+          end: 50%, 45%
+      - waitForAnimationToEnd
+      - extendedWaitUntil:
+          visible: "Add to Home Screen"
+          timeout: 15000
+      - tapOn: "Add to Home Screen"
+      - waitForAnimationToEnd
+      - tapOn:
+          point: "92%,12%"
+      - waitForAnimationToEnd
+      - pressKey: Home
+      - runFlow:
+          when:
+            notVisible: "Hork"
+          commands:
+            - swipe:
+                direction: LEFT
+      - runFlow:
+          when:
+            notVisible: "Hork"
+          commands:
+            - swipe:
+                direction: LEFT
+      - extendedWaitUntil:
+          visible: "Hork"
+          timeout: 20000
+      - tapOn: "Hork"
+      - extendedWaitUntil:
+          visible: ".*Sign in to Hork|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          timeout: 45000
+# Dismiss leftover Account sheet from a prior interrupted run.
+- runFlow:
+    when:
+      visible: "Dark mode"
+    commands:
+      - tapOn: "Close"
+- runFlow:
+    when:
+      visible: "Light mode"
+    commands:
+      - tapOn: "Close"
+# --- Reach home signed-in ---
 - runFlow:
     when:
       visible: "Sign in to Hork"
     file: ios-safari-login-steps.yaml
-- assertVisible: "Your groups"
+- runFlow:
+    when:
+      visible: "Back to home"
+    commands:
+      - tapOn: "Back to home"
+- runFlow:
+    when:
+      visible: "Say something!"
+    commands:
+      - tapOn: "Back to home"
+# Session may have been cleared (webclip storage wipe) after navigating home.
+- runFlow:
+    when:
+      visible: "Sign in to Hork"
+    file: ios-safari-login-steps.yaml
+- extendedWaitUntil:
+    visible: "Your groups"
+    timeout: 20000
+# --- Group + keyboard light then dark ---
 - tapOn: "New group"
 - extendedWaitUntil:
     visible: "Group name"

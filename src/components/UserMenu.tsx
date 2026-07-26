@@ -50,6 +50,28 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   const openNewGroup = () => newGroupModal.onOpen();
 
   const sheetItems: UI.ActionSheetItem[] = [];
+  // Account actions first (above a long group list) so Maestro + thumbs can
+  // reach appearance / log out without scrolling past every membership.
+  if (showColorMode) {
+    sheetItems.push({
+      id: 'color-mode',
+      label: colorMode === 'light' ? 'Dark mode' : 'Light mode',
+      icon: colorMode === 'light' ? faMoon : faSun,
+      onClick: toggleColorMode,
+    });
+  }
+  sheetItems.push({
+    id: 'change-name',
+    label: 'Change name',
+    icon: faPenToSquare,
+    onClick: openEditName,
+  });
+  sheetItems.push({
+    id: 'log-out',
+    label: 'Log out',
+    icon: faRightFromBracket,
+    onClick: () => void signOut(),
+  });
   if (showGroups) {
     for (const group of groups ?? []) {
       sheetItems.push({
@@ -65,27 +87,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       onClick: openNewGroup,
     });
   }
-  sheetItems.push({
-    id: 'change-name',
-    label: 'Change name',
-    icon: faPenToSquare,
-    onClick: openEditName,
-  });
-  if (showColorMode) {
-    sheetItems.push({
-      id: 'color-mode',
-      label: colorMode === 'light' ? 'Dark mode' : 'Light mode',
-      icon: colorMode === 'light' ? faMoon : faSun,
-      onClick: toggleColorMode,
-    });
-  }
-  sheetItems.push({
-    id: 'log-out',
-    label: 'Log out',
-    icon: faRightFromBracket,
-    onClick: () => void signOut(),
-  });
-
   const avatar = (
     <UserAvatar
       name={identityLabel}

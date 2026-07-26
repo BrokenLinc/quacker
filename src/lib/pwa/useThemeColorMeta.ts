@@ -26,5 +26,7 @@ export function useThemeColorMeta(): void {
 
     document.documentElement.style.backgroundColor = color;
     document.body.style.backgroundColor = color;
+    // Match iOS system keyboard / form controls to in-app mode.
+    document.documentElement.style.colorScheme = colorMode;
   }, [colorMode]);
 }

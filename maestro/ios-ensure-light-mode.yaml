@@ -10,8 +10,14 @@ appId: com.apple.mobilesafari
       visible: "Light mode"
     commands:
       - tapOn: "Light mode"
+      - waitForAnimationToEnd
+      - tapOn: "Account menu"
+      - extendedWaitUntil:
+          visible: "Dark mode"
+          timeout: 10000
 - runFlow:
     when:
       visible: "Dark mode"
     commands:
-      - tapOn: "Account menu"
+      - tapOn: "Close"
+- waitForAnimationToEnd

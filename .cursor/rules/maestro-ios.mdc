@@ -15,6 +15,8 @@ alwaysApply: false
 - Do **not** use `clearState` on `com.apple.mobilesafari` — system apps cannot be uninstalled
 - Chakra PinInput: one `inputText` per digit; account chrome is `Account menu`
 - PWA install (iOS 26): expand share sheet with a contained swipe (`50%,88%→50%,45%`), not `View More`; Add dialog autofocuses the name field and often omits `Add` from a11y — tap `point: "92%,12%"`. Leave **Open as Web App** on. Icon may land on home page 2 (swipe left). Stale LAN web clips can paint blank after a bad Vite build — reinstall from a healthy `APP_URL`
-- Screenshots: `takeScreenshot: artifacts/…` lands under `~/.maestro/tests/<run>/…/artifacts/` (repo `artifacts/` is gitignored)
+- Screenshots: `takeScreenshot: artifacts/…` lands under `~/.maestro/tests/<run>/<flow>/takeScreenshot/artifacts/` (repo `artifacts/` is gitignored). Always copy from the newest run dir by mtime — do not assume a prior copy is current
+- Local Safari over a LAN IP shows a collapsed address pill (`192.168.x.x`) that can sit in the keyboard band; that is Safari chrome, not app padding. Prefer judging flushness on standalone PWA shots
 - Test OTP: `555-01XX` + `555555` with `AUTH_ALLOW_TEST_OTP` (local `supabase/functions/.env` or **quacker-dev** only — never prod)
-- Efficiency: do **not** duplicate whole login/PWA-install flows per color mode — toggle once in-session after the expensive setup
+- Viewport: iOS standalone uses `#root { height: 100vh }` (WebKit 254868 — `bottom:0`/`dvh`/`-webkit-fill-available` stop at lying `innerHeight` ~812 on a 874 screen, canvas gap on every page). Early script sets `html.standalone`. Wipe webclip Storage after `index.html` changes. Verify with pixels (raised/composer fill to y=bottom), not image-description guesses
+- Account sheet: appearance → Change name → Log out → groups → New group
