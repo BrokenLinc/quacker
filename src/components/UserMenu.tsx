@@ -95,6 +95,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       size="sm"
       onClick={isMobile ? sheet.onOpen : undefined}
       data-testid="user-menu-button"
+      aria-label="Account menu"
     />
   );
 
@@ -150,6 +151,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             photoURL={user.photoURL}
             cursor="pointer"
             size="sm"
+            aria-label="Account menu"
           />
         </UI.Box>
         <UI.MenuList>

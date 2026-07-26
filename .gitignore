@@ -10,3 +10,5 @@ test-results
 .yarn-global
 supabase/.temp/
 supabase/.branches/
+supabase/functions/.env
+

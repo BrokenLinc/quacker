@@ -36,6 +36,7 @@ Docker is **not** required on your machine for this workflow.
 | CLI | Supabase CLI | Recommended | `supabase --version` | `brew install supabase/tap/supabase` |
 | CLI | GitHub CLI | Recommended | `gh auth status` | `brew install gh && gh auth login` |
 | CLI | Vercel CLI | Optional* | `vercel --version` | `npm i -g vercel` or use Vercel MCP |
+| CLI | Maestro CLI | Optional | `maestro --version` | `brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro` (+ Java 17+) — iOS Safari/PWA flows |
 | Browser | Google Chrome | Recommended | Chrome in `/Applications` (macOS) | [google.com/chrome](https://www.google.com/chrome/) |
 | Runtime | Docker Desktop | **Optional** | `docker info` | Only for local `supabase start` — not needed with remote Supabase |
 | Cursor | Supabase plugin | Recommended | MCP `plugin-supabase-supabase` | Cursor Settings → MCP → Supabase |
@@ -105,6 +106,18 @@ npm install -g vercel
 ```
 
 Requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` in `.env.local`.
+
+### Maestro CLI (optional — iOS Safari / PWA)
+
+Used for MobileSafari login and Add to Home Screen flows (`yarn test:maestro`). Not part of `yarn verify`.
+
+```bash
+brew tap mobile-dev-inc/tap
+brew install mobile-dev-inc/tap/maestro
+# Needs Java 17+: brew install openjdk@17
+```
+
+`yarn test:maestro` runs [scripts/test-maestro.sh](../scripts/test-maestro.sh), which puts Homebrew OpenJDK on `PATH` and probes the LAN for Vite (`5174`/`5173`/`4173`). Start Vite with `--host 0.0.0.0` (not `127.0.0.1`). See [AGENTS.md](../AGENTS.md) Auth section.
 
 ---
 

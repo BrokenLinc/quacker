@@ -3,11 +3,14 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2.110.7';
 import {
   corsHeaders,
   formatError,
+  isTestPhone,
   jsonResponse,
   logAuthOtp,
   maskPhone,
   normalizePhone,
   summarizeTwilioVerification,
+  syntheticVerificationSid,
+  testOtpEnabled,
   twilioAuthHeader,
   verifyServiceSid,
 } from '../_shared/auth-utils.ts';
@@ -74,6 +77,18 @@ Deno.serve(async (req) => {
     if (!phone) {
       return jsonResponse({ error: 'Invalid phone number' }, 400);
     }
+
+    // Local/dev test OTP — never enable AUTH_ALLOW_TEST_OTP in prod secrets.
+    if (testOtpEnabled() && isTestPhone(phone)) {
+      logAuthOtp('send_test', { phone: maskPhone(phone) });
+      return jsonResponse({
+        ok: true,
+        status: 'pending',
+        verification_sid: syntheticVerificationSid(),
+        to: phone,
+      });
+    }
+
     if (!(await canSendOtp(req, phone))) {
       return jsonResponse(
         { error: 'Too many verification requests. Try again later.' },

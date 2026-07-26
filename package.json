@@ -11,6 +11,8 @@
     "test": "TZ=America/New_York vitest run",
     "test:watch": "TZ=America/New_York vitest",
     "test:e2e": "playwright test",
+    "test:maestro": "scripts/test-maestro.sh maestro/ios-safari-login.yaml",
+    "test:maestro:pwa": "scripts/test-maestro.sh maestro/ios-pwa-install-login.yaml",
     "bootstrap": "scripts/bootstrap.sh",
     "check:requirements": "scripts/check-requirements.sh",
     "verify": "scripts/verify.sh",

@@ -1,0 +1,55 @@
+# Install Hork as a PWA from MobileSafari, then confirm the standalone app.
+# Flakier than ios-safari-login.yaml (Share sheet layout varies by iOS).
+# Do not swipe the share sheet — UP gestures can open the tab switcher.
+#
+#   yarn test:maestro:pwa
+#
+appId: com.apple.mobilesafari
+---
+- launchApp
+- openLink: ${APP_URL}
+- runFlow:
+    when:
+      visible: "Close"
+    commands:
+      - tapOn: "Close"
+- runFlow:
+    when:
+      visible: "Dismiss install prompt"
+    commands:
+      - tapOn: "Dismiss install prompt"
+- extendedWaitUntil:
+    visible: ".*Sign in to Hork|Your groups.*"
+    timeout: 20000
+- tapOn: "More"
+- tapOn:
+    id: "ShareButton"
+- extendedWaitUntil:
+    visible: "Copy"
+    timeout: 10000
+- runFlow:
+    when:
+      visible: "View More"
+    commands:
+      - tapOn: "View More"
+- extendedWaitUntil:
+    visible: "Add to Home Screen"
+    timeout: 10000
+- tapOn: "Add to Home Screen"
+- extendedWaitUntil:
+    visible: "Add"
+    timeout: 10000
+- tapOn: "Add"
+- pressKey: Home
+- extendedWaitUntil:
+    visible: "Hork"
+    timeout: 15000
+- tapOn: "Hork"
+- extendedWaitUntil:
+    visible: ".*Sign in to Hork|Your groups.*"
+    timeout: 20000
+- runFlow:
+    when:
+      visible: "Sign in to Hork"
+    file: ios-safari-login-steps.yaml
+- assertVisible: "Your groups"

@@ -64,6 +64,12 @@ else
   warn "Vercel CLI unavailable" "npm i -g vercel — or use Vercel Cursor Plugin MCP"
 fi
 
+if have_cmd maestro; then
+  ok "Maestro CLI $(maestro --version 2>/dev/null | head -1)"
+else
+  warn "Maestro CLI not found" "brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro — optional for iOS Safari/PWA flows (yarn test:maestro)"
+fi
+
 echo
 echo "Local e2e (required on developer/agent machine)"
 if [[ "$(uname -s)" == "Darwin" ]] && [[ -x "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome" ]]; then
@@ -95,6 +101,11 @@ for path in supabase/.temp supabase/.branches; do
     warn "${path}/ not gitignored" "Add Supabase CLI paths to .gitignore — see .cursor/rules/supabase.mdc"
   fi
 done
+if git check-ignore -q "supabase/functions/.env" 2>/dev/null; then
+  ok "supabase/functions/.env gitignored"
+else
+  warn "supabase/functions/.env not gitignored" "Add to .gitignore — local Edge Function / test OTP secrets"
+fi
 
 echo
 echo "Secrets (.env.local)"

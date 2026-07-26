@@ -1,0 +1,15 @@
+---
+description: Maestro iOS Safari / PWA flows for Hork
+globs: "maestro/**"
+alwaysApply: false
+---
+
+# Maestro (iOS Simulator)
+
+- Install: `brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro` (+ Java 17)
+- Run: `yarn test:maestro` (wrapper sets JDK PATH + probes LAN `APP_URL`). Vite must use `--host 0.0.0.0`
+- Overrides: `APP_URL=http://…` or `MAESTRO_PORT=5173`
+- Do **not** use `clearState` on `com.apple.mobilesafari` — system apps cannot be uninstalled
+- Chakra PinInput: one `inputText` per digit; account chrome is `Account menu`
+- `ios-pwa-install-login.yaml` is best-effort — iOS Share sheet / View More is flaky; prefer Safari login flow
+- Test OTP: `555-01XX` + `555555` with `AUTH_ALLOW_TEST_OTP` (local `supabase/functions/.env` or **quacker-dev** only — never prod)

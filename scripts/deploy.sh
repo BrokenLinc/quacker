@@ -23,6 +23,7 @@ SUPABASE_DB_PASSWORD="$SUPABASE_DB_PASSWORD_PROD" supabase db push --yes
 
 if [[ -n "${TWILIO_ACCOUNT_SID:-}" && -n "${TWILIO_AUTH_TOKEN:-}" && -n "${TWILIO_VERIFY_SERVICE_SID:-}" ]]; then
   echo "==> Setting Twilio Edge Function secrets (production)"
+  # Do NOT set AUTH_ALLOW_TEST_OTP on production — local-only test OTP flag.
   supabase secrets set --project-ref "$SUPABASE_PROJECT_ID_PROD" \
     TWILIO_ACCOUNT_SID="$TWILIO_ACCOUNT_SID" \
     TWILIO_AUTH_TOKEN="$TWILIO_AUTH_TOKEN" \

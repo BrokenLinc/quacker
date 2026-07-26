@@ -112,3 +112,21 @@ export const verifyServiceSid = () => {
   if (!sid) throw new Error('Missing TWILIO_VERIFY_SERVICE_SID');
   return sid;
 };
+
+/** Local/dev only — never set as a production Edge Function secret. */
+export const testOtpEnabled = () =>
+  Deno.env.get('AUTH_ALLOW_TEST_OTP') === 'true';
+
+export const testOtpCode = () =>
+  (Deno.env.get('AUTH_TEST_OTP_CODE') ?? '555555').trim();
+
+/**
+ * Fictional US numbers in the 555-01XX block (NANP reserved for fiction).
+ * Phone must already be normalized to E.164 (+1XXXXXXXXXX).
+ */
+export const isTestPhone = (phone: string) =>
+  /^\+1\d{3}555(01\d{2})$/.test(phone);
+
+/** Synthetic Twilio-shaped verification sid for the client contract. */
+export const syntheticVerificationSid = () =>
+  `VE${crypto.randomUUID().replace(/-/g, '')}`;
