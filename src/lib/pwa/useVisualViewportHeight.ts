@@ -1,25 +1,23 @@
 import React from 'react';
 
-import {
-  applyVisualViewportVars,
-  isKeyboardLikelyOpen,
-} from './canvasColors';
+import { applyAppHeightVar } from './canvasColors';
 
 /**
- * Keeps CSS `--app-height` / `--app-offset-top` in sync with the visible
- * viewport so the app shell shrinks above the virtual keyboard (esp. iOS
- * Safari / standalone PWA). Resets residual document scroll while the
- * keyboard is open. Falls back to `window.innerHeight` when VV is missing.
+ * Keeps CSS `--app-height` in sync with the visible viewport so the fixed app
+ * shell shrinks above the virtual keyboard (esp. iOS Safari / standalone PWA).
+ *
+ * The shell is `position: fixed; top: 0; height: var(--app-height)`, so it never
+ * needs a translate offset. iOS still pans the layout viewport when an input
+ * focuses; we cancel that by resetting document scroll on every viewport change
+ * and on blur. Falls back to `window.innerHeight` when VV is missing.
  */
 export function useVisualViewportHeight(): void {
   React.useEffect(() => {
     let rafId = 0;
 
     const sync = () => {
-      applyVisualViewportVars();
-      if (isKeyboardLikelyOpen()) {
-        window.scrollTo(0, 0);
-      }
+      window.scrollTo(0, 0);
+      applyAppHeightVar();
     };
 
     const onChange = () => {
@@ -38,6 +36,7 @@ export function useVisualViewportHeight(): void {
       vv.addEventListener('scroll', onChange);
     }
     window.addEventListener('resize', onChange);
+    document.addEventListener('focusout', onChange);
 
     return () => {
       if (rafId) cancelAnimationFrame(rafId);
@@ -46,53 +45,7 @@ export function useVisualViewportHeight(): void {
         vv.removeEventListener('scroll', onChange);
       }
       window.removeEventListener('resize', onChange);
+      document.removeEventListener('focusout', onChange);
     };
   }, []);
-}
-
-function findScrollParent(el: HTMLElement): HTMLElement | null {
-  let node: HTMLElement | null = el.parentElement;
-  while (node && node !== document.documentElement) {
-    const { overflowY } = window.getComputedStyle(node);
-    if (
-      (overflowY === 'auto' || overflowY === 'scroll') &&
-      node.scrollHeight > node.clientHeight
-    ) {
-      return node;
-    }
-    node = node.parentElement;
-  }
-  return null;
-}
-
-/**
- * When the visual viewport shrinks (keyboard), scroll the focused element into
- * view inside the nearest overflow scrollport — never the document, so iOS
- * cannot reintroduce a layout-viewport jump.
- */
-export function scrollFocusedIntoView(): void {
-  const active = document.activeElement;
-  if (!(active instanceof HTMLElement)) return;
-  const target =
-    active.closest('.ProseMirror') instanceof HTMLElement
-      ? (active.closest('.ProseMirror') as HTMLElement)
-      : active;
-
-  requestAnimationFrame(() => {
-    const scrollParent = findScrollParent(target);
-    if (!scrollParent) {
-      // No internal scrollport — avoid document scrollIntoView on iOS.
-      return;
-    }
-
-    const parentRect = scrollParent.getBoundingClientRect();
-    const targetRect = target.getBoundingClientRect();
-    const padding = 8;
-
-    if (targetRect.bottom > parentRect.bottom - padding) {
-      scrollParent.scrollTop += targetRect.bottom - parentRect.bottom + padding;
-    } else if (targetRect.top < parentRect.top + padding) {
-      scrollParent.scrollTop -= parentRect.top + padding - targetRect.top;
-    }
-  });
 }

@@ -93,9 +93,11 @@ export const theme = extendTheme({
       '#root': {
         bg: 'surface.canvas',
         position: 'fixed',
-        inset: 0,
-        overflow: 'hidden',
+        top: 0,
+        left: 0,
+        width: '100%',
         height: 'var(--app-height, 100dvh)',
+        overflow: 'hidden',
       },
     },
   },

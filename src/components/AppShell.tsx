@@ -40,9 +40,6 @@ export const AppLayout: React.FC = () => {
         maxH="var(--app-height, 100dvh)"
         overflow="hidden"
         bg="surface.canvas"
-        style={{
-          transform: 'translateY(var(--app-offset-top, 0px))',
-        }}
       >
         {isMobile && !isGroupRoute ? <MobileHeader /> : null}
         <UI.Flex flex={1} minH={0}>
