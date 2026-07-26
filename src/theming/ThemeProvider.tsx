@@ -96,6 +96,8 @@ export const theme = extendTheme({
         top: 0,
         left: 0,
         width: '100%',
+        // Height-only sizing — do not use inset/bottom:0 or the root fills the
+        // layout viewport under the keyboard and leaves a blank canvas gap.
         height: 'var(--app-height, 100dvh)',
         overflow: 'hidden',
       },

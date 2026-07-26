@@ -16,8 +16,9 @@ import { UserMenu } from './UserMenu';
 
 /**
  * App frame: fixed-viewport shell with internal scrolling (chat-app pattern).
- * Height tracks visualViewport (`--app-height`) so the keyboard does not cover
- * the composer. Safe-area insets pad chrome, not a letterboxed body.
+ * Height tracks visualViewport (`--app-height`) so the fixed shell shrinks to
+ * the visible viewport above the keyboard (no blank canvas gap). Safe-area
+ * insets pad chrome.
  * Desktop (md+): persistent left sidebar with group nav.
  * Mobile: compact top header on non-group routes; group pages render their
  * own single bar.

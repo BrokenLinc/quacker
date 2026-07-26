@@ -13,6 +13,9 @@ This repository is **agent-operated**. The user sets vision; you execute everyth
 | Command | Purpose |
 | ------- | ------- |
 | `yarn check:requirements` | Verify CLIs, `.env.local`, and list MCP plugin expectations |
+| `yarn test:maestro` | MobileSafari login on iOS Simulator (needs Maestro + LAN Vite) |
+| `yarn test:maestro:keyboard` | Group chat composer vs iOS keyboard open/close |
+| `yarn test:maestro:pwa` | Add to Home Screen + login (flakier; optional) |
 | `yarn bootstrap` | Install deps, scaffold `.env.local`, start local Supabase |
 | `yarn dev` | Vite dev server |
 | `yarn verify` | lint + build + unit + smoke e2e locally (~seconds); full e2e in CI or with local Supabase |
@@ -84,7 +87,36 @@ Docker runs rootless-in-VM and is not started automatically:
 
 ### Auth / SMS OTP testing
 
-Production and dev Supabase use Twilio Verify via Edge Functions (`auth-send-otp`, `auth-verify-otp`). E2E tests bypass Twilio via admin session seeding in `tests/e2e/fixtures/supabase.ts`.
+Production and **prod** Supabase use Twilio Verify via Edge Functions (`auth-send-otp`, `auth-verify-otp`). E2E tests bypass Twilio via admin session seeding in `tests/e2e/fixtures/supabase.ts`.
+
+**Local / agent UI login (test OTP):** with `AUTH_ALLOW_TEST_OTP=true` (local `supabase/functions/.env`, or the **quacker-dev** project secret — never production):
+
+1. Use a fictional `555-01XX` number, e.g. `(202) 555-0100`
+2. Enter code `555555` (or `AUTH_TEST_OTP_CODE`)
+3. Edge functions skip Twilio and issue a normal magiclink session
+
+Fallback if `supabase start` does not load `supabase/functions/.env`:
+
+```bash
+supabase functions serve auth-send-otp auth-verify-otp \
+  --env-file supabase/functions/.env --no-verify-jwt
+```
+
+**Maestro (MobileSafari / PWA):**
+
+```bash
+# Vite must bind LAN so the simulator can reach the host (not 127.0.0.1):
+yarn dev -- --host 0.0.0.0 --port 5174
+yarn test:maestro          # Safari login
+yarn test:maestro:keyboard # group chat keyboard open/close + screenshots
+yarn test:maestro:pwa      # optional Add to Home Screen (flaky on iOS 26)
+```
+
+`scripts/test-maestro.sh` puts Homebrew OpenJDK on `PATH` and probes `en0`/`en1` for a live Vite port (`5174`, `5173`, `4173`). Override with `APP_URL=…` or `MAESTRO_PORT=5173` if needed.
+
+Install Maestro: `brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro` (needs Java 17+). Not part of `yarn verify`.
+
+Notes from live runs: do not use `clearState` on Safari (system app); Chakra PinInput needs one `inputText` per digit; account avatar is labeled **Account menu** for VoiceOver/Maestro.
 
 ### Running e2e
 `yarn test:e2e` uses the installed Google **Chrome** (`channel: 'chrome'`), not bundled Chromium. Start a preview server first (`yarn preview --host 127.0.0.1 --port 4173`) and run with `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173`; `yarn verify` wires this up automatically.

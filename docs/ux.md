@@ -105,6 +105,8 @@ chrome, keyboard-safe chat, and touch-first overlays — not a shrunk desktop pa
 - The app frame tracks the **visible** viewport via a single CSS var:
   `--app-height` = `visualViewport.height` (fallback `100dvh`). No offset
   var, no `translateY`, no scale correction — the shell is sized, not shifted.
+  Do **not** size `#root` with `inset: 0` / `bottom: 0` or it fills the layout
+  viewport and leaves a blank gap above the keyboard.
 - The composer stays **above the keyboard** because the fixed shell shrinks to
   `--app-height` and the composer is flex-pinned to its bottom.
 - iOS still pans the layout viewport on focus. Cancel it: on every

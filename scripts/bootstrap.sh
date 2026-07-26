@@ -16,6 +16,11 @@ if [[ ! -f .env.local ]]; then
   echo "    Fill in Supabase values in .env.local before connecting to cloud."
 fi
 
+if [[ ! -f supabase/functions/.env ]]; then
+  echo "==> Creating supabase/functions/.env from .env.example (local test OTP)"
+  cp supabase/functions/.env.example supabase/functions/.env
+fi
+
 if command -v supabase &>/dev/null; then
   echo "==> Starting local Supabase (if not already running)"
   supabase start 2>/dev/null || true

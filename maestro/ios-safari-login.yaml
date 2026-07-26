@@ -1,0 +1,31 @@
+# Sign in through MobileSafari using local test OTP (555-01XX / 555555).
+# Requires: booted iOS Simulator, Vite on LAN (--host 0.0.0.0), AUTH_ALLOW_TEST_OTP.
+# Note: clearState is not used — Safari is a system app and cannot be uninstalled.
+#
+#   yarn test:maestro
+#
+appId: com.apple.mobilesafari
+---
+- launchApp
+- openLink: ${APP_URL}
+- runFlow:
+    when:
+      visible: "Close"
+    commands:
+      - tapOn: "Close"
+- extendedWaitUntil:
+    visible: ".*Sign in to Hork|Your groups.*"
+    timeout: 20000
+# Clear a leftover session so this flow always exercises OTP.
+- runFlow:
+    when:
+      visible: "Your groups"
+    commands:
+      - tapOn: "Account menu"
+      - tapOn: "Log out"
+      - extendedWaitUntil:
+          visible: "Sign in to Hork"
+          timeout: 15000
+- runFlow:
+    file: ios-safari-login-steps.yaml
+- assertVisible: "Your groups"

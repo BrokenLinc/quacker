@@ -1,0 +1,27 @@
+appId: com.apple.mobilesafari
+---
+# Shared sign-in steps (test OTP). Invoked from flows that may already be on the form.
+- tapOn: "(555) 555-5555"
+- eraseText
+- inputText: "2025550100"
+- tapOn: "Text me a code"
+- extendedWaitUntil:
+    visible: "Verification code"
+    timeout: 15000
+- tapOn:
+    text: "Please enter your pin code"
+    index: 0
+- inputText: "5"
+- inputText: "5"
+- inputText: "5"
+- inputText: "5"
+- inputText: "5"
+- inputText: "5"
+- runFlow:
+    when:
+      visible: "Verify"
+    commands:
+      - tapOn: "Verify"
+- extendedWaitUntil:
+    visible: "Your groups"
+    timeout: 20000
