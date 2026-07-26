@@ -99,20 +99,37 @@ chrome, keyboard-safe chat, and touch-first overlays — not a shrunk desktop pa
 
 ### Viewport and keyboard
 
+Implementation: `index.html` (geometry + `html.standalone`),
+`src/lib/pwa/canvasColors.ts`, `useVisualViewportHeight.ts`.
+
 - Lock document scroll: `html`/`body` `overflow: hidden`. App shell is
   `position: absolute; inset: 0` inside `#root`.
 - **Keyboard closed / browser:** `#root` is `position: fixed; inset: 0`.
-- **Keyboard closed / iOS standalone:** WebKit’s lying viewport makes
+- **Keyboard closed / iOS standalone:** WebKit’s lying viewport
+  ([bug 254868](https://bugs.webkit.org/show_bug.cgi?id=254868)) makes
   `bottom: 0`, `dvh`, and `-webkit-fill-available` short of the home indicator
-  (gap on every page — groups list, composer, modals). Use classic `100vh` on
-  `#root` instead (`html.standalone` from an early script). Composer pad once:
-  `0.75rem + env(safe-area-inset-bottom)` via `--app-composer-pb`.
-- **Keyboard open:** JS sets `top`/`height` from `visualViewport` and
-  `bottom: auto`; `--app-composer-pb: 0`.
-- On VV `resize`/`scroll` + `focusout`, `scrollTo(0,0)` then re-apply.
+  (`innerHeight` ≈ 812 on a 874 screen → canvas gap on **every** page). Use
+  classic `100vh` on `#root` (`html.standalone` from an early script). Composer
+  pad once: `0.75rem + env(safe-area-inset-bottom)` via `--app-composer-pb`.
+- **Keyboard open:** only when VV shrinks **and** an editable is focused. JS
+  sets `#root` `top`/`height` from `visualViewport`; `--app-composer-pb: 0`.
+- On VV `resize`/`scroll` + focus change, `scrollTo(0,0)` then re-apply.
   Do not document-scroll to inputs.
 - Prefer `interactive-widget=resizes-content` in the viewport meta where
   supported (Chrome). Safari ignores it; the VV + fixed-root path covers iOS.
+
+#### Anti-patterns (failed approaches — do not reintroduce)
+
+| Tempting fix | Why it fails |
+| --- | --- |
+| Size closed `#root` from `visualViewport` / `innerHeight` | Lying viewport is already short; shell stops above the HI |
+| `bottom: 0` + `height: -webkit-fill-available` / `100dvh` on standalone `#root` | Same lying height; over-constrained height wins over `bottom` |
+| Drop composer `safe-area-inset-bottom` to “fix double pad” | Outer gap is the short shell, not double inset; content then sits under the HI once `100vh` is correct |
+| Treat VV shrink alone as keyboard-open | Standalone often has a large VV delta with no keyboard |
+| Trust screenshot captions / vision descriptions of the bottom gap | Sample pixels (`surface.raised` vs `surface.canvas` at bottom center) |
+| Change JS only and retest PWA without wiping webclip Storage | Installed PWAs cache `index.html`; wipe Storage or reinstall |
+
+**Symptom check:** `screen.height - innerHeight ≈ 60` and `#root.getBoundingClientRect().height === innerHeight` while a canvas strip sits under chrome → missing `html.standalone` / still on `bottom: 0`. After the fix, raised chrome (composer) samples to the physical bottom; safe-area is **inside** that raised fill.
 
 ### Safe areas and system chrome blending
 

@@ -18,5 +18,5 @@ alwaysApply: false
 - Screenshots: `takeScreenshot: artifacts/…` lands under `~/.maestro/tests/<run>/<flow>/takeScreenshot/artifacts/` (repo `artifacts/` is gitignored). Always copy from the newest run dir by mtime — do not assume a prior copy is current
 - Local Safari over a LAN IP shows a collapsed address pill (`192.168.x.x`) that can sit in the keyboard band; that is Safari chrome, not app padding. Prefer judging flushness on standalone PWA shots
 - Test OTP: `555-01XX` + `555555` with `AUTH_ALLOW_TEST_OTP` (local `supabase/functions/.env` or **quacker-dev** only — never prod)
-- Viewport: iOS standalone uses `#root { height: 100vh }` (WebKit 254868 — `bottom:0`/`dvh`/`-webkit-fill-available` stop at lying `innerHeight` ~812 on a 874 screen, canvas gap on every page). Early script sets `html.standalone`. Wipe webclip Storage after `index.html` changes. Verify with pixels (raised/composer fill to y=bottom), not image-description guesses
+- Viewport contract + anti-patterns: `docs/ux.md`. Wipe webclip Storage after `index.html` changes. Judge PWA bottom gap with pixels (raised fill to y=bottom), not vision captions
 - Account sheet: appearance → Change name → Log out → groups → New group

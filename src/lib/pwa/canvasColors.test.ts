@@ -27,7 +27,7 @@ function stubDocument(
     activeElement: { tagName: 'BODY', isContentEditable: false },
     documentElement: {
       classList: {
-        contains: () => classListContains,
+        contains: (name: string) => classListContains && name === 'standalone',
         add: vi.fn(),
       },
       style: {

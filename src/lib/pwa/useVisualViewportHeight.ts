@@ -5,8 +5,8 @@ import { applyAppHeightVar } from './canvasColors';
 /**
  * Keeps the fixed app shell sized for the soft keyboard.
  *
- * `#root` defaults to CSS `inset: 0`. While an editable is focused and the
- * visual viewport has shrunk, JS overrides top/height from `visualViewport`.
+ * Closed: `#root` uses CSS from `index.html` (browser `inset: 0`, standalone
+ * `height: 100vh`). Open: VV shrink + focused editable → override top/height.
  * `scrollTo(0,0)` cancels Safari's focus pan.
  */
 export function useVisualViewportHeight(): void {
@@ -37,7 +37,6 @@ export function useVisualViewportHeight(): void {
       vv.addEventListener('scroll', onChange);
     }
     window.addEventListener('resize', onChange);
-    // Focus changes flip the editable+VV keyboard heuristic.
     document.addEventListener('focusin', onChange);
     document.addEventListener('focusout', onChange);
 

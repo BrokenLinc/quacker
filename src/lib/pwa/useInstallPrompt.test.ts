@@ -2,10 +2,22 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { isIosSafari, isStandaloneDisplay } from './useInstallPrompt';
 
+function stubDocument(standaloneClass = false) {
+  vi.stubGlobal('document', {
+    documentElement: {
+      classList: {
+        contains: (name: string) => standaloneClass && name === 'standalone',
+      },
+    },
+  });
+}
+
 describe('isStandaloneDisplay', () => {
   beforeEach(() => {
+    stubDocument();
     vi.stubGlobal('window', {
       matchMedia: vi.fn().mockReturnValue({ matches: false }),
+      navigator: {},
     });
     vi.stubGlobal('navigator', {});
   });
@@ -21,16 +33,26 @@ describe('isStandaloneDisplay', () => {
 
   it('returns true for legacy iOS standalone navigator flag', () => {
     vi.stubGlobal('navigator', { standalone: true });
+    vi.stubGlobal('window', {
+      matchMedia: vi.fn().mockReturnValue({ matches: false }),
+      navigator: { standalone: true },
+    });
+    expect(isStandaloneDisplay()).toBe(true);
+  });
+
+  it('returns true when html.standalone is set by the early script', () => {
+    stubDocument(true);
     expect(isStandaloneDisplay()).toBe(true);
   });
 });
 
 describe('isIosSafari', () => {
   beforeEach(() => {
+    stubDocument();
     vi.stubGlobal('window', {
       matchMedia: vi.fn().mockReturnValue({ matches: false }),
+      navigator: {},
     });
-    vi.stubGlobal('document', {});
   });
 
   afterEach(() => {
@@ -55,7 +77,12 @@ describe('isIosSafari', () => {
   });
 
   it('does not detect desktop macOS from DOM touch event support', () => {
-    vi.stubGlobal('document', { ontouchend: null });
+    vi.stubGlobal('document', {
+      ontouchend: null,
+      documentElement: {
+        classList: { contains: () => false },
+      },
+    });
     vi.stubGlobal('navigator', {
       maxTouchPoints: 0,
       userAgent:
@@ -69,6 +96,14 @@ describe('isIosSafari', () => {
       userAgent:
         'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
       standalone: true,
+    });
+    vi.stubGlobal('window', {
+      matchMedia: vi.fn().mockReturnValue({ matches: false }),
+      navigator: {
+        userAgent:
+          'Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15',
+        standalone: true,
+      },
     });
     expect(isIosSafari()).toBe(false);
   });

@@ -1,3 +1,5 @@
+import { isStandaloneDisplay } from './standalone';
+
 /** Matches `surface.canvas` → gray.50 / gray.900 in ThemeProvider. */
 export const CANVAS_LIGHT = '#FAF9FC';
 export const CANVAS_DARK = '#221D33';
@@ -31,13 +33,6 @@ function isEditableTarget(el: EventTarget | null): boolean {
   return Boolean(node.isContentEditable);
 }
 
-export function isStandaloneDisplay(): boolean {
-  if (document.documentElement.classList.contains('standalone')) return true;
-  if (window.matchMedia('(display-mode: standalone)').matches) return true;
-  const nav = window.navigator as Navigator & { standalone?: boolean };
-  return Boolean(nav.standalone);
-}
-
 /**
  * Soft keyboard heuristic for iOS Safari / standalone PWA.
  *
@@ -65,8 +60,9 @@ function resetRootToLayoutFill(root: HTMLElement | null): void {
   }
 
   if (root) {
-    root.style.top = '0px';
     if (standalone) {
+      // Re-assert after keyboard-open overrides (inline top/height).
+      root.style.top = '0px';
       root.style.bottom = 'auto';
       root.style.height = '100vh';
     } else {
@@ -81,7 +77,6 @@ function resetRootToLayoutFill(root: HTMLElement | null): void {
     ? `${Math.max(window.innerHeight, window.screen.height)}px`
     : `${window.innerHeight}px`;
   document.documentElement.style.setProperty('--app-height', appHeight);
-  document.documentElement.style.setProperty('--app-offset-top', '0px');
   document.documentElement.style.setProperty(
     '--app-composer-pb',
     COMPOSER_PADDING_CLOSED
@@ -110,10 +105,6 @@ export function applyAppHeightVar(height = getVisibleViewportHeight()): void {
   document.documentElement.style.setProperty(
     '--app-height',
     heightPx > 0 ? `${heightPx}px` : '100dvh'
-  );
-  document.documentElement.style.setProperty(
-    '--app-offset-top',
-    `${offsetPx}px`
   );
   document.documentElement.style.setProperty('--app-composer-pb', '0px');
 

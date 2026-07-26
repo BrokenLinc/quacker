@@ -16,9 +16,7 @@ import { UserMenu } from './UserMenu';
 
 /**
  * App frame: fixed-viewport shell with internal scrolling (chat-app pattern).
- * Closed: fills the layout viewport. Open: `--app-height` tracks
- * visualViewport so the shell shrinks above the keyboard. Safe-area pads
- * chrome (composer) once — not via a short shell.
+ * `#root` geometry: `index.html` + `useVisualViewportHeight` (see docs/ux.md).
  * Desktop (md+): persistent left sidebar with group nav.
  * Mobile: compact top header on non-group routes; group pages render their
  * own single bar.
@@ -37,9 +35,6 @@ export const AppLayout: React.FC = () => {
     <SignInPlacementFromAuth>
       <UI.Flex
         direction="column"
-        // Absolute fill of #root — percentage height is unreliable when #root
-        // is sized via inset:0 / height:auto, and leaves a canvas strip under
-        // the composer (reads as a second safe-area).
         position="absolute"
         inset={0}
         overflow="hidden"
