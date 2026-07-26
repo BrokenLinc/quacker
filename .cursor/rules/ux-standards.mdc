@@ -22,17 +22,20 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
 ## Layout contract
 
 - App frame is fixed-viewport (`AppLayout` in `src/components/AppShell.tsx`):
-  desktop (md+) = persistent sidebar; mobile = compact header, group pages
-  render their own single top bar. Pages scroll internally (`flex={1} overflowY="auto"`)
+  desktop (md+) = persistent sidebar (brand + plus at top; user + appearance
+  in the footer); mobile
+  = compact header, group pages render their own single top bar. Document
+  does not scroll — pages scroll internally (`flex={1} minH={0} overflowY="auto"`)
 - Chat: chronological messages, composer pinned to bottom, Enter sends
   (Shift+Enter newline), optimistic pending bubbles
-- Overlays use `QuickModal` (modal on md+, bottom drawer on mobile)
+- Overlays use `QuickModal` (modal on md+, drawer on mobile; drag-to-dismiss)
 
 ## Native / PWA
 
-- **Viewport:** drive shell height from `visualViewport` (CSS `--app-height`);
-  fallback `100dvh`. Composer must stay above the keyboard; scroll focused
-  inputs into view on VV resize
+- **Viewport:** `#root` is `position: fixed`; shell height from
+  `visualViewport` (`--app-height`, `--app-offset-top`); fallback `100dvh`.
+  Composer stays above the keyboard; focus scrolls inside the nearest
+  overflow scrollport only (never the document)
 - **Edges:** paint `html`/`body`/`#root` with `surface.canvas`; pad chrome with
   `env(safe-area-inset-*)` (no body+shell double-subtract). `theme-color` +
   manifest colors track canvas (incl. in-app color-mode sync);

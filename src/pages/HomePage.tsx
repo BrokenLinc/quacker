@@ -1,6 +1,9 @@
 import { useGroups } from '@@api';
 import { RequireAuth } from '@@components/auth/RequireAuth';
-import { NewGroupButton } from '@@components/NewGroupModal';
+import {
+  NewGroupButton,
+  NewGroupIconButton,
+} from '@@components/NewGroupModal';
 import { useAuthState } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
@@ -13,13 +16,18 @@ import React from 'react';
 const HomePage: React.FC = () => {
   return (
     <RequireAuth>
-      <UI.Box flex={1} overflowY="auto">
+      <UI.Box
+        flex={1}
+        minH={0}
+        overflowY="auto"
+        overscrollBehavior="contain"
+      >
         <UI.Box maxW="560px" mx="auto" p={4}>
           <UI.HStack mb={4}>
             <UI.Heading size="md" mr="auto">
               Your groups
             </UI.Heading>
-            <NewGroupButton />
+            <NewGroupIconButton />
           </UI.HStack>
           <GroupList />
         </UI.Box>

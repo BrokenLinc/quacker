@@ -27,6 +27,7 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const sendInFlight = React.useRef(false);
+  const verifyInFlight = React.useRef(false);
 
   const sendCode = async (phone: string) => {
     if (sendInFlight.current || loading) return false;
@@ -58,17 +59,18 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
     await sendCode(phone);
   };
 
-  const handleCodeSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!normalizedPhone || !verificationSid || loading) return;
+  const verifyCode = async (otp: string) => {
+    if (!normalizedPhone || !verificationSid || verifyInFlight.current) return;
+    verifyInFlight.current = true;
     setLoading(true);
     setError(null);
     const { error: verifyError } = await verifySmsOtp(
       normalizedPhone,
-      code.trim(),
+      otp.trim(),
       verificationSid
     );
     if (verifyError) {
+      verifyInFlight.current = false;
       setLoading(false);
       setError(verifyError.message);
       return;
@@ -76,12 +78,19 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
 
     // First session: ask for a real name before dropping into chat.
     const authUser = await getCurrentAuthUser();
+    verifyInFlight.current = false;
     setLoading(false);
     if (!hasChosenDisplayName(authUser)) {
       setStep('name');
       return;
     }
     onSuccess?.();
+  };
+
+  const handleCodeSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (code.length !== 6) return;
+    await verifyCode(code);
   };
 
   if (step === 'name') {
@@ -104,19 +113,30 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
       >
         <UI.FormControl>
           <UI.FormLabel>Verification code</UI.FormLabel>
-          <UI.Input
-            type="text"
-            inputMode="numeric"
-            autoComplete="one-time-code"
-            placeholder="6-digit code"
-            value={code}
-            onChange={(e) =>
-              setCode(e.target.value.replace(/\D/g, '').slice(0, 6))
-            }
-            required
-            data-testid="sign-in-code"
-          />
-          <UI.FormHelperText>
+          <UI.HStack justify="center" data-testid="sign-in-code">
+            <UI.PinInput
+              otp
+              type="number"
+              value={code}
+              onChange={setCode}
+              onComplete={(value) => {
+                void verifyCode(value);
+              }}
+              isDisabled={loading}
+              autoFocus
+              size="md"
+              manageFocus
+              placeholder=""
+            >
+              <UI.PinInputField autoComplete="one-time-code" />
+              <UI.PinInputField />
+              <UI.PinInputField />
+              <UI.PinInputField />
+              <UI.PinInputField />
+              <UI.PinInputField />
+            </UI.PinInput>
+          </UI.HStack>
+          <UI.FormHelperText textAlign="center">
             Use the code from your latest text
           </UI.FormHelperText>
         </UI.FormControl>
@@ -130,6 +150,7 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
           preset="primary"
           isLoading={loading}
           loadingText="Verifying…"
+          isDisabled={code.length !== 6}
         >
           Verify
         </UI.Button>

@@ -25,11 +25,13 @@ pages, no nested routes.
 
 ### Shell
 
-- **Desktop (md+):** persistent left sidebar (brand, New group, group nav,
+- **Desktop (md+):** persistent left sidebar (brand + plus, group nav,
   user + appearance in the footer). Chat pane content is capped at ~760px for
   readable line length.
-- **Mobile:** compact top header on home; group pages have exactly one bar
-  (back, title, share, overflow, avatar). Never stack two headers.
+- **Mobile:** compact top header on home (brand, avatar); group pages have
+  exactly one bar (back, title, share, overflow, avatar). Never stack two
+  headers. "New group" is a plus icon in the page header (and sidebar brand
+  row on desktop).
 
 ## Color system
 
@@ -97,12 +99,17 @@ chrome, keyboard-safe chat, and touch-first overlays — not a shrunk desktop pa
 
 ### Viewport and keyboard
 
-- The app frame tracks the **visible** viewport (`visualViewport` height when
-  available; `100dvh` fallback). Never rely on `100vh` alone.
+- Lock document scroll: `html`/`body` `overflow: hidden`; `#root` is
+  `position: fixed` sized to the visible viewport so iOS cannot
+  focus-scroll the layout viewport.
+- The app frame tracks the **visible** viewport via CSS vars from
+  `visualViewport`: `--app-height` (scale-corrected height) and
+  `--app-offset-top` (iOS keyboard scroll offset). Fallback `100dvh`.
 - The composer must stay **above the keyboard**. On focus / viewport resize,
-  keep the focused input in view.
+  scroll the focused input inside the nearest overflow scrollport — never
+  the document.
 - Prefer `interactive-widget=resizes-content` in the viewport meta where
-  supported (Chrome).
+  supported (Chrome). Safari ignores it; the VV + fixed-root path covers iOS.
 
 ### Safe areas and system chrome blending
 
@@ -121,7 +128,8 @@ chrome, keyboard-safe chat, and touch-first overlays — not a shrunk desktop pa
 - Every overlay has an obvious dismiss (X and/or Cancel). Overlay tap and Esc
   remain available unless a flow intentionally requires an explicit choice —
   still keep Cancel.
-- Content sheets use `QuickModal` (modal ≥ md, bottom drawer on mobile).
+- Content sheets use `QuickModal` (modal ≥ md, drawer on mobile). Mobile
+  drawers support drag-to-dismiss (placement-aware) via framer-motion.
 - Confirmations use the **same** mobile drawer shell as `QuickModal`, not a
   centered desktop modal on phones.
 
