@@ -2,12 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import {
   applyAppHeightVar,
-  applyAppOffsetTopVar,
-  applyVisualViewportVars,
   canvasColorForMode,
   getVisibleViewportHeight,
-  getVisualViewportOffsetTop,
-  isKeyboardLikelyOpen,
 } from './canvasColors';
 
 describe('canvasColorForMode', () => {
@@ -17,10 +13,10 @@ describe('canvasColorForMode', () => {
   });
 });
 
-describe('visual viewport helpers', () => {
+describe('visible viewport height', () => {
   beforeEach(() => {
     vi.stubGlobal('window', {
-      visualViewport: { height: 640, offsetTop: 0, scale: 1 },
+      visualViewport: { height: 640 },
       innerHeight: 800,
     });
     vi.stubGlobal('document', {
@@ -47,16 +43,16 @@ describe('visual viewport helpers', () => {
     );
   });
 
-  it('scale-corrects height so pinch-zoom does not shrink the shell', () => {
+  it('shrinks with the keyboard (uses raw VV height, no scale)', () => {
     vi.stubGlobal('window', {
-      visualViewport: { height: 320, offsetTop: 0, scale: 2 },
+      visualViewport: { height: 320 },
       innerHeight: 800,
     });
-    expect(getVisibleViewportHeight()).toBe(640);
+    expect(getVisibleViewportHeight()).toBe(320);
     applyAppHeightVar();
     expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
       '--app-height',
-      '640px'
+      '320px'
     );
   });
 
@@ -73,39 +69,15 @@ describe('visual viewport helpers', () => {
     );
   });
 
-  it('publishes --app-offset-top from visualViewport.offsetTop', () => {
+  it('rounds fractional heights', () => {
     vi.stubGlobal('window', {
-      visualViewport: { height: 500, offsetTop: 120, scale: 1 },
+      visualViewport: { height: 639.6 },
       innerHeight: 800,
     });
-    expect(getVisualViewportOffsetTop()).toBe(120);
-    applyAppOffsetTopVar();
-    expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
-      '--app-offset-top',
-      '120px'
-    );
-  });
-
-  it('applyVisualViewportVars sets both CSS vars', () => {
-    vi.stubGlobal('window', {
-      visualViewport: { height: 500, offsetTop: 80, scale: 1 },
-      innerHeight: 800,
-    });
-    applyVisualViewportVars();
+    applyAppHeightVar();
     expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
       '--app-height',
-      '500px'
+      '640px'
     );
-    expect(document.documentElement.style.setProperty).toHaveBeenCalledWith(
-      '--app-offset-top',
-      '80px'
-    );
-  });
-
-  it('detects keyboard via offsetTop or height delta', () => {
-    expect(isKeyboardLikelyOpen(800, 800, 0)).toBe(false);
-    expect(isKeyboardLikelyOpen(800, 800, 40)).toBe(true);
-    expect(isKeyboardLikelyOpen(800, 500, 0)).toBe(true);
-    expect(isKeyboardLikelyOpen(800, 780, 0)).toBe(false);
   });
 });

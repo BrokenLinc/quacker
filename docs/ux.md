@@ -100,14 +100,16 @@ chrome, keyboard-safe chat, and touch-first overlays — not a shrunk desktop pa
 ### Viewport and keyboard
 
 - Lock document scroll: `html`/`body` `overflow: hidden`; `#root` is
-  `position: fixed` sized to the visible viewport so iOS cannot
+  `position: fixed; top: 0; height: var(--app-height)` so iOS cannot
   focus-scroll the layout viewport.
-- The app frame tracks the **visible** viewport via CSS vars from
-  `visualViewport`: `--app-height` (scale-corrected height) and
-  `--app-offset-top` (iOS keyboard scroll offset). Fallback `100dvh`.
-- The composer must stay **above the keyboard**. On focus / viewport resize,
-  scroll the focused input inside the nearest overflow scrollport — never
-  the document.
+- The app frame tracks the **visible** viewport via a single CSS var:
+  `--app-height` = `visualViewport.height` (fallback `100dvh`). No offset
+  var, no `translateY`, no scale correction — the shell is sized, not shifted.
+- The composer stays **above the keyboard** because the fixed shell shrinks to
+  `--app-height` and the composer is flex-pinned to its bottom.
+- iOS still pans the layout viewport on focus. Cancel it: on every
+  `visualViewport` `resize`/`scroll` and on `focusout`, `window.scrollTo(0, 0)`
+  then re-apply `--app-height`. Do not scroll the document to reveal inputs.
 - Prefer `interactive-widget=resizes-content` in the viewport meta where
   supported (Chrome). Safari ignores it; the VV + fixed-root path covers iOS.
 
