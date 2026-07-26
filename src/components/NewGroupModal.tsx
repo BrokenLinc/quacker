@@ -40,6 +40,27 @@ export const NewGroupButton: React.FC<UI.ButtonProps> = (props) => {
   );
 };
 
+/** Header/sidebar plus control — same modal as NewGroupButton. */
+export const NewGroupIconButton: React.FC<
+  Omit<UI.IconButtonProps, 'icon' | 'aria-label'>
+> = (props) => {
+  const modal = UI.useDisclosure();
+
+  return (
+    <React.Fragment>
+      <UI.IconButton
+        aria-label="New group"
+        icon={faPlus}
+        size="sm"
+        variant="ghost"
+        onClick={modal.onOpen}
+        {...props}
+      />
+      <NewGroupModal isOpen={modal.isOpen} onClose={modal.onClose} />
+    </React.Fragment>
+  );
+};
+
 const NewGroupForm: React.FC<{ onCreated: () => void }> = ({ onCreated }) => {
   const [user] = useAuthState();
   const [name, setName] = React.useState('');

@@ -84,9 +84,18 @@ export const theme = extendTheme({
   },
   styles: {
     global: {
-      'html, body, #root': {
+      'html, body': {
         bg: 'surface.canvas',
         height: '100%',
+        overflow: 'hidden',
+        overscrollBehavior: 'none',
+      },
+      '#root': {
+        bg: 'surface.canvas',
+        position: 'fixed',
+        inset: 0,
+        overflow: 'hidden',
+        height: 'var(--app-height, 100dvh)',
       },
     },
   },

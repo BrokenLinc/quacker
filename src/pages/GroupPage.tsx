@@ -863,7 +863,15 @@ const ChatScrollArea: React.FC<{
   }
 
   return (
-    <UI.Box ref={scrollRef} flex={1} overflowY="auto" px={4} py={3}>
+    <UI.Box
+      ref={scrollRef}
+      flex={1}
+      minH={0}
+      overflowY="auto"
+      overscrollBehavior="contain"
+      px={4}
+      py={3}
+    >
       <UI.VStack align="stretch" spacing={0} maxW="760px" mx="auto">
         {items.map((message, i) => {
           const prev = items[i - 1];

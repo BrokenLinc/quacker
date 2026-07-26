@@ -11,8 +11,18 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
   heading = 'Sign in to Hork',
 }) => {
   return (
-    <UI.Box flex={1} overflowY="auto" w="full">
-      <UI.Box maxW="480px" mx="auto" p={4} pt={10} data-testid="sign-in-screen">
+    <UI.Flex
+      flex={1}
+      minH={0}
+      overflowY="auto"
+      overscrollBehavior="contain"
+      w="full"
+      align="center"
+      justify="center"
+      px={4}
+      py={6}
+    >
+      <UI.Box maxW="480px" w="full" data-testid="sign-in-screen">
         <UI.VStack align="stretch" spacing={6}>
           <UI.VStack align="stretch" spacing={1}>
             <UI.Heading size="md">{heading}</UI.Heading>
@@ -23,6 +33,6 @@ export const SignInScreen: React.FC<SignInScreenProps> = ({
           <SignInForm />
         </UI.VStack>
       </UI.Box>
-    </UI.Box>
+    </UI.Flex>
   );
 };

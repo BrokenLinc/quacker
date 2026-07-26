@@ -20,10 +20,11 @@
     <title>Hork</title>
     <style>
       html,
-      body,
-      #root {
+      body {
         height: 100%;
-        min-height: 100%;
+        margin: 0;
+        overflow: hidden;
+        overscroll-behavior: none;
         /* surface.canvas light — overwritten by Chakra once hydrated */
         background-color: #faf9fc;
       }
@@ -36,13 +37,13 @@
         }
       }
 
-      body {
-        margin: 0;
-      }
-
+      /* Fixed root stops iOS from focus-scrolling the layout viewport. */
       #root {
-        /* visualViewport-driven; fallback 100dvh */
-        min-height: var(--app-height, 100dvh);
+        position: fixed;
+        inset: 0;
+        overflow: hidden;
+        height: var(--app-height, 100dvh);
+        background-color: #faf9fc;
       }
     </style>
   </head>

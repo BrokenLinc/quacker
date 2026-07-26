@@ -11,7 +11,7 @@ import { useAuthState } from '@@lib/supabase/auth';
 import { useVisualViewportHeight } from '@@lib/pwa/useVisualViewportHeight';
 import { routes } from '@@routing/routes';
 
-import { NewGroupButton } from './NewGroupModal';
+import { NewGroupIconButton } from './NewGroupModal';
 import { UserMenu } from './UserMenu';
 
 /**
@@ -40,6 +40,9 @@ export const AppLayout: React.FC = () => {
         maxH="var(--app-height, 100dvh)"
         overflow="hidden"
         bg="surface.canvas"
+        style={{
+          transform: 'translateY(var(--app-offset-top, 0px))',
+        }}
       >
         {isMobile && !isGroupRoute ? <MobileHeader /> : null}
         <UI.Flex flex={1} minH={0}>
@@ -111,17 +114,21 @@ const Sidebar: React.FC = () => {
       pt="env(safe-area-inset-top, 0px)"
       pb="env(safe-area-inset-bottom, 0px)"
     >
-      <UI.HStack px={4} py={3}>
+      <UI.HStack px={4} py={3} spacing={1}>
         <BrandLink mr="auto" />
-        {user ? null : <HeaderSignIn />}
+        {user ? <NewGroupIconButton /> : <HeaderSignIn />}
       </UI.HStack>
 
       {user ? (
         <React.Fragment>
-          <UI.Box px={3} pb={2}>
-            <NewGroupButton w="full" variant="outline" colorScheme="gray" />
-          </UI.Box>
-          <UI.Box flex={1} minH={0} overflowY="auto" px={3} py={1}>
+          <UI.Box
+            flex={1}
+            minH={0}
+            overflowY="auto"
+            overscrollBehavior="contain"
+            px={3}
+            py={1}
+          >
             <SidebarGroupNav />
           </UI.Box>
           <UI.HStack
