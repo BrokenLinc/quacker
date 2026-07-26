@@ -1,5 +1,5 @@
 # Group chat layout with iOS virtual keyboard open + dismissed.
-# Asserts the composer stays above the keyboard and chrome restores after blur.
+# Captures screenshots (closed + open) and asserts chrome/composer stay correct.
 #
 #   yarn test:maestro:keyboard
 #
@@ -25,21 +25,30 @@ appId: com.apple.mobilesafari
 - assertVisible: "Keyboard Lab options"
 - assertVisible: "Say something!"
 - assertVisible: "Send"
+- assertNotVisible: "return"
+# Settle then capture keyboard-closed baseline (no soft keyboard keys).
+- waitForAnimationToEnd
+- takeScreenshot: artifacts/maestro-keyboard-closed
 - tapOn: "Say something!"
 # Soft keyboard is up (iOS exposes letter keys + return; space may be unlabeled).
 - extendedWaitUntil:
     visible: "return"
     timeout: 10000
+- waitForAnimationToEnd
+# Composer must remain usable above the keyboard — no covered Send / missing title.
 - assertVisible: "Send"
 - assertVisible: "Say something!"
 - assertVisible: "Keyboard Lab options"
+- takeScreenshot: artifacts/maestro-keyboard-open
 # Dismiss via the keyboard accessory Done control.
 - tapOn: "Done"
 - extendedWaitUntil:
     notVisible: "return"
     timeout: 10000
+- waitForAnimationToEnd
 # Layout restored: chrome + composer still on screen, keyboard gone.
 - assertVisible: "Keyboard Lab options"
 - assertVisible: "Say something!"
 - assertVisible: "Send"
 - assertNotVisible: "return"
+- takeScreenshot: artifacts/maestro-keyboard-closed-after

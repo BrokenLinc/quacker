@@ -104,7 +104,9 @@ chrome, keyboard-safe chat, and touch-first overlays — not a shrunk desktop pa
   focus-scroll the layout viewport.
 - The app frame tracks the **visible** viewport via CSS vars from
   `visualViewport`: `--app-height` (scale-corrected height) and
-  `--app-offset-top` (iOS keyboard scroll offset). Fallback `100dvh`.
+  `--app-offset-top` (iOS keyboard scroll offset) applied as `#root` `top`.
+  Fallback `100dvh`. Do **not** size `#root` with `inset: 0` / `bottom: 0`
+  or it fills the layout viewport and leaves a blank gap above the keyboard.
 - The composer must stay **above the keyboard**. On focus / viewport resize,
   scroll the focused input inside the nearest overflow scrollport — never
   the document.

@@ -32,10 +32,12 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
 
 ## Native / PWA
 
-- **Viewport:** `#root` is `position: fixed`; shell height from
-  `visualViewport` (`--app-height`, `--app-offset-top`); fallback `100dvh`.
-  Composer stays above the keyboard; focus scrolls inside the nearest
-  overflow scrollport only (never the document)
+- **Viewport:** `#root` is `position: fixed` with `top: var(--app-offset-top)`
+  and `height: var(--app-height)` from `visualViewport` (fallback `100dvh`).
+  Do not use `inset: 0` / `bottom: 0` on `#root` — that fills the layout
+  viewport and leaves a blank canvas gap above the keyboard. Composer stays
+  above the keyboard; focus scrolls inside the nearest overflow scrollport
+  only (never the document)
 - **Edges:** paint `html`/`body`/`#root` with `surface.canvas`; pad chrome with
   `env(safe-area-inset-*)` (no body+shell double-subtract). `theme-color` +
   manifest colors track canvas (incl. in-app color-mode sync);

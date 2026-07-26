@@ -93,9 +93,14 @@ export const theme = extendTheme({
       '#root': {
         bg: 'surface.canvas',
         position: 'fixed',
-        inset: 0,
-        overflow: 'hidden',
+        top: 'var(--app-offset-top, 0px)',
+        left: 0,
+        right: 0,
+        width: '100%',
+        // Height-only sizing — do not use inset/bottom:0 or the root fills the
+        // layout viewport under the keyboard and leaves a blank canvas gap.
         height: 'var(--app-height, 100dvh)',
+        overflow: 'hidden',
       },
     },
   },

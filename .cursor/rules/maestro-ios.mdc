@@ -8,7 +8,7 @@ alwaysApply: false
 
 - Install: `brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro` (+ Java 17)
 - Run: `yarn test:maestro` (wrapper sets JDK PATH + probes LAN `APP_URL`). Vite must use `--host 0.0.0.0`
-- Keyboard layout: `yarn test:maestro:keyboard` opens a group chat, focuses the composer, asserts Send stays visible, then dismisses the keyboard
+- Keyboard layout: `yarn test:maestro:keyboard` opens a group chat, screenshots keyboard closed/open/restored, asserts Send stays visible
 - Overrides: `APP_URL=http://…` or `MAESTRO_PORT=5173`
 - Do **not** use `clearState` on `com.apple.mobilesafari` — system apps cannot be uninstalled
 - Chakra PinInput: one `inputText` per digit; account chrome is `Account menu`

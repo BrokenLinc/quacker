@@ -108,7 +108,7 @@ supabase functions serve auth-send-otp auth-verify-otp \
 # Vite must bind LAN so the simulator can reach the host (not 127.0.0.1):
 yarn dev -- --host 0.0.0.0 --port 5174
 yarn test:maestro          # Safari login
-yarn test:maestro:keyboard # group chat keyboard open/close layout
+yarn test:maestro:keyboard # group chat keyboard open/close + screenshots
 yarn test:maestro:pwa      # optional Add to Home Screen (flaky on iOS 26)
 ```
 
