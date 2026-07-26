@@ -1,8 +1,7 @@
-# Install Hork as a PWA from MobileSafari, then confirm the standalone app.
-# Flakier than ios-safari-login.yaml (Share sheet / Add dialog a11y vary by iOS).
-# Prefer a contained share-sheet swipe over "View More" (hit target flaky on iOS 26).
+# Standalone PWA group-chat keyboard — light then dark in one run (install once).
+# Screenshots: artifacts/maestro-pwa-keyboard-{,dark-}{closed,open,closed-after}
 #
-#   yarn test:maestro:pwa
+#   yarn test:maestro:pwa:keyboard
 #
 appId: com.apple.mobilesafari
 ---
@@ -28,6 +27,7 @@ appId: com.apple.mobilesafari
     visible: "Copy"
     timeout: 10000
 - waitForAnimationToEnd
+# Expand actions without relying on flaky "View More" hit targets.
 - swipe:
     start: 50%, 88%
     end: 50%, 45%
@@ -37,7 +37,8 @@ appId: com.apple.mobilesafari
     timeout: 15000
 - tapOn: "Add to Home Screen"
 - waitForAnimationToEnd
-# Name field autofocuses; a11y often omits the top-right Add — tap by position.
+# iOS 26 Add-to-Home dialog: name field focuses keyboard; a11y tree often omits Add.
+# Tap Add by position — below status bar, top-right of the sheet (not 7% — that hits the status bar).
 - tapOn:
     point: "92%,12%"
 - waitForAnimationToEnd
@@ -66,3 +67,28 @@ appId: com.apple.mobilesafari
       visible: "Sign in to Hork"
     file: ios-safari-login-steps.yaml
 - assertVisible: "Your groups"
+- tapOn: "New group"
+- extendedWaitUntil:
+    visible: "Group name"
+    timeout: 10000
+- tapOn: "WWDC hallway chat"
+- eraseText
+- inputText: "PWA Keyboard Lab"
+- tapOn: "Create group"
+- extendedWaitUntil:
+    visible: "Say hi — this is the start of PWA Keyboard Lab"
+    timeout: 20000
+- assertVisible: "PWA Keyboard Lab options"
+- runFlow:
+    file: ios-ensure-light-mode.yaml
+- runFlow:
+    file: ios-keyboard-shots.yaml
+    env:
+      SHOT_PREFIX: maestro-pwa-keyboard
+- runFlow:
+    file: ios-ensure-dark-mode.yaml
+- assertVisible: "PWA Keyboard Lab options"
+- runFlow:
+    file: ios-keyboard-shots.yaml
+    env:
+      SHOT_PREFIX: maestro-pwa-keyboard-dark

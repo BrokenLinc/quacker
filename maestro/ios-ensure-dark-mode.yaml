@@ -1,0 +1,9 @@
+appId: com.apple.mobilesafari
+---
+# Switch to dark via Account menu (assumes currently light).
+- tapOn: "Account menu"
+- extendedWaitUntil:
+    visible: "Dark mode"
+    timeout: 10000
+- tapOn: "Dark mode"
+- waitForAnimationToEnd

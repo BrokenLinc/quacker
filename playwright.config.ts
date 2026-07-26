@@ -25,7 +25,7 @@ export default defineConfig({
   projects: [
     {
       name: 'smoke',
-      testMatch: /(a11y-home|auth-flow|smoke-production)\.spec\.ts/,
+      testMatch: /(a11y-home|auth-flow|smoke-production|theme-modes)\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         ...(browserChannel ? { channel: browserChannel } : {}),

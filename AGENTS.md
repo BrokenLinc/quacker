@@ -14,7 +14,8 @@ This repository is **agent-operated**. The user sets vision; you execute everyth
 | ------- | ------- |
 | `yarn check:requirements` | Verify CLIs, `.env.local`, and list MCP plugin expectations |
 | `yarn test:maestro` | MobileSafari login on iOS Simulator (needs Maestro + LAN Vite) |
-| `yarn test:maestro:keyboard` | Group chat composer vs iOS keyboard open/close |
+| `yarn test:maestro:keyboard` | Group chat keyboard open/close — light + dark screenshots (Safari) |
+| `yarn test:maestro:pwa:keyboard` | Same keyboard shots in standalone PWA (install once; flakier) |
 | `yarn test:maestro:pwa` | Add to Home Screen + login (flakier; optional) |
 | `yarn bootstrap` | Install deps, scaffold `.env.local`, start local Supabase |
 | `yarn dev` | Vite dev server |
@@ -107,9 +108,10 @@ supabase functions serve auth-send-otp auth-verify-otp \
 ```bash
 # Vite must bind LAN so the simulator can reach the host (not 127.0.0.1):
 yarn dev -- --host 0.0.0.0 --port 5174
-yarn test:maestro          # Safari login
-yarn test:maestro:keyboard # group chat keyboard open/close + screenshots
-yarn test:maestro:pwa      # optional Add to Home Screen (flaky on iOS 26)
+yarn test:maestro               # Safari login
+yarn test:maestro:keyboard      # Safari keyboard open/close — light + dark screenshots
+yarn test:maestro:pwa:keyboard  # standalone PWA keyboard — light + dark (install once)
+yarn test:maestro:pwa           # optional Add to Home Screen (flaky on iOS 26)
 ```
 
 `scripts/test-maestro.sh` puts Homebrew OpenJDK on `PATH` and probes `en0`/`en1` for a live Vite port (`5174`, `5173`, `4173`). Override with `APP_URL=…` or `MAESTRO_PORT=5173` if needed.
@@ -120,3 +122,5 @@ Notes from live runs: do not use `clearState` on Safari (system app); Chakra Pin
 
 ### Running e2e
 `yarn test:e2e` uses the installed Google **Chrome** (`channel: 'chrome'`), not bundled Chromium. Start a preview server first (`yarn preview --host 127.0.0.1 --port 4173`) and run with `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173`; `yarn verify` wires this up automatically.
+
+**Color modes (efficiency):** `a11y-home` seeds `chakra-ui-color-mode` and runs axe + canvas/`theme-color` checks for **light and dark** (no auth — included in verify smoke). `theme-modes` covers the authenticated sidebar toggle (needs Supabase, full e2e). Do not duplicate messaging/auth suites per mode. Assert `html[data-theme]`, not `chakra-ui-*` classes.

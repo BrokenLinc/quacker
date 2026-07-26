@@ -124,6 +124,8 @@ chrome, keyboard-safe chat, and touch-first overlays — not a shrunk desktop pa
   from both body padding and shell height.
 - `theme-color`, manifest `theme_color`, and `background_color` track canvas
   (light + dark). Sync `theme-color` when the in-app color mode changes.
+  Tests: Playwright `a11y-home` (both modes via localStorage) + `theme-modes`
+  (sidebar toggle); Maestro keyboard flows screenshot light then dark in one run.
 - With edge-to-edge painting, use `apple-mobile-web-app-status-bar-style` =
   `black-translucent`.
 
