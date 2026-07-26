@@ -93,9 +93,8 @@ export const theme = extendTheme({
       '#root': {
         bg: 'surface.canvas',
         position: 'fixed',
-        top: 'var(--app-offset-top, 0px)',
+        top: 0,
         left: 0,
-        right: 0,
         width: '100%',
         // Height-only sizing — do not use inset/bottom:0 or the root fills the
         // layout viewport under the keyboard and leaves a blank canvas gap.

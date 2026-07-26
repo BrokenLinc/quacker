@@ -1,6 +1,5 @@
 import { useChirpOnNewMessages } from '@@lib/notifications/chirp';
 import { getShareUrl } from '@@lib/share';
-import { scrollFocusedIntoView } from '@@lib/pwa/useVisualViewportHeight';
 import {
   Group,
   Message,
@@ -787,7 +786,7 @@ const GroupChat: React.FC<{
         flexShrink={0}
         px={4}
         pt={3}
-          pb="calc(0.75rem + env(safe-area-inset-bottom, 0px))"
+        pb="calc(0.75rem + env(safe-area-inset-bottom, 0px))"
         borderTop="1px solid"
         borderColor="border.subtle"
         bg="surface.raised"
@@ -954,23 +953,6 @@ const Composer: React.FC<{ onSend: (text: string) => Promise<void> }> = ({
   const [text, setText] = React.useState('');
   const toast = UI.useToast();
   const canSend = !!text.trim();
-  const hostRef = React.useRef<HTMLDivElement>(null);
-
-  React.useEffect(() => {
-    const vv = window.visualViewport;
-    if (!vv) return;
-
-    const onViewportChange = () => {
-      const active = document.activeElement;
-      if (!hostRef.current || !active || !hostRef.current.contains(active)) {
-        return;
-      }
-      scrollFocusedIntoView();
-    };
-
-    vv.addEventListener('resize', onViewportChange);
-    return () => vv.removeEventListener('resize', onViewportChange);
-  }, []);
 
   const handleSend = async () => {
     if (!canSend) return;
@@ -990,13 +972,7 @@ const Composer: React.FC<{ onSend: (text: string) => Promise<void> }> = ({
   };
 
   return (
-    <UI.Box
-      ref={hostRef}
-      position="relative"
-      onFocusCapture={() => {
-        scrollFocusedIntoView();
-      }}
-    >
+    <UI.Box position="relative">
       <UI.RichTextEditor
         value={text}
         onChange={setText}
