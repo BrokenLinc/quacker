@@ -14,6 +14,7 @@ This repository is **agent-operated**. The user sets vision; you execute everyth
 | ------- | ------- |
 | `yarn check:requirements` | Verify CLIs, `.env.local`, and list MCP plugin expectations |
 | `yarn test:maestro` | MobileSafari login on iOS Simulator (needs Maestro + LAN Vite) |
+| `yarn test:maestro:keyboard` | Group chat composer vs iOS keyboard open/close |
 | `yarn test:maestro:pwa` | Add to Home Screen + login (flakier; optional) |
 | `yarn bootstrap` | Install deps, scaffold `.env.local`, start local Supabase |
 | `yarn dev` | Vite dev server |
@@ -107,6 +108,7 @@ supabase functions serve auth-send-otp auth-verify-otp \
 # Vite must bind LAN so the simulator can reach the host (not 127.0.0.1):
 yarn dev -- --host 0.0.0.0 --port 5174
 yarn test:maestro          # Safari login
+yarn test:maestro:keyboard # group chat keyboard open/close layout
 yarn test:maestro:pwa      # optional Add to Home Screen (flaky on iOS 26)
 ```
 
