@@ -5,9 +5,15 @@ appId: com.apple.mobilesafari
 - eraseText
 - inputText: "2025550100"
 - tapOn: "Text me a code"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Text me a code"
+    commands:
+      - tapOn: "Text me a code"
 - extendedWaitUntil:
     visible: "Verification code"
-    timeout: 15000
+    timeout: 20000
 - tapOn:
     text: "Please enter your pin code"
     index: 0

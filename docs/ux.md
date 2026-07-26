@@ -99,21 +99,37 @@ chrome, keyboard-safe chat, and touch-first overlays — not a shrunk desktop pa
 
 ### Viewport and keyboard
 
-- Lock document scroll: `html`/`body` `overflow: hidden`; `#root` is
-  `position: fixed; top: 0; height: var(--app-height)` so iOS cannot
-  focus-scroll the layout viewport.
-- The app frame tracks the **visible** viewport via a single CSS var:
-  `--app-height` = `visualViewport.height` (fallback `100dvh`). No offset
-  var, no `translateY`, no scale correction — the shell is sized, not shifted.
-  Do **not** size `#root` with `inset: 0` / `bottom: 0` or it fills the layout
-  viewport and leaves a blank gap above the keyboard.
-- The composer stays **above the keyboard** because the fixed shell shrinks to
-  `--app-height` and the composer is flex-pinned to its bottom.
-- iOS still pans the layout viewport on focus. Cancel it: on every
-  `visualViewport` `resize`/`scroll` and on `focusout`, `window.scrollTo(0, 0)`
-  then re-apply `--app-height`. Do not scroll the document to reveal inputs.
+Implementation: `index.html` (geometry + `html.standalone`),
+`src/lib/pwa/canvasColors.ts`, `useVisualViewportHeight.ts`.
+
+- Lock document scroll: `html`/`body` `overflow: hidden`. App shell is
+  `position: absolute; inset: 0` inside `#root`.
+- **Keyboard closed / browser:** `#root` is `position: fixed; inset: 0`.
+- **Keyboard closed / iOS standalone:** WebKit’s lying viewport
+  ([bug 254868](https://bugs.webkit.org/show_bug.cgi?id=254868)) makes
+  `bottom: 0`, `dvh`, and `-webkit-fill-available` short of the home indicator
+  (`innerHeight` ≈ 812 on a 874 screen → canvas gap on **every** page). Use
+  classic `100vh` on `#root` (`html.standalone` from an early script). Composer
+  pad once: `0.75rem + env(safe-area-inset-bottom)` via `--app-composer-pb`.
+- **Keyboard open:** only when VV shrinks **and** an editable is focused. JS
+  sets `#root` `top`/`height` from `visualViewport`; `--app-composer-pb: 0`.
+- On VV `resize`/`scroll` + focus change, `scrollTo(0,0)` then re-apply.
+  Do not document-scroll to inputs.
 - Prefer `interactive-widget=resizes-content` in the viewport meta where
   supported (Chrome). Safari ignores it; the VV + fixed-root path covers iOS.
+
+#### Anti-patterns (failed approaches — do not reintroduce)
+
+| Tempting fix | Why it fails |
+| --- | --- |
+| Size closed `#root` from `visualViewport` / `innerHeight` | Lying viewport is already short; shell stops above the HI |
+| `bottom: 0` + `height: -webkit-fill-available` / `100dvh` on standalone `#root` | Same lying height; over-constrained height wins over `bottom` |
+| Drop composer `safe-area-inset-bottom` to “fix double pad” | Outer gap is the short shell, not double inset; content then sits under the HI once `100vh` is correct |
+| Treat VV shrink alone as keyboard-open | Standalone often has a large VV delta with no keyboard |
+| Trust screenshot captions / vision descriptions of the bottom gap | Sample pixels (`surface.raised` vs `surface.canvas` at bottom center) |
+| Change JS only and retest PWA without wiping webclip Storage | Installed PWAs cache `index.html`; wipe Storage or reinstall |
+
+**Symptom check:** `screen.height - innerHeight ≈ 60` and `#root.getBoundingClientRect().height === innerHeight` while a canvas strip sits under chrome → missing `html.standalone` / still on `bottom: 0`. After the fix, raised chrome (composer) samples to the physical bottom; safe-area is **inside** that raised fill.
 
 ### Safe areas and system chrome blending
 
@@ -124,6 +140,8 @@ chrome, keyboard-safe chat, and touch-first overlays — not a shrunk desktop pa
   from both body padding and shell height.
 - `theme-color`, manifest `theme_color`, and `background_color` track canvas
   (light + dark). Sync `theme-color` when the in-app color mode changes.
+  Tests: Playwright `a11y-home` (both modes via localStorage) + `theme-modes`
+  (sidebar toggle); Maestro keyboard flows screenshot light then dark in one run.
 - With edge-to-edge painting, use `apple-mobile-web-app-status-bar-style` =
   `black-translucent`.
 

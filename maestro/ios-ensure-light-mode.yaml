@@ -1,0 +1,23 @@
+appId: com.apple.mobilesafari
+---
+# Force light via Account menu (mobile color-mode row), then leave menu closed.
+- tapOn: "Account menu"
+- extendedWaitUntil:
+    visible: ".*Dark mode|Light mode.*"
+    timeout: 10000
+- runFlow:
+    when:
+      visible: "Light mode"
+    commands:
+      - tapOn: "Light mode"
+      - waitForAnimationToEnd
+      - tapOn: "Account menu"
+      - extendedWaitUntil:
+          visible: "Dark mode"
+          timeout: 10000
+- runFlow:
+    when:
+      visible: "Dark mode"
+    commands:
+      - tapOn: "Close"
+- waitForAnimationToEnd

@@ -1,0 +1,26 @@
+appId: com.apple.mobilesafari
+---
+# Keyboard closed → open → closed screenshots + layout asserts.
+# Env: SHOT_PREFIX (e.g. maestro-keyboard or maestro-keyboard-dark)
+- assertVisible: "Say something!"
+- assertVisible: "Send"
+- assertNotVisible: "return"
+- waitForAnimationToEnd
+- takeScreenshot: artifacts/${SHOT_PREFIX}-closed
+- tapOn: "Say something!"
+- extendedWaitUntil:
+    visible: "return"
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible: "Send"
+- assertVisible: "Say something!"
+- takeScreenshot: artifacts/${SHOT_PREFIX}-open
+- tapOn: "Done"
+- extendedWaitUntil:
+    notVisible: "return"
+    timeout: 10000
+- waitForAnimationToEnd
+- assertVisible: "Say something!"
+- assertVisible: "Send"
+- assertNotVisible: "return"
+- takeScreenshot: artifacts/${SHOT_PREFIX}-closed-after

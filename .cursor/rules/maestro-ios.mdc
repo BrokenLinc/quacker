@@ -8,9 +8,15 @@ alwaysApply: false
 
 - Install: `brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro` (+ Java 17)
 - Run: `yarn test:maestro` (wrapper sets JDK PATH + probes LAN `APP_URL`). Vite must use `--host 0.0.0.0`
-- Keyboard layout: `yarn test:maestro:keyboard` opens a group chat, screenshots keyboard closed/open/restored, asserts Send stays visible
+- Keyboard layout (Safari): `yarn test:maestro:keyboard` — one run covers **light then dark** (toggle via Account menu); screenshots `maestro-keyboard-{,dark-}{closed,open,closed-after}`
+- Keyboard layout (PWA): `yarn test:maestro:pwa:keyboard` — install once, then same light+dark shots (`maestro-pwa-keyboard-*`)
+- Shared steps: `ios-keyboard-shots.yaml` (`SHOT_PREFIX`), `ios-ensure-light-mode.yaml`, `ios-ensure-dark-mode.yaml`
 - Overrides: `APP_URL=http://…` or `MAESTRO_PORT=5173`
 - Do **not** use `clearState` on `com.apple.mobilesafari` — system apps cannot be uninstalled
 - Chakra PinInput: one `inputText` per digit; account chrome is `Account menu`
-- `ios-pwa-install-login.yaml` is best-effort — iOS Share sheet / View More is flaky; prefer Safari login flow
+- PWA install (iOS 26): expand share sheet with a contained swipe (`50%,88%→50%,45%`), not `View More`; Add dialog autofocuses the name field and often omits `Add` from a11y — tap `point: "92%,12%"`. Leave **Open as Web App** on. Icon may land on home page 2 (swipe left). Stale LAN web clips can paint blank after a bad Vite build — reinstall from a healthy `APP_URL`
+- Screenshots: `takeScreenshot: artifacts/…` lands under `~/.maestro/tests/<run>/<flow>/takeScreenshot/artifacts/` (repo `artifacts/` is gitignored). Always copy from the newest run dir by mtime — do not assume a prior copy is current
+- Local Safari over a LAN IP shows a collapsed address pill (`192.168.x.x`) that can sit in the keyboard band; that is Safari chrome, not app padding. Prefer judging flushness on standalone PWA shots
 - Test OTP: `555-01XX` + `555555` with `AUTH_ALLOW_TEST_OTP` (local `supabase/functions/.env` or **quacker-dev** only — never prod)
+- Viewport contract + anti-patterns: `docs/ux.md`. Wipe webclip Storage after `index.html` changes. Judge PWA bottom gap with pixels (raised fill to y=bottom), not vision captions
+- Account sheet: appearance → Change name → Log out → groups → New group

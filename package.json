@@ -14,6 +14,7 @@
     "test:maestro": "scripts/test-maestro.sh maestro/ios-safari-login.yaml",
     "test:maestro:pwa": "scripts/test-maestro.sh maestro/ios-pwa-install-login.yaml",
     "test:maestro:keyboard": "scripts/test-maestro.sh maestro/ios-group-keyboard.yaml",
+    "test:maestro:pwa:keyboard": "scripts/test-maestro.sh maestro/ios-pwa-group-keyboard.yaml",
     "bootstrap": "scripts/bootstrap.sh",
     "check:requirements": "scripts/check-requirements.sh",
     "verify": "scripts/verify.sh",

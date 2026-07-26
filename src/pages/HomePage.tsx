@@ -22,7 +22,13 @@ const HomePage: React.FC = () => {
         overflowY="auto"
         overscrollBehavior="contain"
       >
-        <UI.Box maxW="560px" mx="auto" p={4}>
+        <UI.Box
+          maxW="560px"
+          mx="auto"
+          px={4}
+          pt={4}
+          pb="calc(1rem + env(safe-area-inset-bottom, 0px))"
+        >
           <UI.HStack mb={4}>
             <UI.Heading size="md" mr="auto">
               Your groups

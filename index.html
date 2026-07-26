@@ -18,15 +18,44 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
     <meta name="apple-mobile-web-app-title" content="Hork" />
     <title>Hork</title>
+    <script>
+      /* iOS home-screen web apps: classic 100vh includes the home-indicator band;
+         bottom:0 / dvh / -webkit-fill-available use the lying viewport (WebKit 254868). */
+      (function () {
+        var standalone =
+          (window.navigator && window.navigator.standalone === true) ||
+          (window.matchMedia &&
+            window.matchMedia('(display-mode: standalone)').matches);
+        if (standalone) document.documentElement.classList.add('standalone');
+      })();
+    </script>
     <style>
+      html {
+        height: 100%;
+      }
+
+      html.standalone {
+        /* Classic vh — not svh/dvh — fills under the home indicator in standalone */
+        height: 100vh;
+      }
+
       html,
       body {
-        height: 100%;
         margin: 0;
         overflow: hidden;
         overscroll-behavior: none;
         /* surface.canvas light — overwritten by Chakra once hydrated */
         background-color: #faf9fc;
+      }
+
+      body {
+        min-height: 100%;
+      }
+
+      html.standalone,
+      html.standalone body {
+        min-height: 100vh;
+        height: 100vh;
       }
 
       @media (prefers-color-scheme: dark) {
@@ -37,17 +66,22 @@
         }
       }
 
-      /* Fixed root stops iOS from focus-scrolling the layout viewport.
-         Height tracks the visible viewport (--app-height) so no translate
-         offset is needed when the keyboard opens. */
+      /* Browser: inset stretch. Standalone: height 100vh (see html.standalone). */
       #root {
         position: fixed;
         top: 0;
         left: 0;
+        right: 0;
+        bottom: 0;
         width: 100%;
-        height: var(--app-height, 100dvh);
         overflow: hidden;
         background-color: #faf9fc;
+      }
+
+      html.standalone #root {
+        /* bottom:0 is capped to the lying viewport; 100vh is not (WebKit 254868) */
+        bottom: auto;
+        height: 100vh;
       }
     </style>
   </head>

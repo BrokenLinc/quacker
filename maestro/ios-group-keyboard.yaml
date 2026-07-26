@@ -1,5 +1,5 @@
-# Group chat layout with iOS virtual keyboard open + dismissed.
-# Captures screenshots (closed + open) and asserts chrome/composer stay correct.
+# Group chat layout with iOS virtual keyboard — light then dark in one run.
+# Screenshots: artifacts/maestro-keyboard-{,dark-}{closed,open,closed-after}
 #
 #   yarn test:maestro:keyboard
 #
@@ -18,37 +18,20 @@ appId: com.apple.mobilesafari
 - eraseText
 - inputText: "Keyboard Lab"
 - tapOn: "Create group"
-# Title button is exposed as "{name} options"; empty-state copy also includes the name.
 - extendedWaitUntil:
     visible: "Say hi — this is the start of Keyboard Lab"
     timeout: 20000
 - assertVisible: "Keyboard Lab options"
-- assertVisible: "Say something!"
-- assertVisible: "Send"
-- assertNotVisible: "return"
-# Settle then capture keyboard-closed baseline (no soft keyboard keys).
-- waitForAnimationToEnd
-- takeScreenshot: artifacts/maestro-keyboard-closed
-- tapOn: "Say something!"
-# Soft keyboard is up (iOS exposes letter keys + return; space may be unlabeled).
-- extendedWaitUntil:
-    visible: "return"
-    timeout: 10000
-- waitForAnimationToEnd
-# Composer must remain usable above the keyboard — no covered Send / missing title.
-- assertVisible: "Send"
-- assertVisible: "Say something!"
+- runFlow:
+    file: ios-ensure-light-mode.yaml
+- runFlow:
+    file: ios-keyboard-shots.yaml
+    env:
+      SHOT_PREFIX: maestro-keyboard
+- runFlow:
+    file: ios-ensure-dark-mode.yaml
 - assertVisible: "Keyboard Lab options"
-- takeScreenshot: artifacts/maestro-keyboard-open
-# Dismiss via the keyboard accessory Done control.
-- tapOn: "Done"
-- extendedWaitUntil:
-    notVisible: "return"
-    timeout: 10000
-- waitForAnimationToEnd
-# Layout restored: chrome + composer still on screen, keyboard gone.
-- assertVisible: "Keyboard Lab options"
-- assertVisible: "Say something!"
-- assertVisible: "Send"
-- assertNotVisible: "return"
-- takeScreenshot: artifacts/maestro-keyboard-closed-after
+- runFlow:
+    file: ios-keyboard-shots.yaml
+    env:
+      SHOT_PREFIX: maestro-keyboard-dark

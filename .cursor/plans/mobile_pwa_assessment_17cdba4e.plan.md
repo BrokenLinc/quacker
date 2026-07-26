@@ -23,6 +23,12 @@ todos:
 isProject: false
 ---
 
+> **Viewport follow-up:** shell geometry settled in [`docs/ux.md`](../../docs/ux.md)
+> (standalone `100vh` / WebKit 254868). Do not re-apply a closed-keyboard
+> `100dvh` / always-on VV shell from the gaps section without reading that
+> anti-patterns table.
+
+
 # Mobile / PWA compatibility assessment
 
 ## Verdict

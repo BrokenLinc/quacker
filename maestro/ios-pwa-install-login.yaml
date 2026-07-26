@@ -1,6 +1,6 @@
 # Install Hork as a PWA from MobileSafari, then confirm the standalone app.
-# Flakier than ios-safari-login.yaml (Share sheet layout varies by iOS).
-# Do not swipe the share sheet — UP gestures can open the tab switcher.
+# Flakier than ios-safari-login.yaml (Share sheet / Add dialog a11y vary by iOS).
+# Prefer a contained share-sheet swipe over "View More" (hit target flaky on iOS 26).
 #
 #   yarn test:maestro:pwa
 #
@@ -27,27 +27,40 @@ appId: com.apple.mobilesafari
 - extendedWaitUntil:
     visible: "Copy"
     timeout: 10000
-- runFlow:
-    when:
-      visible: "View More"
-    commands:
-      - tapOn: "View More"
+- waitForAnimationToEnd
+- swipe:
+    start: 50%, 88%
+    end: 50%, 45%
+- waitForAnimationToEnd
 - extendedWaitUntil:
     visible: "Add to Home Screen"
-    timeout: 10000
+    timeout: 15000
 - tapOn: "Add to Home Screen"
-- extendedWaitUntil:
-    visible: "Add"
-    timeout: 10000
-- tapOn: "Add"
+- waitForAnimationToEnd
+# Name field autofocuses; a11y often omits the top-right Add — tap by position.
+- tapOn:
+    point: "92%,12%"
+- waitForAnimationToEnd
 - pressKey: Home
+- runFlow:
+    when:
+      notVisible: "Hork"
+    commands:
+      - swipe:
+          direction: LEFT
+- runFlow:
+    when:
+      notVisible: "Hork"
+    commands:
+      - swipe:
+          direction: LEFT
 - extendedWaitUntil:
     visible: "Hork"
-    timeout: 15000
+    timeout: 20000
 - tapOn: "Hork"
 - extendedWaitUntil:
     visible: ".*Sign in to Hork|Your groups.*"
-    timeout: 20000
+    timeout: 45000
 - runFlow:
     when:
       visible: "Sign in to Hork"

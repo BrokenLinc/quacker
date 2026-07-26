@@ -786,7 +786,7 @@ const GroupChat: React.FC<{
         flexShrink={0}
         px={4}
         pt={3}
-        pb="calc(0.75rem + env(safe-area-inset-bottom, 0px))"
+        pb="var(--app-composer-pb, calc(0.75rem + env(safe-area-inset-bottom, 0px)))"
         borderTop="1px solid"
         borderColor="border.subtle"
         bg="surface.raised"
