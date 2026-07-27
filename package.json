@@ -25,7 +25,8 @@
     "verify": "scripts/verify.sh",
     "verify:fast": "SKIP_E2E=1 scripts/verify.sh",
     "deploy": "scripts/deploy.sh",
-    "sync:vercel-env": "scripts/sync-vercel-env.sh"
+    "sync:vercel-env": "scripts/sync-vercel-env.sh",
+    "generate:pwa-assets": "scripts/generate-pwa-assets.sh"
   },
   "dependencies": {
     "@chakra-ui/react": "2.10.9",
