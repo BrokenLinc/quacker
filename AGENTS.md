@@ -27,6 +27,7 @@ This repository is **agent-operated**. The user sets vision; you execute everyth
 | `yarn verify` | lint + build + unit + smoke e2e locally (~seconds); full e2e in CI or with local Supabase |
 | `yarn verify:fast` | lint + build + unit only (skip e2e) |
 | `yarn deploy` | Push Supabase migrations + Vercel prod deploy |
+| `yarn generate:pwa-assets` | Regenerate icons, iOS splash (light/dark), favicon.ico, og-image (needs ImageMagick) |
 
 ## Environment
 

@@ -37,6 +37,7 @@ Docker is **not** required on your machine for this workflow.
 | CLI | GitHub CLI | Recommended | `gh auth status` | `brew install gh && gh auth login` |
 | CLI | Vercel CLI | Optional* | `vercel --version` | `npm i -g vercel` or use Vercel MCP |
 | CLI | Maestro CLI | Optional | `maestro --version` | `brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro` (+ Java 17+) — iOS Safari + Android Chrome/PWA |
+| CLI | ImageMagick | Optional | `magick -version` | `brew install imagemagick` — only for `yarn generate:pwa-assets` |
 | CLI | Android `adb` | Optional | `adb version` / `yarn check:android` | Android Studio / SDK platform-tools; Play Store AVD with Chrome |
 | Browser | Google Chrome | Recommended | Chrome in `/Applications` (macOS) | [google.com/chrome](https://www.google.com/chrome/) |
 | Runtime | Docker Desktop | **Optional** | `docker info` | Only for local `supabase start` — not needed with remote Supabase |

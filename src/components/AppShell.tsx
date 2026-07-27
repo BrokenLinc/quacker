@@ -1,5 +1,5 @@
 import * as UI from '@@ui';
-import { faMessage, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
+import { faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 import { Outlet, useMatch } from 'react-router-dom';
 
@@ -63,17 +63,11 @@ export const BrandLink: React.FC<Omit<UI.LinkProps, 'children'>> = (props) => (
     route={routes.home()}
     display="inline-flex"
     alignItems="center"
-    gap={2}
-    color="brand.500"
-    _dark={{ color: 'brand.300' }}
     textDecoration="none"
     _hover={{ textDecoration: 'none' }}
     {...props}
   >
-    <UI.Icon icon={faMessage} />
-    <UI.Text as="span" fontWeight="bold" fontSize="sm">
-      yowl
-    </UI.Text>
+    <UI.Image src="/yowl-logo.svg" alt="Yowl" h="22px" w="auto" />
   </UI.RouteLink>
 );
 

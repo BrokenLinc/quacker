@@ -144,6 +144,11 @@ Implementation: `index.html` (geometry + `html.standalone`),
   (sidebar toggle); Maestro keyboard flows screenshot light then dark in one run.
 - With edge-to-edge painting, use `apple-mobile-web-app-status-bar-style` =
   `black-translucent`.
+- **Icons / splash / share:** source art in `img-src/`; shipping assets under
+  `public/` (`icon.svg`, `icons/*.png`, `splash/*-{light,dark}.png`,
+  `favicon.ico`, `og-image.png`, `safari-pinned-tab.svg`). Regenerate with
+  `yarn generate:pwa-assets` (needs ImageMagick). iOS launch images are wired
+  via `apple-touch-startup-image` in `index.html`.
 
 ### Overlays
 
