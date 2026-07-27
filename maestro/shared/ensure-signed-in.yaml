@@ -1,0 +1,28 @@
+appId: ${APP_ID}
+---
+# Ensure signed in with test OTP. Logs out first if already on home.
+# Env: APP_ID (com.apple.mobilesafari | com.android.chrome)
+- runFlow:
+    when:
+      visible: "Close"
+    commands:
+      - tapOn: "Close"
+- runFlow:
+    when:
+      visible: "Dismiss install prompt"
+    commands:
+      - tapOn: "Dismiss install prompt"
+- extendedWaitUntil:
+    visible: ".*Sign in to Hork|Your groups.*"
+    timeout: 20000
+- runFlow:
+    when:
+      visible: "Your groups"
+    commands:
+      - tapOn: "Account menu"
+      - tapOn: "Log out"
+      - extendedWaitUntil:
+          visible: "Sign in to Hork"
+          timeout: 15000
+- runFlow:
+    file: login-steps.yaml

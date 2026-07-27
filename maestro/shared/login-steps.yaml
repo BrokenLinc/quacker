@@ -1,0 +1,35 @@
+appId: ${APP_ID}
+---
+# Shared sign-in steps (test OTP). Invoked from flows that may already be on the form.
+# Env: APP_ID (com.apple.mobilesafari | com.android.chrome)
+# Prefer label "Phone number" — Android Chrome WebView often omits input placeholders from a11y.
+- tapOn: "Phone number"
+- eraseText
+- inputText: "2025550100"
+- tapOn: "Text me a code"
+- waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Text me a code"
+    commands:
+      - tapOn: "Text me a code"
+- extendedWaitUntil:
+    visible: "Verification code"
+    timeout: 20000
+- tapOn:
+    text: "Please enter your pin code"
+    index: 0
+- inputText: "5"
+- inputText: "5"
+- inputText: "5"
+- inputText: "5"
+- inputText: "5"
+- inputText: "5"
+- runFlow:
+    when:
+      visible: "Verify"
+    commands:
+      - tapOn: "Verify"
+- extendedWaitUntil:
+    visible: "Your groups"
+    timeout: 20000

@@ -67,7 +67,32 @@ fi
 if have_cmd maestro; then
   ok "Maestro CLI $(maestro --version 2>/dev/null | head -1)"
 else
-  warn "Maestro CLI not found" "brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro — optional for iOS Safari/PWA flows (yarn test:maestro)"
+  warn "Maestro CLI not found" "brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro — optional for iOS Safari + Android Chrome/PWA flows (yarn test:maestro*)"
+fi
+
+# Android SDK adb (optional — Android Maestro / MCP)
+ADB_PATH=""
+for sdk_bin in \
+  "${ANDROID_HOME:+$ANDROID_HOME/platform-tools}" \
+  "${ANDROID_SDK_ROOT:+$ANDROID_SDK_ROOT/platform-tools}" \
+  "$HOME/Library/Android/sdk/platform-tools" \
+  "$HOME/Android/Sdk/platform-tools"
+do
+  if [[ -n "$sdk_bin" && -x "$sdk_bin/adb" ]]; then
+    ADB_PATH="$sdk_bin/adb"
+    export PATH="$sdk_bin:$PATH"
+    break
+  fi
+done
+if have_cmd adb || [[ -n "$ADB_PATH" ]]; then
+  ok "adb $(adb version 2>/dev/null | head -1)"
+  if adb devices 2>/dev/null | awk 'NR>1 && $2=="device" { found=1 } END { exit found?0:1 }'; then
+    ok "Android device/emulator online"
+  else
+    info "adb present but no emulator online — optional; yarn check:android / yarn test:maestro:android"
+  fi
+else
+  info "adb not found — optional for Android Maestro (Play Store AVD + platform-tools)"
 fi
 
 echo
@@ -149,6 +174,8 @@ echo
 echo "Cursor MCP plugins (agent: verify with GetMcpTools)"
 echo "  · Supabase: server plugin-supabase-supabase — apply_migration, generate_typescript_types, get_advisors"
 echo "  · Vercel:   server plugin-vercel-vercel — deploy, env, project ops (or fall back to vercel CLI + VERCEL_TOKEN)"
+echo "  · iOS Simulator: user-ios-simulator / ios-simulator — exploratory tap/screenshot (Maestro for automation)"
+echo "  · Android:   @moallemi/android-mcp-server (npx) — adb screenshot/tap (Maestro for automation)"
 echo "  · If serverStatus is needsAuth: call mcp_auth for that server, then retry"
 echo "  · Full list: docs/system-requirements.md"
 

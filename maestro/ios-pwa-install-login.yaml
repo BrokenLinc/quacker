@@ -4,7 +4,7 @@
 #
 #   yarn test:maestro:pwa
 #
-appId: com.apple.mobilesafari
+appId: ${APP_ID}
 ---
 - launchApp
 - openLink: ${APP_URL}
@@ -64,5 +64,5 @@ appId: com.apple.mobilesafari
 - runFlow:
     when:
       visible: "Sign in to Hork"
-    file: ios-safari-login-steps.yaml
+    file: shared/login-steps.yaml
 - assertVisible: "Your groups"

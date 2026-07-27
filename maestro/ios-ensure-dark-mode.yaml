@@ -1,18 +1,5 @@
-appId: com.apple.mobilesafari
+appId: ${APP_ID}
 ---
-# Switch to dark via Account menu (assumes currently light). Verify it stuck.
-- tapOn: "Account menu"
-- extendedWaitUntil:
-    visible: "Dark mode"
-    timeout: 10000
-- tapOn: "Dark mode"
-- extendedWaitUntil:
-    notVisible: "Account"
-    timeout: 10000
-- waitForAnimationToEnd
-- tapOn: "Account menu"
-- extendedWaitUntil:
-    visible: "Light mode"
-    timeout: 10000
-- tapOn: "Close"
-- waitForAnimationToEnd
+# Compatibility wrapper — prefer shared/ensure-dark-mode.yaml directly.
+- runFlow:
+    file: shared/ensure-dark-mode.yaml

@@ -1,0 +1,32 @@
+appId: ${APP_ID}
+---
+# Force light via Account menu (mobile color-mode row), then leave menu closed.
+# Env: APP_ID (com.apple.mobilesafari | com.android.chrome)
+# Dismiss: Close if present, else swipe-down (ActionSheet / QuickModal on Android PWA).
+- tapOn: "Account menu"
+- extendedWaitUntil:
+    visible: ".*Dark mode|Light mode.*"
+    timeout: 10000
+- runFlow:
+    when:
+      visible: "Light mode"
+    commands:
+      - tapOn: "Light mode"
+      - waitForAnimationToEnd
+      - tapOn: "Account menu"
+      - extendedWaitUntil:
+          visible: "Dark mode"
+          timeout: 10000
+- runFlow:
+    when:
+      visible: "Close"
+    commands:
+      - tapOn: "Close"
+- runFlow:
+    when:
+      visible: "Dark mode"
+    commands:
+      - swipe:
+          start: 50%, 35%
+          end: 50%, 95%
+- waitForAnimationToEnd

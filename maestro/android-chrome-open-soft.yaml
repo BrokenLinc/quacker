@@ -1,0 +1,13 @@
+appId: ${APP_ID}
+---
+# Soft open: launch Chrome without clearState (avoids crash loops after many clears).
+# Env: APP_URL, APP_ID
+- launchApp
+- runFlow:
+    file: android-chrome-dismiss-fre.yaml
+- openLink: ${APP_URL}
+- extendedWaitUntil:
+    visible: ".*Use without an account|Welcome to Chrome|Sign in to Hork|Your groups|Phone number|Install Hork.*"
+    timeout: 25000
+- runFlow:
+    file: android-chrome-dismiss-fre.yaml

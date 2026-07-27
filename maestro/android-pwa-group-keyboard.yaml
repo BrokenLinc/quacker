@@ -1,13 +1,16 @@
-# Standalone PWA group-chat keyboard — light then dark in one run.
-# Prefers an existing Home Screen icon; installs only if missing.
-# Screenshots: artifacts/maestro-pwa-keyboard-{,dark-}{closed,open,closed-after}
+# Standalone Android PWA group-chat keyboard — light then dark in one run.
+# Prefers an existing Home Screen / launcher icon; installs only if missing
+# (same Install Hork → Install → Add to home screen path as android-pwa-install-login).
+# Screenshots: artifacts/maestro-android-pwa-keyboard-{,dark-}{closed,open,closed-after}
 #
-#   yarn test:maestro:pwa:keyboard
+#   yarn test:maestro:android:pwa:keyboard
 #
 appId: ${APP_ID}
+androidWebViewHierarchy: devtools
 ---
 # --- Launch standalone Hork ---
 - pressKey: Home
+- waitForAnimationToEnd
 - runFlow:
     when:
       notVisible: "Hork"
@@ -28,57 +31,43 @@ appId: ${APP_ID}
       - extendedWaitUntil:
           visible: ".*Sign in to Hork|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
           timeout: 45000
+# Install if launcher icon missing
 - runFlow:
     when:
       notVisible: ".*Sign in to Hork|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
     commands:
-      - launchApp
-      - openLink: ${APP_URL}
+      - runFlow:
+          file: android-chrome-open.yaml
       - runFlow:
           when:
             visible: "Close"
           commands:
             - tapOn: "Close"
-      - runFlow:
-          when:
-            visible: "Dismiss install prompt"
-          commands:
-            - tapOn: "Dismiss install prompt"
       - extendedWaitUntil:
           visible: ".*Sign in to Hork|Your groups.*"
           timeout: 20000
-      - tapOn: "More"
-      - tapOn:
-          id: "ShareButton"
+      - runFlow:
+          when:
+            visible: "Sign in to Hork"
+          file: shared/login-steps.yaml
       - extendedWaitUntil:
-          visible: "Copy"
-          timeout: 10000
-      - waitForAnimationToEnd
-      - swipe:
-          start: 50%, 88%
-          end: 50%, 45%
+          visible: "Install Hork"
+          timeout: 45000
+      - tapOn: "Install app"
       - waitForAnimationToEnd
       - extendedWaitUntil:
-          visible: "Add to Home Screen"
+          visible: "Install"
           timeout: 15000
-      - tapOn: "Add to Home Screen"
+      - tapOn: "Install"
       - waitForAnimationToEnd
-      - tapOn:
-          point: "92%,12%"
-      - waitForAnimationToEnd
+      - runFlow:
+          when:
+            visible: "Add to home screen"
+          commands:
+            - tapOn: "Add to home screen"
+            - waitForAnimationToEnd
       - pressKey: Home
-      - runFlow:
-          when:
-            notVisible: "Hork"
-          commands:
-            - swipe:
-                direction: LEFT
-      - runFlow:
-          when:
-            notVisible: "Hork"
-          commands:
-            - swipe:
-                direction: LEFT
+      - waitForAnimationToEnd
       - extendedWaitUntil:
           visible: "Hork"
           timeout: 20000
@@ -86,17 +75,36 @@ appId: ${APP_ID}
       - extendedWaitUntil:
           visible: ".*Sign in to Hork|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
           timeout: 45000
-# Dismiss leftover Account sheet from a prior interrupted run.
+# Dismiss leftover Account sheet
+- runFlow:
+    when:
+      visible: "Close"
+    commands:
+      - tapOn: "Close"
 - runFlow:
     when:
       visible: "Dark mode"
     commands:
-      - tapOn: "Close"
+      - swipe:
+          start: 50%, 35%
+          end: 50%, 95%
 - runFlow:
     when:
       visible: "Light mode"
     commands:
-      - tapOn: "Close"
+      - swipe:
+          start: 50%, 35%
+          end: 50%, 95%
+- runFlow:
+    when:
+      visible: "Dismiss install prompt"
+    commands:
+      - tapOn: "Dismiss install prompt"
+- runFlow:
+    when:
+      visible: "Cancel"
+    commands:
+      - tapOn: "Cancel"
 # --- Reach home signed-in ---
 - runFlow:
     when:
@@ -112,7 +120,6 @@ appId: ${APP_ID}
       visible: "Say something!"
     commands:
       - tapOn: "Back to home"
-# Session may have been cleared (webclip storage wipe) after navigating home.
 - runFlow:
     when:
       visible: "Sign in to Hork"
@@ -125,24 +132,39 @@ appId: ${APP_ID}
 - extendedWaitUntil:
     visible: "Group name"
     timeout: 10000
-- tapOn: "WWDC hallway chat"
+- tapOn: "Group name"
 - eraseText
-- inputText: "PWA Keyboard Lab"
+- inputText: "Android PWA Keyboard Lab"
 - tapOn: "Create group"
 - extendedWaitUntil:
-    visible: "Say hi — this is the start of PWA Keyboard Lab"
+    visible: "Say hi — this is the start of Android PWA Keyboard Lab"
     timeout: 20000
-- assertVisible: "PWA Keyboard Lab options"
+- assertVisible: "Android PWA Keyboard Lab options"
+- runFlow:
+    when:
+      visible: "Dismiss install prompt"
+    commands:
+      - tapOn: "Dismiss install prompt"
+- runFlow:
+    when:
+      visible: "Cancel"
+    commands:
+      - tapOn: "Cancel"
 - runFlow:
     file: shared/ensure-light-mode.yaml
 - runFlow:
-    file: ios-keyboard-shots.yaml
+    file: android-keyboard-shots.yaml
     env:
-      SHOT_PREFIX: maestro-pwa-keyboard
+      SHOT_PREFIX: maestro-android-pwa-keyboard
 - runFlow:
     file: shared/ensure-dark-mode.yaml
-- assertVisible: "PWA Keyboard Lab options"
+- assertVisible: "Android PWA Keyboard Lab options"
 - runFlow:
-    file: ios-keyboard-shots.yaml
+    when:
+      visible: "Dismiss install prompt"
+    commands:
+      - tapOn: "Dismiss install prompt"
+- runFlow:
+    file: android-keyboard-shots.yaml
     env:
-      SHOT_PREFIX: maestro-pwa-keyboard-dark
+      SHOT_PREFIX: maestro-android-pwa-keyboard-dark

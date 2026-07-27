@@ -36,7 +36,8 @@ Docker is **not** required on your machine for this workflow.
 | CLI | Supabase CLI | Recommended | `supabase --version` | `brew install supabase/tap/supabase` |
 | CLI | GitHub CLI | Recommended | `gh auth status` | `brew install gh && gh auth login` |
 | CLI | Vercel CLI | Optional* | `vercel --version` | `npm i -g vercel` or use Vercel MCP |
-| CLI | Maestro CLI | Optional | `maestro --version` | `brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro` (+ Java 17+) — iOS Safari/PWA flows |
+| CLI | Maestro CLI | Optional | `maestro --version` | `brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro` (+ Java 17+) — iOS Safari + Android Chrome/PWA |
+| CLI | Android `adb` | Optional | `adb version` / `yarn check:android` | Android Studio / SDK platform-tools; Play Store AVD with Chrome |
 | Browser | Google Chrome | Recommended | Chrome in `/Applications` (macOS) | [google.com/chrome](https://www.google.com/chrome/) |
 | Runtime | Docker Desktop | **Optional** | `docker info` | Only for local `supabase start` — not needed with remote Supabase |
 | Cursor | Supabase plugin | Recommended | MCP `plugin-supabase-supabase` | Cursor Settings → MCP → Supabase |
@@ -107,9 +108,9 @@ npm install -g vercel
 
 Requires `VERCEL_TOKEN`, `VERCEL_ORG_ID`, and `VERCEL_PROJECT_ID` in `.env.local`.
 
-### Maestro CLI (optional — iOS Safari / PWA)
+### Maestro CLI (optional — iOS Safari + Android Chrome / PWA)
 
-Used for MobileSafari login and Add to Home Screen flows (`yarn test:maestro`). Not part of `yarn verify`.
+Used for MobileSafari and Android Chrome login, keyboard layout shots, and PWA install flows (`yarn test:maestro*`). Not part of `yarn verify`.
 
 ```bash
 brew tap mobile-dev-inc/tap
@@ -117,7 +118,19 @@ brew install mobile-dev-inc/tap/maestro
 # Needs Java 17+: brew install openjdk@17
 ```
 
-`yarn test:maestro` runs [scripts/test-maestro.sh](../scripts/test-maestro.sh), which puts Homebrew OpenJDK on `PATH` and probes the LAN for Vite (`5174`/`5173`/`4173`). Start Vite with `--host 0.0.0.0` (not `127.0.0.1`). See [AGENTS.md](../AGENTS.md) Auth section.
+`yarn test:maestro*` runs [scripts/test-maestro.sh](../scripts/test-maestro.sh), which puts Homebrew OpenJDK on `PATH`, sets `APP_ID`, and resolves `APP_URL`:
+
+- **iOS:** LAN IP via `en0`/`en1`; start Vite with `--host 0.0.0.0`
+- **Android:** `adb reverse` → `http://localhost:<port>` (secure context); Play Store AVD with Chrome required
+
+Ports probed: `5174` / `5173` / `4173`. Android readiness: `yarn check:android`. See [AGENTS.md](../AGENTS.md) Auth section and [`.cursor/rules/maestro-android.mdc`](../.cursor/rules/maestro-android.mdc).
+
+### Android SDK / emulator (optional — Android Maestro + MCP)
+
+- Install [Android Studio](https://developer.android.com/studio) (or SDK platform-tools only)
+- Create an AVD with a **Google Play** system image so `com.android.chrome` is present
+- `adb` typically at `~/Library/Android/sdk/platform-tools` (macOS)
+- Cursor MCP: `@moallemi/android-mcp-server` via npx — exploratory screenshot/tap (parallel to `ios-simulator-mcp`)
 
 ---
 
@@ -142,6 +155,17 @@ These extend what the agent can do without opening dashboards.
 - **Auth:** Plugin uses Vercel account linkage; keep `VERCEL_TOKEN` in `.env.local` for CLI fallback
 
 **User setup:** Install the Vercel plugin in Cursor and link the account. Add Vercel IDs and token to `.env.local`.
+
+### iOS Simulator MCP (optional — exploratory)
+
+- **Package:** `ios-simulator-mcp` (npx) — typically `user-ios-simulator` in GetMcpTools
+- Screenshot / tap / UI describe for agent exploration; automated flows use Maestro
+
+### Android emulator MCP (optional — exploratory)
+
+- **Package:** `@moallemi/android-mcp-server` (npx) in `~/.cursor/mcp.json` as server `android`
+- Requires `adb` + a booted device/emulator (`yarn check:android`)
+- Screenshot / UI tree / tap for agent exploration; automated flows use `yarn test:maestro:android*`
 
 ---
 

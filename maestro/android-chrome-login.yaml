@@ -1,22 +1,27 @@
-# Sign in through MobileSafari using local test OTP (555-01XX / 555555).
-# Requires: booted iOS Simulator, Vite on LAN (--host 0.0.0.0), AUTH_ALLOW_TEST_OTP.
-# Note: clearState is not used — Safari is a system app and cannot be uninstalled.
+# Sign in through Android Chrome using local test OTP (555-01XX / 555555).
+# Requires: booted Play Store AVD (Chrome), Vite or preview + adb reverse, AUTH_ALLOW_TEST_OTP.
+# Runner sets APP_URL=http://localhost:<port> via adb reverse (preferred).
 #
-#   yarn test:maestro
+#   yarn test:maestro:android
 #
 appId: ${APP_ID}
+androidWebViewHierarchy: devtools
 ---
-- launchApp
-- openLink: ${APP_URL}
+- runFlow:
+    file: android-chrome-open.yaml
 - runFlow:
     when:
       visible: "Close"
     commands:
       - tapOn: "Close"
+- runFlow:
+    when:
+      visible: "Dismiss install prompt"
+    commands:
+      - tapOn: "Dismiss install prompt"
 - extendedWaitUntil:
     visible: ".*Sign in to Hork|Your groups.*"
     timeout: 20000
-# Clear a leftover session so this flow always exercises OTP.
 - runFlow:
     when:
       visible: "Your groups"
