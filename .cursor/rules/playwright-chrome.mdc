@@ -28,14 +28,16 @@ PLAYWRIGHT_BASE_URL=https://yowl.us yarn test:e2e --config=playwright.smoke.conf
 ## Troubleshooting
 
 | Symptom | Action |
-| ------- | ------ |
+| ---- | --- |
 | Tests hang at startup | Confirm Google Chrome is installed; do **not** switch to bundled Chromium locally |
 | `channel: 'chrome'` not found | Install [Google Chrome](https://www.google.com/chrome/); on macOS it lives in `/Applications/Google Chrome.app` |
 | Agent sandbox blocks browser | Request `all` permissions for the test command, not a config change away from Chrome |
 | CI failure | Keep `CI=true` path on bundled Chromium; do not set `channel: 'chrome'` in GitHub Actions |
+| Brand link not found (`name: 'yowl'`) | Accessible name is **Yowl** (logo `alt`); use `getByRole('link', { name: 'Yowl' })` — see naming casing in `quacker-core.mdc` |
 
 ## Avoid locally
 
 - `playwright install chromium` as the first fix for hangs
 - Overriding config to force headless bundled Chromium when Chrome is available
 - Installing Edge/Firefox projects unless explicitly requested
+- Asserting lowercase `yowl` for the header brand after the logo/`alt="Yowl"` swap

@@ -2,7 +2,9 @@
 
 Working agreement for how Yowl should look, feel, and behave. The enforceable
 summary lives in [`.cursor/rules/ux-standards.mdc`](../.cursor/rules/ux-standards.mdc);
-this doc holds the rationale.
+this doc holds the rationale. Brand casing: user-visible **Yowl**; domain/assets
+`yowl.us` / `yowl-…`; never lowercase **yowl** as UI brand text — see
+[`.cursor/rules/quacker-core.mdc`](../.cursor/rules/quacker-core.mdc).
 
 ## North star
 

@@ -9,9 +9,29 @@ Quacker is a private, ad-hoc group chat for trips and conferences — short-live
 
 ## Naming: code name vs brand
 
-- **Quacker** is the internal **code name** — use it only for infrastructure and config: repo, `package.json` name, Supabase project names, env keys, `localStorage` keys, CI, and internal docs/rules.
-- **Yowl** is the **user-facing brand** — use it in all copy an end user sees: UI text, page/tab titles, notifications, PWA manifest, meta tags, and any user-facing message. Production domain is `yowl.us`.
-- Rule of thumb: if a human end user reads it, it says **Yowl**; if it's plumbing, it's **quacker**. Never surface "Quacker" in user-facing copy.
+- **Quacker** is the internal **code name** — use it only for infrastructure and
+  config: repo, `package.json` name, Supabase project names, env keys,
+  `localStorage` keys, CI, and internal docs/rules.
+- **Yowl** is the **user-facing brand** — use it in all copy an end user sees:
+  UI text, page/tab titles, notifications, PWA manifest, meta tags, `alt` /
+  `aria-label`, and any user-facing message. Production domain is `yowl.us`.
+- Rule of thumb: if a human end user reads it, it says **Yowl**; if it's
+  plumbing, it's **quacker**. Never surface "Quacker" in user-facing copy.
+
+### Casing (do not invent variants)
+
+| Form | Use for |
+| ---- | ------- |
+| **Yowl** | User-visible brand word — UI copy, titles, `alt`/`aria-label`, OG/Twitter, Playwright `getByRole` names, Maestro `visible`/`tapOn` for the brand |
+| **yowl.us** | Domain / URLs only (always lowercase) |
+| **yowl-…** | Asset / file kebab ids (`yowl-logo.svg`, `phone.yowl.us`) — lowercase |
+| **quacker** | Repo, `package.json` `name`, env/`localStorage` key prefixes, CLI project ids |
+| **Quacker** | Internal docs headings / code-name prose only — never UI |
+
+- Do **not** use lowercase **yowl** as visible brand text (old wordmark style).
+  The header logo’s accessible name is **Yowl** (image `alt`), not `yowl`.
+- When branding changes, update e2e/Maestro selectors to the **accessible
+  name** users/AT actually see — not a stylized spelling from an old mock.
 
 ## Stack
 
