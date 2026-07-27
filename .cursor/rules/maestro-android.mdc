@@ -1,5 +1,5 @@
 ---
-description: Maestro Android Chrome / PWA flows for Hork
+description: Maestro Android Chrome / PWA flows for Yowl
 globs: "maestro/android*.yaml,maestro/shared/**"
 alwaysApply: false
 ---
@@ -11,7 +11,7 @@ alwaysApply: false
 - Run: `yarn test:maestro:android` — wrapper sets JDK PATH, `APP_ID=com.android.chrome`, `adb reverse` → `APP_URL=http://localhost:<port>`
 - Keyboard (Chrome): `yarn test:maestro:android:keyboard` — light then dark; screenshots `maestro-android-keyboard-{,dark-}{closed,open,closed-after}`
 - Keyboard (PWA): `yarn test:maestro:android:pwa:keyboard` — install once, then same light+dark shots (`maestro-android-pwa-keyboard-*`)
-- PWA install: `yarn test:maestro:android:pwa` — in-app **Install Hork** → **Install app** → native **Install** → **Add to home screen**. `adb reverse` + `http://localhost` is a secure context (Vite LAN works). Prefer clearState so a prior dismiss does not hide the banner
+- PWA install: `yarn test:maestro:android:pwa` — in-app **Install Yowl** → **Install app** → native **Install** → **Add to home screen**. `adb reverse` + `http://localhost` is a secure context (Vite LAN works). Prefer clearState so a prior dismiss does not hide the banner
 - Shared product steps: `maestro/shared/{login-steps,ensure-light-mode,ensure-dark-mode,ensure-signed-in}.yaml` (`APP_ID` env)
 - Open helpers: `android-chrome-open.yaml` (clearState + FRE); `android-chrome-open-soft.yaml` (no clear); `android-chrome-dismiss-fre.yaml`
 - Do **not** put `androidWebViewHierarchy: devtools` on FRE/open steps — it can hide native Chrome welcome UI

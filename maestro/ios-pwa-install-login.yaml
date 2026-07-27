@@ -1,4 +1,4 @@
-# Install Hork as a PWA from MobileSafari, then confirm the standalone app.
+# Install Yowl as a PWA from MobileSafari, then confirm the standalone app.
 # Flakier than ios-safari-login.yaml (Share sheet / Add dialog a11y vary by iOS).
 # Prefer a contained share-sheet swipe over "View More" (hit target flaky on iOS 26).
 #
@@ -19,7 +19,7 @@ appId: ${APP_ID}
     commands:
       - tapOn: "Dismiss install prompt"
 - extendedWaitUntil:
-    visible: ".*Sign in to Hork|Your groups.*"
+    visible: ".*Sign in to Yowl|Your groups.*"
     timeout: 20000
 - tapOn: "More"
 - tapOn:
@@ -44,25 +44,25 @@ appId: ${APP_ID}
 - pressKey: Home
 - runFlow:
     when:
-      notVisible: "Hork"
+      notVisible: "Yowl"
     commands:
       - swipe:
           direction: LEFT
 - runFlow:
     when:
-      notVisible: "Hork"
+      notVisible: "Yowl"
     commands:
       - swipe:
           direction: LEFT
 - extendedWaitUntil:
-    visible: "Hork"
+    visible: "Yowl"
     timeout: 20000
-- tapOn: "Hork"
+- tapOn: "Yowl"
 - extendedWaitUntil:
-    visible: ".*Sign in to Hork|Your groups.*"
+    visible: ".*Sign in to Yowl|Your groups.*"
     timeout: 45000
 - runFlow:
     when:
-      visible: "Sign in to Hork"
+      visible: "Sign in to Yowl"
     file: shared/login-steps.yaml
 - assertVisible: "Your groups"

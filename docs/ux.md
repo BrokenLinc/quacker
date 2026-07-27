@@ -1,6 +1,6 @@
-# Hork UX / Visual System
+# Yowl UX / Visual System
 
-Working agreement for how Hork should look, feel, and behave. The enforceable
+Working agreement for how Yowl should look, feel, and behave. The enforceable
 summary lives in [`.cursor/rules/ux-standards.mdc`](../.cursor/rules/ux-standards.mdc);
 this doc holds the rationale.
 
@@ -94,7 +94,7 @@ components.
 
 ## Native / PWA
 
-Hork installs as a standalone PWA. Treat phones like a native shell: edge-to-edge
+Yowl installs as a standalone PWA. Treat phones like a native shell: edge-to-edge
 chrome, keyboard-safe chat, and touch-first overlays — not a shrunk desktop page.
 
 ### Viewport and keyboard

@@ -6,31 +6,31 @@
 #
 appId: ${APP_ID}
 ---
-# --- Launch standalone Hork ---
+# --- Launch standalone Yowl ---
 - pressKey: Home
 - runFlow:
     when:
-      notVisible: "Hork"
+      notVisible: "Yowl"
     commands:
       - swipe:
           direction: LEFT
 - runFlow:
     when:
-      notVisible: "Hork"
+      notVisible: "Yowl"
     commands:
       - swipe:
           direction: LEFT
 - runFlow:
     when:
-      visible: "Hork"
+      visible: "Yowl"
     commands:
-      - tapOn: "Hork"
+      - tapOn: "Yowl"
       - extendedWaitUntil:
-          visible: ".*Sign in to Hork|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          visible: ".*Sign in to Yowl|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
           timeout: 45000
 - runFlow:
     when:
-      notVisible: ".*Sign in to Hork|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+      notVisible: ".*Sign in to Yowl|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
     commands:
       - launchApp
       - openLink: ${APP_URL}
@@ -45,7 +45,7 @@ appId: ${APP_ID}
           commands:
             - tapOn: "Dismiss install prompt"
       - extendedWaitUntil:
-          visible: ".*Sign in to Hork|Your groups.*"
+          visible: ".*Sign in to Yowl|Your groups.*"
           timeout: 20000
       - tapOn: "More"
       - tapOn:
@@ -69,22 +69,22 @@ appId: ${APP_ID}
       - pressKey: Home
       - runFlow:
           when:
-            notVisible: "Hork"
+            notVisible: "Yowl"
           commands:
             - swipe:
                 direction: LEFT
       - runFlow:
           when:
-            notVisible: "Hork"
+            notVisible: "Yowl"
           commands:
             - swipe:
                 direction: LEFT
       - extendedWaitUntil:
-          visible: "Hork"
+          visible: "Yowl"
           timeout: 20000
-      - tapOn: "Hork"
+      - tapOn: "Yowl"
       - extendedWaitUntil:
-          visible: ".*Sign in to Hork|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          visible: ".*Sign in to Yowl|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
           timeout: 45000
 # Dismiss leftover Account sheet from a prior interrupted run.
 - runFlow:
@@ -100,7 +100,7 @@ appId: ${APP_ID}
 # --- Reach home signed-in ---
 - runFlow:
     when:
-      visible: "Sign in to Hork"
+      visible: "Sign in to Yowl"
     file: shared/login-steps.yaml
 - runFlow:
     when:
@@ -115,7 +115,7 @@ appId: ${APP_ID}
 # Session may have been cleared (webclip storage wipe) after navigating home.
 - runFlow:
     when:
-      visible: "Sign in to Hork"
+      visible: "Sign in to Yowl"
     file: shared/login-steps.yaml
 - extendedWaitUntil:
     visible: "Your groups"

@@ -1,8 +1,8 @@
 self.addEventListener('push', (event) => {
-  const data = event.data?.json() ?? { title: 'Hork', body: 'New message' };
+  const data = event.data?.json() ?? { title: 'Yowl', body: 'New message' };
   event.waitUntil(
-    self.registration.showNotification(data.title ?? 'Hork', {
-      body: data.body ?? 'Someone horked!',
+    self.registration.showNotification(data.title ?? 'Yowl', {
+      body: data.body ?? 'Someone yowled!',
       icon: '/icons/icon-192.png',
       data: data.url,
     })

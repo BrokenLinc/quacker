@@ -20,7 +20,7 @@ androidWebViewHierarchy: devtools
     commands:
       - tapOn: "Dismiss install prompt"
 - extendedWaitUntil:
-    visible: ".*Sign in to Hork|Your groups.*"
+    visible: ".*Sign in to Yowl|Your groups.*"
     timeout: 20000
 - runFlow:
     when:
@@ -29,7 +29,7 @@ androidWebViewHierarchy: devtools
       - tapOn: "Account menu"
       - tapOn: "Log out"
       - extendedWaitUntil:
-          visible: "Sign in to Hork"
+          visible: "Sign in to Yowl"
           timeout: 15000
 - runFlow:
     file: shared/login-steps.yaml

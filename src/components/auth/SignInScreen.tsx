@@ -8,7 +8,7 @@ export type SignInScreenProps = {
 };
 
 export const SignInScreen: React.FC<SignInScreenProps> = ({
-  heading = 'Sign in to Hork',
+  heading = 'Sign in to Yowl',
 }) => {
   return (
     <UI.Flex

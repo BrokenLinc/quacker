@@ -4,7 +4,7 @@ import React from 'react';
 import { useThemeColorMeta } from '@@lib/pwa/useThemeColorMeta';
 
 /**
- * Hork visual system:
+ * Yowl visual system:
  * - Purple is the brand/neutral foundation: the `gray` scale is purple-tinted
  *   so chrome, surfaces, and borders carry brand character without signaling
  *   status.

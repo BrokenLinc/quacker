@@ -1,4 +1,4 @@
-# Install Hork as a PWA from Android Chrome, then confirm the standalone app.
+# Install Yowl as a PWA from Android Chrome, then confirm the standalone app.
 # Prefer APP_URL=http://localhost:<port> via adb reverse (secure context).
 # Uses clearState so a prior "Dismiss install prompt" does not hide the banner.
 #
@@ -16,17 +16,17 @@ androidWebViewHierarchy: devtools
       - tapOn: "Close"
 # Keep install banner — do not dismiss it.
 - extendedWaitUntil:
-    visible: ".*Sign in to Hork|Your groups.*"
+    visible: ".*Sign in to Yowl|Your groups.*"
     timeout: 20000
 - runFlow:
     when:
-      visible: "Sign in to Hork"
+      visible: "Sign in to Yowl"
     file: shared/login-steps.yaml
 - extendedWaitUntil:
     visible: "Your groups"
     timeout: 20000
 - extendedWaitUntil:
-    visible: "Install Hork"
+    visible: "Install Yowl"
     timeout: 45000
 - tapOn: "Install app"
 - waitForAnimationToEnd
@@ -51,7 +51,7 @@ androidWebViewHierarchy: devtools
 - waitForAnimationToEnd
 - runFlow:
     when:
-      notVisible: "Hork"
+      notVisible: "Yowl"
     commands:
       - swipe:
           start: 50%, 90%
@@ -59,25 +59,25 @@ androidWebViewHierarchy: devtools
       - waitForAnimationToEnd
 - runFlow:
     when:
-      notVisible: "Hork"
+      notVisible: "Yowl"
     commands:
       - swipe:
           direction: LEFT
 - runFlow:
     when:
-      notVisible: "Hork"
+      notVisible: "Yowl"
     commands:
       - swipe:
           direction: LEFT
 - extendedWaitUntil:
-    visible: "Hork"
+    visible: "Yowl"
     timeout: 20000
-- tapOn: "Hork"
+- tapOn: "Yowl"
 - extendedWaitUntil:
-    visible: ".*Sign in to Hork|Your groups.*"
+    visible: ".*Sign in to Yowl|Your groups.*"
     timeout: 45000
 - runFlow:
     when:
-      visible: "Sign in to Hork"
+      visible: "Sign in to Yowl"
     file: shared/login-steps.yaml
 - assertVisible: "Your groups"

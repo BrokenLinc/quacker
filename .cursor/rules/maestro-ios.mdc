@@ -1,5 +1,5 @@
 ---
-description: Maestro iOS Safari / PWA flows for Hork
+description: Maestro iOS Safari / PWA flows for Yowl
 globs: "maestro/**"
 alwaysApply: false
 ---

@@ -78,7 +78,7 @@ export const normalizePhone = (input: string): string | null => {
 };
 
 export const syntheticEmail = (phone: string) =>
-  `${phone.replace(/\D/g, '')}@phone.hork.us`;
+  `${phone.replace(/\D/g, '')}@phone.yowl.us`;
 
 /** Digits only — GoTrue may store phone with or without a leading `+`. */
 export const phoneDigits = (phone: string | null | undefined) =>
