@@ -5,8 +5,8 @@ This repository is **agent-operated**. The user sets vision; you execute everyth
 ## Naming: code name vs brand
 
 - **Quacker** = internal **code name** → infrastructure and config only (repo, `package.json` name, Supabase project names, env/`localStorage` keys, CI, internal docs).
-- **Yowl** = user-facing **brand** → all copy an end user sees (UI text, titles, notifications, PWA manifest, meta tags). Production domain is `yowl.us`.
-- Never surface "Quacker" in user-facing copy. See [`.cursor/rules/quacker-core.mdc`](.cursor/rules/quacker-core.mdc).
+- **Yowl** = user-facing **brand** → all copy an end user sees (UI text, titles, notifications, PWA manifest, meta tags, `alt`/`aria-label`). Production domain is `yowl.us`.
+- Never surface "Quacker" in user-facing copy. Do not use lowercase **yowl** as visible brand text — accessible name is **Yowl**. See [`.cursor/rules/quacker-core.mdc`](.cursor/rules/quacker-core.mdc) for the casing table.
 
 ## Quick commands
 

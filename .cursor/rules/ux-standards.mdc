@@ -72,6 +72,9 @@ No decorative animation, gradients, or gloss.
 
 ## Copy
 
-- User-facing strings say **Yowl**, never Quacker; no developer copy in error
-  screens (no "Vite", "dev server")
+- User-facing strings say **Yowl** (capital Y), never Quacker and never
+  lowercase **yowl** as brand text; no developer copy in error screens (no
+  "Vite", "dev server")
+- Brand chrome: header logo is `/yowl-logo.svg` with `alt="Yowl"` — tests must
+  match that accessible name (`getByRole('link', { name: 'Yowl' })`)
 - Errors are human + actionable ("Check your connection and try again.")
