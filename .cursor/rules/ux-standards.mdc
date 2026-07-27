@@ -1,11 +1,11 @@
 ---
-description: Hork UX standards — color roles, layout contract, state handling, motion budget
+description: Yowl UX standards — color roles, layout contract, state handling, motion budget
 alwaysApply: true
 ---
 
 # UX Standards
 
-Hork is a Slack-baseline utility chat: snappy, device-appropriate, lovable
+Yowl is a Slack-baseline utility chat: snappy, device-appropriate, lovable
 because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
 
 ## Color roles (never mix)
@@ -72,6 +72,6 @@ No decorative animation, gradients, or gloss.
 
 ## Copy
 
-- User-facing strings say **Hork**, never Quacker; no developer copy in error
+- User-facing strings say **Yowl**, never Quacker; no developer copy in error
   screens (no "Vite", "dev server")
 - Errors are human + actionable ("Check your connection and try again.")

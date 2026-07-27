@@ -4,7 +4,7 @@ import type { Session, User } from '@supabase/supabase-js';
 
 import { supabase } from './client';
 
-const SYNTHETIC_EMAIL_DOMAIN = '@phone.hork.us';
+const SYNTHETIC_EMAIL_DOMAIN = '@phone.yowl.us';
 
 /** App-facing user shape (compatible with legacy Firebase fields). */
 export interface AppUser {

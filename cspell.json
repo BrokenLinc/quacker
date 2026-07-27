@@ -14,7 +14,8 @@
     "luxon",
     "metas",
     "promisable",
-    "hork",
+    "yowl",
+    "yowled",
     "quacker"
   ],
   "ignoreWords": [

@@ -17,7 +17,7 @@ for (const mode of ['light', 'dark'] as AppColorMode[]) {
   }) => {
     await seedColorMode(page, mode);
     await page.goto('/');
-    await expect(page.getByRole('link', { name: 'hork' })).toBeVisible();
+    await expect(page.getByRole('link', { name: 'yowl' })).toBeVisible();
     await expectColorMode(page, mode);
 
     const results = await new AxeBuilder({ page }).analyze();

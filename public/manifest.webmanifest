@@ -1,6 +1,6 @@
 {
-  "name": "Hork",
-  "short_name": "Hork",
+  "name": "Yowl",
+  "short_name": "Yowl",
   "description": "Ad-hoc group chat for trips and conferences",
   "start_url": "/",
   "scope": "/",

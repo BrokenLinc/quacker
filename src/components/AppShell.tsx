@@ -72,7 +72,7 @@ export const BrandLink: React.FC<Omit<UI.LinkProps, 'children'>> = (props) => (
   >
     <UI.Icon icon={faMessage} />
     <UI.Text as="span" fontWeight="bold" fontSize="sm">
-      hork
+      yowl
     </UI.Text>
   </UI.RouteLink>
 );

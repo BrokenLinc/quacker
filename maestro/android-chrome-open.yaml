@@ -8,13 +8,13 @@ appId: ${APP_ID}
     clearState: true
 # FRE can lag after clearState — wait before conditional dismiss.
 - extendedWaitUntil:
-    visible: ".*Use without an account|Welcome to Chrome|Search or type|Sign in to Hork|Your groups.*"
+    visible: ".*Use without an account|Welcome to Chrome|Search or type|Sign in to Yowl|Your groups.*"
     timeout: 25000
 - runFlow:
     file: android-chrome-dismiss-fre.yaml
 - openLink: ${APP_URL}
 - extendedWaitUntil:
-    visible: ".*Use without an account|Welcome to Chrome|Sign in to Hork|Your groups|Phone number|Install Hork.*"
+    visible: ".*Use without an account|Welcome to Chrome|Sign in to Yowl|Your groups|Phone number|Install Yowl.*"
     timeout: 25000
 - runFlow:
     file: android-chrome-dismiss-fre.yaml

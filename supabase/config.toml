@@ -27,7 +27,7 @@ enabled = true
 [auth]
 enabled = true
 site_url = "http://127.0.0.1:5173"
-additional_redirect_urls = ["http://127.0.0.1:5173", "http://127.0.0.1:4173", "https://*.vercel.app", "https://hork.us"]
+additional_redirect_urls = ["http://127.0.0.1:5173", "http://127.0.0.1:4173", "https://*.vercel.app", "https://yowl.us", "https://www.yowl.us"]
 # Access-token lifetime (max allowed: 604800 = 1 week). Refresh tokens do not
 # expire by default, so sessions persist across visits via auto-refresh.
 jwt_expiry = 604800

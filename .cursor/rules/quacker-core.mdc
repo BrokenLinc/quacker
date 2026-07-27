@@ -10,8 +10,8 @@ Quacker is a private, ad-hoc group chat for trips and conferences — short-live
 ## Naming: code name vs brand
 
 - **Quacker** is the internal **code name** — use it only for infrastructure and config: repo, `package.json` name, Supabase project names, env keys, `localStorage` keys, CI, and internal docs/rules.
-- **Hork** is the **user-facing brand** — use it in all copy an end user sees: UI text, page/tab titles, notifications, PWA manifest, meta tags, and any user-facing message. Production domain is `hork.us`.
-- Rule of thumb: if a human end user reads it, it says **Hork**; if it's plumbing, it's **quacker**. Never surface "Quacker" in user-facing copy.
+- **Yowl** is the **user-facing brand** — use it in all copy an end user sees: UI text, page/tab titles, notifications, PWA manifest, meta tags, and any user-facing message. Production domain is `yowl.us`.
+- Rule of thumb: if a human end user reads it, it says **Yowl**; if it's plumbing, it's **quacker**. Never surface "Quacker" in user-facing copy.
 
 ## Stack
 

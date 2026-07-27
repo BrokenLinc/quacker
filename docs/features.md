@@ -1,6 +1,6 @@
 # Features
 
-Quacker (code name) is a private, ad-hoc group chat for trips and conferences. It ships to users as **Hork** — all user-facing copy uses the Hork brand; "Quacker" stays in infra and config only.
+Quacker (code name) is a private, ad-hoc group chat for trips and conferences. It ships to users as **Yowl** — all user-facing copy uses the Yowl brand; "Quacker" stays in infra and config only.
 
 ## Implemented
 

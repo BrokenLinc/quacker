@@ -48,6 +48,6 @@ fi
 echo ""
 echo "Hints:"
 echo "  • yarn test:maestro:android  (runner adb-reverses Vite/preview ports → localhost)"
-echo "  • PWA install: yarn test:maestro:android:pwa (Install Hork banner; clearState resets dismiss)"
+echo "  • PWA install: yarn test:maestro:android:pwa (Install Yowl banner; clearState resets dismiss)"
 echo "  • Manual reverse: adb reverse tcp:5174 tcp:5174"
 exit 0

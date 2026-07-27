@@ -1,6 +1,6 @@
 # Standalone Android PWA group-chat keyboard — light then dark in one run.
 # Prefers an existing Home Screen / launcher icon; installs only if missing
-# (same Install Hork → Install → Add to home screen path as android-pwa-install-login).
+# (same Install Yowl → Install → Add to home screen path as android-pwa-install-login).
 # Screenshots: artifacts/maestro-android-pwa-keyboard-{,dark-}{closed,open,closed-after}
 #
 #   yarn test:maestro:android:pwa:keyboard
@@ -8,33 +8,33 @@
 appId: ${APP_ID}
 androidWebViewHierarchy: devtools
 ---
-# --- Launch standalone Hork ---
+# --- Launch standalone Yowl ---
 - pressKey: Home
 - waitForAnimationToEnd
 - runFlow:
     when:
-      notVisible: "Hork"
+      notVisible: "Yowl"
     commands:
       - swipe:
           direction: LEFT
 - runFlow:
     when:
-      notVisible: "Hork"
+      notVisible: "Yowl"
     commands:
       - swipe:
           direction: LEFT
 - runFlow:
     when:
-      visible: "Hork"
+      visible: "Yowl"
     commands:
-      - tapOn: "Hork"
+      - tapOn: "Yowl"
       - extendedWaitUntil:
-          visible: ".*Sign in to Hork|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          visible: ".*Sign in to Yowl|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
           timeout: 45000
 # Install if launcher icon missing
 - runFlow:
     when:
-      notVisible: ".*Sign in to Hork|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+      notVisible: ".*Sign in to Yowl|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
     commands:
       - runFlow:
           file: android-chrome-open.yaml
@@ -44,14 +44,14 @@ androidWebViewHierarchy: devtools
           commands:
             - tapOn: "Close"
       - extendedWaitUntil:
-          visible: ".*Sign in to Hork|Your groups.*"
+          visible: ".*Sign in to Yowl|Your groups.*"
           timeout: 20000
       - runFlow:
           when:
-            visible: "Sign in to Hork"
+            visible: "Sign in to Yowl"
           file: shared/login-steps.yaml
       - extendedWaitUntil:
-          visible: "Install Hork"
+          visible: "Install Yowl"
           timeout: 45000
       - tapOn: "Install app"
       - waitForAnimationToEnd
@@ -69,11 +69,11 @@ androidWebViewHierarchy: devtools
       - pressKey: Home
       - waitForAnimationToEnd
       - extendedWaitUntil:
-          visible: "Hork"
+          visible: "Yowl"
           timeout: 20000
-      - tapOn: "Hork"
+      - tapOn: "Yowl"
       - extendedWaitUntil:
-          visible: ".*Sign in to Hork|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          visible: ".*Sign in to Yowl|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
           timeout: 45000
 # Dismiss leftover Account sheet
 - runFlow:
@@ -108,7 +108,7 @@ androidWebViewHierarchy: devtools
 # --- Reach home signed-in ---
 - runFlow:
     when:
-      visible: "Sign in to Hork"
+      visible: "Sign in to Yowl"
     file: shared/login-steps.yaml
 - runFlow:
     when:
@@ -122,7 +122,7 @@ androidWebViewHierarchy: devtools
       - tapOn: "Back to home"
 - runFlow:
     when:
-      visible: "Sign in to Hork"
+      visible: "Sign in to Yowl"
     file: shared/login-steps.yaml
 - extendedWaitUntil:
     visible: "Your groups"

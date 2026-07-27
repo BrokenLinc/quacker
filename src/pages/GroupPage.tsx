@@ -908,9 +908,9 @@ export const MessageRow: React.FC<{
       opacity={message.pending ? 0.55 : 1}
       _hover={{ bg: 'surface.sunken' }}
       sx={{
-        animation: 'hork-message-in 160ms ease-out',
+        animation: 'yowl-message-in 160ms ease-out',
         '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-        '@keyframes hork-message-in': {
+        '@keyframes yowl-message-in': {
           from: { opacity: 0, transform: 'translateY(4px)' },
           to: { opacity: message.pending ? 0.55 : 1, transform: 'none' },
         },

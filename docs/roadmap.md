@@ -5,7 +5,7 @@
 - Short slug URLs (`/g/:slug`) + share sheet
 - Chirp tab notifications (zero permission)
 - Web Push scaffold (SW + subscriptions table + edge function stub)
-- Twilio Verify SMS OTP auth + `hork.us` production domain
+- Twilio Verify SMS OTP auth + `yowl.us` production domain
 
 ## Tier 1 — next
 
