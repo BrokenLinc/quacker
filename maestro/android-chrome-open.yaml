@@ -1,0 +1,20 @@
+appId: ${APP_ID}
+---
+# Launch Chrome cleanly, dismiss FRE, open APP_URL, dismiss any follow-up prompts.
+# Do NOT set androidWebViewHierarchy here — FRE is native Chrome UI and DevTools
+# hierarchy can hide "Welcome to Chrome" / "Use without an account".
+# Env: APP_URL, APP_ID
+- launchApp:
+    clearState: true
+# FRE can lag after clearState — wait before conditional dismiss.
+- extendedWaitUntil:
+    visible: ".*Use without an account|Welcome to Chrome|Search or type|Sign in to Hork|Your groups.*"
+    timeout: 25000
+- runFlow:
+    file: android-chrome-dismiss-fre.yaml
+- openLink: ${APP_URL}
+- extendedWaitUntil:
+    visible: ".*Use without an account|Welcome to Chrome|Sign in to Hork|Your groups|Phone number|Install Hork.*"
+    timeout: 25000
+- runFlow:
+    file: android-chrome-dismiss-fre.yaml

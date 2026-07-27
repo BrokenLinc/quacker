@@ -1,0 +1,34 @@
+appId: ${APP_ID}
+---
+# Dismiss Chrome first-run / fre screens when present (Play Store AVDs).
+# Safe no-ops when already past onboarding.
+- runFlow:
+    when:
+      visible: "Use without an account"
+    commands:
+      - tapOn: "Use without an account"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Continue"
+    commands:
+      - tapOn: "Continue"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Got it"
+    commands:
+      - tapOn: "Got it"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "No thanks"
+    commands:
+      - tapOn: "No thanks"
+      - waitForAnimationToEnd
+- runFlow:
+    when:
+      visible: "Don't allow"
+    commands:
+      - tapOn: "Don't allow"
+      - waitForAnimationToEnd

@@ -7,10 +7,10 @@ alwaysApply: false
 # Maestro (iOS Simulator)
 
 - Install: `brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro` (+ Java 17)
-- Run: `yarn test:maestro` (wrapper sets JDK PATH + probes LAN `APP_URL`). Vite must use `--host 0.0.0.0`
+- Run: `yarn test:maestro` (wrapper sets JDK PATH + probes LAN `APP_URL` + `APP_ID=com.apple.mobilesafari`). Vite must use `--host 0.0.0.0`
 - Keyboard layout (Safari): `yarn test:maestro:keyboard` — one run covers **light then dark** (toggle via Account menu); screenshots `maestro-keyboard-{,dark-}{closed,open,closed-after}`
 - Keyboard layout (PWA): `yarn test:maestro:pwa:keyboard` — install once, then same light+dark shots (`maestro-pwa-keyboard-*`)
-- Shared steps: `ios-keyboard-shots.yaml` (`SHOT_PREFIX`), `ios-ensure-light-mode.yaml`, `ios-ensure-dark-mode.yaml`
+- Shared product steps: `maestro/shared/{login-steps,ensure-light-mode,ensure-dark-mode,ensure-signed-in}.yaml` (`APP_ID` env). iOS keyboard chrome stays in `ios-keyboard-shots.yaml`
 - Overrides: `APP_URL=http://…` or `MAESTRO_PORT=5173`
 - Do **not** use `clearState` on `com.apple.mobilesafari` — system apps cannot be uninstalled
 - Chakra PinInput: one `inputText` per digit; account chrome is `Account menu`
@@ -20,3 +20,4 @@ alwaysApply: false
 - Test OTP: `555-01XX` + `555555` with `AUTH_ALLOW_TEST_OTP` (local `supabase/functions/.env` or **quacker-dev** only — never prod)
 - Viewport contract + anti-patterns: `docs/ux.md`. Wipe webclip Storage after `index.html` changes. Judge PWA bottom gap with pixels (raised fill to y=bottom), not vision captions
 - Account sheet: appearance → Change name → Log out → groups → New group
+- Android sibling: `.cursor/rules/maestro-android.mdc` (`yarn test:maestro:android*`)

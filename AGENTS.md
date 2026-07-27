@@ -17,6 +17,11 @@ This repository is **agent-operated**. The user sets vision; you execute everyth
 | `yarn test:maestro:keyboard` | Group chat keyboard open/close — light + dark screenshots (Safari) |
 | `yarn test:maestro:pwa:keyboard` | Same keyboard shots in standalone PWA (install once; flakier) |
 | `yarn test:maestro:pwa` | Add to Home Screen + login (flakier; optional) |
+| `yarn test:maestro:android` | Chrome login on Android emulator (`adb reverse` → localhost) |
+| `yarn test:maestro:android:keyboard` | Chrome keyboard open/close — light + dark screenshots |
+| `yarn test:maestro:android:pwa:keyboard` | Standalone Android PWA keyboard — light + dark (install once) |
+| `yarn test:maestro:android:pwa` | Android Chrome Install app / Add to Home screen + login |
+| `yarn check:android` | adb + Play Store AVD / Chrome readiness for Android Maestro |
 | `yarn bootstrap` | Install deps, scaffold `.env.local`, start local Supabase |
 | `yarn dev` | Vite dev server |
 | `yarn verify` | lint + build + unit + smoke e2e locally (~seconds); full e2e in CI or with local Supabase |
@@ -103,22 +108,33 @@ supabase functions serve auth-send-otp auth-verify-otp \
   --env-file supabase/functions/.env --no-verify-jwt
 ```
 
-**Maestro (MobileSafari / PWA):**
+**Maestro (iOS Safari / Android Chrome / PWA):**
+
+Shared product steps live in `maestro/shared/` (`login-steps`, theme ensure). Platform chrome (share sheet, keyboard IME, install UI) stays in `ios-*` / `android-*` flows.
 
 ```bash
-# Vite must bind LAN so the simulator can reach the host (not 127.0.0.1):
+# iOS — Vite must bind LAN so the simulator can reach the host (not 127.0.0.1):
 yarn dev -- --host 0.0.0.0 --port 5174
 yarn test:maestro               # Safari login
 yarn test:maestro:keyboard      # Safari keyboard open/close — light + dark screenshots
 yarn test:maestro:pwa:keyboard  # standalone PWA keyboard — light + dark (install once)
 yarn test:maestro:pwa           # optional Add to Home Screen (flaky on iOS 26)
+
+# Android — Play Store AVD + Chrome; runner adb-reverses host ports → localhost:
+yarn check:android
+yarn test:maestro:android
+yarn test:maestro:android:keyboard
+# PWA install needs prod SW — prefer preview on a reversed localhost port:
+yarn build && yarn preview --host 127.0.0.1 --port 4173
+yarn test:maestro:android:pwa
+yarn test:maestro:android:pwa:keyboard
 ```
 
-`scripts/test-maestro.sh` puts Homebrew OpenJDK on `PATH` and probes `en0`/`en1` for a live Vite port (`5174`, `5173`, `4173`). Override with `APP_URL=…` or `MAESTRO_PORT=5173` if needed.
+`scripts/test-maestro.sh` puts Homebrew OpenJDK on `PATH`, sets `APP_ID` (`com.apple.mobilesafari` vs `com.android.chrome`), and resolves `APP_URL` (iOS: LAN `en0`/`en1`; Android: `adb reverse` → `http://localhost:<port>`). Ports probed: `5174`, `5173`, `4173`. Override with `APP_URL=…` or `MAESTRO_PORT=5173` if needed.
 
 Install Maestro: `brew tap mobile-dev-inc/tap && brew install mobile-dev-inc/tap/maestro` (needs Java 17+). Not part of `yarn verify`.
 
-Notes from live runs: do not use `clearState` on Safari (system app); Chakra PinInput needs one `inputText` per digit; account avatar is labeled **Account menu** for VoiceOver/Maestro.
+Notes from live runs: do not use `clearState` on Safari (system app); Chrome `clearState` is fine; Chakra PinInput needs one `inputText` per digit; account avatar is labeled **Account menu** for VoiceOver/Maestro.
 
 ### Running e2e
 `yarn test:e2e` uses the installed Google **Chrome** (`channel: 'chrome'`), not bundled Chromium. Start a preview server first (`yarn preview --host 127.0.0.1 --port 4173`) and run with `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173`; `yarn verify` wires this up automatically.

@@ -1,26 +1,23 @@
 appId: ${APP_ID}
+androidWebViewHierarchy: devtools
 ---
-# Keyboard closed → open → closed screenshots + layout asserts (iOS IME).
-# Env: SHOT_PREFIX (e.g. maestro-keyboard or maestro-keyboard-dark), APP_ID
+# Keyboard closed → open → closed screenshots + layout asserts (Android IME).
+# Env: SHOT_PREFIX (e.g. maestro-android-keyboard), APP_ID
+# When the composer is focused, Android Chrome often drops the placeholder /
+# aria-label from the a11y tree — assert Send instead while open.
 - assertVisible: "Say something!"
 - assertVisible: "Send"
-- assertNotVisible: "return"
 - waitForAnimationToEnd
 - takeScreenshot: artifacts/${SHOT_PREFIX}-closed
 - tapOn: "Say something!"
-- extendedWaitUntil:
-    visible: "return"
-    timeout: 10000
 - waitForAnimationToEnd
 - assertVisible: "Send"
-- assertVisible: "Say something!"
 - takeScreenshot: artifacts/${SHOT_PREFIX}-open
-- tapOn: "Done"
+- pressKey: back
 - extendedWaitUntil:
-    notVisible: "return"
-    timeout: 10000
+    visible: "Say something!"
+    timeout: 15000
 - waitForAnimationToEnd
 - assertVisible: "Say something!"
 - assertVisible: "Send"
-- assertNotVisible: "return"
 - takeScreenshot: artifacts/${SHOT_PREFIX}-closed-after

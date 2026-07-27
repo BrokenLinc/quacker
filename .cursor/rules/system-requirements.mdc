@@ -23,6 +23,8 @@ Shell cannot see Cursor plugins. Use **GetMcpTools**:
 | --------- | ------- | ---------------------- |
 | `plugin-supabase-supabase` | Remote migrations, types, **create_project** | If `needsAuth`: `mcp_auth`; else user adds `SUPABASE_ACCESS_TOKEN` once — **do not ask user to create projects** |
 | `plugin-vercel-vercel` | Deploy, env, project ops | If unavailable: `npx vercel` + `VERCEL_TOKEN` — agent runs sync/deploy |
+| `user-ios-simulator` / `ios-simulator` | iOS Simulator tap/screenshot (exploratory) | `npx ios-simulator-mcp` in `~/.cursor/mcp.json`; Maestro for automated flows |
+| Android MCP (`@moallemi/android-mcp-server`) | Android emulator adb screenshot/tap | Add npx server to `~/.cursor/mcp.json`; needs `adb` + Play Store AVD |
 
 If `serverStatus` is `needsAuth`, call `mcp_auth` for that server and retry.
 
@@ -35,6 +37,7 @@ If `serverStatus` is `needsAuth`, call `mcp_auth` for that server and retry.
 | `vercel` / deploy fails | Vercel token or CLI | Add `VERCEL_*` to `.env.local`; `npm i -g vercel` or Vercel MCP |
 | Playwright hangs locally | Chrome or sandbox | Install Google Chrome; run tests with `all` permissions |
 | `supabase start` fails | Docker (optional) | Only needed for local Supabase — use remote project or CI for full e2e |
+| Android Maestro / MCP blocked | `adb` or emulator | Android Studio + Play Store AVD; `yarn check:android` |
 | MCP tools unavailable | Cursor plugin | Cursor Settings → MCP; if `needsAuth`, `mcp_auth` — not “go create a project in Supabase” |
 | `.env.local` keys empty | User gate | Point to `docs/prerequisites.md` — do not invent secrets |
 
@@ -42,7 +45,7 @@ If `serverStatus` is `needsAuth`, call `mcp_auth` for that server and retry.
 
 1. **Required:** Node, Yarn, Git, `.env.local` Supabase vars
 2. **Recommended for full autonomy:** Supabase MCP or CLI, Vercel MCP or CLI + token, `gh`, Chrome
-3. **Optional:** Docker (local `supabase start` only)
+3. **Optional:** Docker (local `supabase start` only); Maestro + iOS Simulator / Android emulator for mobile PWA
 4. **CI:** GitHub Actions secrets (via `gh secret set` once `gh` is available)
 
 Do not defer to manual dashboard steps when CLI or MCP can do the job.

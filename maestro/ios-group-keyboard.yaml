@@ -3,12 +3,12 @@
 #
 #   yarn test:maestro:keyboard
 #
-appId: com.apple.mobilesafari
+appId: ${APP_ID}
 ---
 - launchApp
 - openLink: ${APP_URL}
 - runFlow:
-    file: ios-ensure-signed-in.yaml
+    file: shared/ensure-signed-in.yaml
 - assertVisible: "Your groups"
 - tapOn: "New group"
 - extendedWaitUntil:
@@ -23,13 +23,13 @@ appId: com.apple.mobilesafari
     timeout: 20000
 - assertVisible: "Keyboard Lab options"
 - runFlow:
-    file: ios-ensure-light-mode.yaml
+    file: shared/ensure-light-mode.yaml
 - runFlow:
     file: ios-keyboard-shots.yaml
     env:
       SHOT_PREFIX: maestro-keyboard
 - runFlow:
-    file: ios-ensure-dark-mode.yaml
+    file: shared/ensure-dark-mode.yaml
 - assertVisible: "Keyboard Lab options"
 - runFlow:
     file: ios-keyboard-shots.yaml
