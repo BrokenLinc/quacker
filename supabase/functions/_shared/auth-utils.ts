@@ -54,6 +54,20 @@ export const summarizeTwilioPayload = (payload: Record<string, unknown>) => ({
   twilio_more_info: payload.more_info ?? null,
 });
 
+/** Map known Twilio Verify errors to user-safe copy (admin detail stays in logs). */
+export const twilioSendOtpUserError = (
+  payload: Record<string, unknown>
+): string => {
+  const code = Number(payload.code);
+  if (code === 21608) {
+    return "We can't send a verification code to that number yet. Try again later.";
+  }
+  if (code === 60203 || code === 60202) {
+    return 'Too many verification attempts for this number. Try again later.';
+  }
+  return String(payload.message ?? 'Failed to send code');
+};
+
 export const summarizeTwilioVerification = (
   payload: Record<string, unknown>
 ) => ({
