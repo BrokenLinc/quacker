@@ -175,6 +175,7 @@ const GroupBar: React.FC<{
     { base: true, md: false },
     { ssr: false }
   );
+  const shareModal = UI.useDisclosure();
 
   return (
     <UI.HStack
@@ -202,7 +203,11 @@ const GroupBar: React.FC<{
         />
       ) : null}
       {isMember ? (
-        <GroupOverflowMenu group={group} user={user} />
+        <GroupOverflowMenu
+          group={group}
+          user={user}
+          onInvite={shareModal.onOpen}
+        />
       ) : (
         <UI.Heading size="sm" noOfLines={1} mr="auto">
           <UI.Text as="span" data-testid="group-title">
@@ -210,14 +215,24 @@ const GroupBar: React.FC<{
           </UI.Text>
         </UI.Heading>
       )}
-      <ShareButton group={group} />
+      <UI.IconButton
+        aria-label="Invite or Share"
+        icon={faUserPlus}
+        variant="ghost"
+        size="sm"
+        onClick={shareModal.onOpen}
+      />
       {isMobile ? <UserMenu showGroups showColorMode /> : null}
+      <ShareGroupModal group={group} {...shareModal} />
     </UI.HStack>
   );
 };
 
-const ShareButton: React.FC<{ group: Group }> = ({ group }) => {
-  const modal = UI.useDisclosure();
+const ShareGroupModal: React.FC<{
+  group: Group;
+  isOpen: boolean;
+  onClose: () => void;
+}> = ({ group, isOpen, onClose }) => {
   const toast = UI.useToast();
   const shareUrl = getShareUrl(group.slug);
 
@@ -235,67 +250,59 @@ const ShareButton: React.FC<{ group: Group }> = ({ group }) => {
   };
 
   return (
-    <React.Fragment>
-      <UI.IconButton
-        aria-label="Share"
-        icon={faShareFromSquare}
-        variant="ghost"
-        size="sm"
-        onClick={modal.onOpen}
-      />
-
-      <UI.QuickModal
-        headerContent={
-          <React.Fragment>
-            <UI.Icon icon={faQrcode} mr={2} />
-            Share {group.name}
-          </React.Fragment>
-        }
-        size="md"
-        {...modal}
-      >
-        <UI.ModalBody px={6} pb={6}>
-          <UI.VStack spacing={4}>
-            <UI.Box
-              bg="white"
-              p={6}
-              borderRadius="2xl"
-              border="1px solid"
-              borderColor="border.subtle"
-              shadow="sm"
+    <UI.QuickModal
+      headerContent={
+        <React.Fragment>
+          <UI.Icon icon={faQrcode} mr={2} />
+          Share {group.name}
+        </React.Fragment>
+      }
+      size="md"
+      isOpen={isOpen}
+      onClose={onClose}
+    >
+      <UI.ModalBody px={6} pb={6}>
+        <UI.VStack spacing={4}>
+          <UI.Box
+            bg="white"
+            p={6}
+            borderRadius="2xl"
+            border="1px solid"
+            borderColor="border.subtle"
+            shadow="sm"
+          >
+            <QRCode value={shareUrl} size={220} />
+          </UI.Box>
+          <UI.Text fontSize="sm" fontFamily="mono" wordBreak="break-all">
+            {shareUrl}
+          </UI.Text>
+          <UI.ButtonGroup size="sm">
+            <UI.Button
+              preset="primary"
+              leftIcon={<UI.Icon icon={faCopy} />}
+              onClick={copyLink}
             >
-              <QRCode value={shareUrl} size={220} />
-            </UI.Box>
-            <UI.Text fontSize="sm" fontFamily="mono" wordBreak="break-all">
-              {shareUrl}
-            </UI.Text>
-            <UI.ButtonGroup size="sm">
-              <UI.Button
-                preset="primary"
-                leftIcon={<UI.Icon icon={faCopy} />}
-                onClick={copyLink}
-              >
-                Copy link
-              </UI.Button>
-              <UI.Button
-                variant="outline"
-                leftIcon={<UI.Icon icon={faShareFromSquare} />}
-                onClick={nativeShare}
-              >
-                Share
-              </UI.Button>
-            </UI.ButtonGroup>
-          </UI.VStack>
-        </UI.ModalBody>
-      </UI.QuickModal>
-    </React.Fragment>
+              Copy link
+            </UI.Button>
+            <UI.Button
+              variant="outline"
+              leftIcon={<UI.Icon icon={faShareFromSquare} />}
+              onClick={nativeShare}
+            >
+              Share
+            </UI.Button>
+          </UI.ButtonGroup>
+        </UI.VStack>
+      </UI.ModalBody>
+    </UI.QuickModal>
   );
 };
 
-const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
-  group,
-  user,
-}) => {
+const GroupOverflowMenu: React.FC<{
+  group: Group;
+  user: AppUser;
+  onInvite: () => void;
+}> = ({ group, user, onInvite }) => {
   const isCreator = group.uid === user.uid;
   const membersModal = UI.useDisclosure();
   const renameModal = UI.useDisclosure();
@@ -348,6 +355,12 @@ const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
 
   const sheetItems: UI.ActionSheetItem[] = [
     {
+      id: 'invite',
+      label: 'Invite or Share',
+      icon: faUserPlus,
+      onClick: onInvite,
+    },
+    {
       id: 'members',
       label: 'Members',
       icon: faUsers,
@@ -378,6 +391,11 @@ const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
     });
   }
 
+  const openInviteFromMembers = () => {
+    membersModal.onClose();
+    onInvite();
+  };
+
   const modals = (
     <React.Fragment>
       <MembersModal
@@ -385,6 +403,7 @@ const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
         user={user}
         isOpen={membersModal.isOpen}
         onClose={membersModal.onClose}
+        onInvite={openInviteFromMembers}
       />
       <RenameGroupModal
         group={group}
@@ -457,6 +476,13 @@ const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
         <UI.MenuList>
           <UI.MenuItem
             fontSize="sm"
+            icon={<UI.Icon icon={faUserPlus} />}
+            onClick={onInvite}
+          >
+            Invite or Share
+          </UI.MenuItem>
+          <UI.MenuItem
+            fontSize="sm"
             icon={<UI.Icon icon={faUsers} />}
             onClick={membersModal.onOpen}
           >
@@ -507,10 +533,20 @@ const MembersModal: React.FC<{
   user: AppUser;
   isOpen: boolean;
   onClose: () => void;
-}> = ({ group, user, isOpen, onClose }) => {
+  onInvite: () => void;
+}> = ({ group, user, isOpen, onClose, onInvite }) => {
   return (
     <UI.QuickModal isOpen={isOpen} onClose={onClose} headerContent="Members">
       <UI.ModalBody pb={6}>
+        <UI.HStack justify="flex-end" mb={2}>
+          <UI.IconButton
+            aria-label="Invite or Share"
+            icon={faUserPlus}
+            size="sm"
+            variant="ghost"
+            onClick={onInvite}
+          />
+        </UI.HStack>
         {isOpen ? <MembersList group={group} user={user} /> : null}
       </UI.ModalBody>
     </UI.QuickModal>
@@ -947,12 +983,14 @@ export const MessageRow: React.FC<{
   );
 };
 
+const MESSAGE_MAX_LENGTH = 140;
+
 const Composer: React.FC<{ onSend: (text: string) => Promise<void> }> = ({
   onSend,
 }) => {
   const [text, setText] = React.useState('');
   const toast = UI.useToast();
-  const canSend = !!text.trim();
+  const canSend = !!text.trim() && text.length <= MESSAGE_MAX_LENGTH;
 
   const handleSend = async () => {
     if (!canSend) return;
@@ -977,7 +1015,20 @@ const Composer: React.FC<{ onSend: (text: string) => Promise<void> }> = ({
         value={text}
         onChange={setText}
         onSubmit={handleSend}
+        maxLength={MESSAGE_MAX_LENGTH}
       />
+      {text.length > 0 ? (
+        <UI.Text
+          position="absolute"
+          bottom={3}
+          right={14}
+          fontSize="xs"
+          color={text.length > MESSAGE_MAX_LENGTH ? 'red.500' : 'text.muted'}
+          pointerEvents="none"
+        >
+          {text.length}/{MESSAGE_MAX_LENGTH}
+        </UI.Text>
+      ) : null}
       <UI.Box position="absolute" bottom={2} right={2}>
         <UI.IconButton
           aria-label="Send"

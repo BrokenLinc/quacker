@@ -81,6 +81,22 @@ sign-in flow asks "What should people call you?" right after first OTP verify
 (skippable); "Change name" lives in the avatar menu. Names are denormalized
 onto `group_members` for the roster and onto `messages` at send time.
 
+## Inputs
+
+Make invalid input hard to type, not just hard to submit. Prefer:
+
+| Pattern | When | In this repo |
+| ------- | ---- | ------------ |
+| Masked input | Fixed digit/format strings (phone, zip, SSN) | `UI.MaskedInput` + `react-hook-mask`; masks in `subtypeMetas` |
+| Filtered / typed | Allowed character set is small (names) | Strip on change + `maxLength` |
+| Length limit | Short-form content (chat) | TipTap `CharacterCount` + visible `n/max` when typing |
+| Purpose-built control | Structure or a11y beats a single text box | OTP → Chakra `PinInput`; closed sets → combobox/select; money/date → form subtypes |
+
+Custom controls (OTP pin fields, comboboxes, masked phones) are preferred when
+they reduce mistakes and map better to assistive tech — do not default to a
+plain text field “because validation will catch it.” Reuse `src/forms/` and
+`@@ui` primitives before adding another masking library.
+
 ## State handling
 
 | State | Pattern |
