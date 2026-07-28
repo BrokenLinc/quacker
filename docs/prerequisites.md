@@ -53,4 +53,32 @@ Copy from [`.env.example`](../.env.example). The agent fills project URL, keys, 
 
 Optional: **GitHub CLI** (`gh auth login`), **Google Chrome** (local e2e). **Docker** not required (remote Supabase).
 
-**Not needed for MVP:** Google OAuth, Twilio, Firebase.
+## Twilio Verify (SMS OTP)
+
+Production sign-in uses **Twilio Verify** via Edge Functions. **Verify does not require A2P 10DLC**, but Twilio still blocks SMS to unverified numbers until identity is approved.
+
+| Step | Who | Notes |
+| ---- | --- | ----- |
+| Create Twilio account + Verify Service | **You** | Console → Verify → Services; save `TWILIO_VERIFY_SERVICE_SID` |
+| Add billing / upgrade from trial | **You** | Console → **Upgrade** (adding balance alone is not enough) |
+| **Primary Compliance Profile** (Trust Hub) | **You** | **Required** to text numbers other than verified testers — Console only (API blocked for direct accounts) |
+| Paste `TWILIO_*` into `.env.local` | **You** | Agent syncs to Supabase Edge Function secrets on deploy |
+| `AUTH_ALLOW_TEST_OTP` on **dev only** | **Agent** | Fictional `555-01XX` + code `555555` — never production |
+
+### Primary Compliance Profile (fixes error 21608)
+
+Symptom: OTP works for your own verified phone, fails for everyone else with “trial account” / error **21608** — even after upgrade and adding funds.
+
+Cause: no **approved Primary Compliance Profile** in Trust Hub (`CustomerProfiles` list empty).
+
+Fix (Console — ~10 min + up to 72h review):
+
+1. [Twilio Console → Trust Hub → Profiles](https://console.twilio.com/us1/account/trust-hub/customer-profiles)
+2. Under **Primary profile**, choose **Individual Profile** (solo/dev) or **Business Profile** (company)
+3. Complete identity steps (legal name, address, photo ID, selfie verification)
+4. Submit for review — Twilio emails when **Twilio Approved**
+5. Retry OTP to an unverified number (no app code changes)
+
+Until approved, add testers under [Verified Caller IDs](https://console.twilio.com/us1/develop/phone-numbers/manage/verified) (trial-style limit applies).
+
+**Not needed for MVP:** Google OAuth, Firebase.

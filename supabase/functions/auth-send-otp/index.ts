@@ -12,6 +12,7 @@ import {
   syntheticVerificationSid,
   testOtpEnabled,
   twilioAuthHeader,
+  twilioSendOtpUserError,
   verifyServiceSid,
 } from '../_shared/auth-utils.ts';
 
@@ -123,7 +124,7 @@ Deno.serve(async (req) => {
         'error'
       );
       return jsonResponse(
-        { error: payload.message ?? 'Failed to send code' },
+        { error: twilioSendOtpUserError(payload) },
         res.status
       );
     }

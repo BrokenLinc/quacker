@@ -58,6 +58,15 @@ Session longevity (agent-configured via Management API + `supabase/config.toml`)
 
 When looking up SMS users in `auth-verify-otp`, match by **digits** (and synthetic email `*@phone.yowl.us`), not exact E.164 strings — GoTrue may store `phone` without a leading `+`.
 
+### Twilio Verify SMS OTP
+
+Edge Functions: `auth-send-otp`, `auth-verify-otp`. Secrets: `TWILIO_ACCOUNT_SID`, `TWILIO_AUTH_TOKEN`, `TWILIO_VERIFY_SERVICE_SID`.
+
+**Upgrade + balance ≠ unrestricted SMS.** Twilio returns error **21608** until a **Primary Compliance Profile** is **Twilio Approved** in Trust Hub. See [prerequisites.md — Twilio Verify](./prerequisites.md#twilio-verify-sms-otp).
+
+- **Dev test OTP:** `AUTH_ALLOW_TEST_OTP=true` on **quacker-dev** only; fictional `555-01XX` + `555555` — never prod.
+- **Verify** is exempt from A2P 10DLC; do not register a messaging campaign for OTP alone.
+
 ## Workflows
 
 | Command / workflow | Target |
