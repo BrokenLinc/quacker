@@ -31,7 +31,8 @@ export const InAppPushToastListener: React.FC = () => {
   pathnameRef.current = location.pathname;
 
   useEffect(() => {
-    if (!('serviceWorker' in navigator)) return;
+    const sw = navigator.serviceWorker;
+    if (!sw?.addEventListener) return;
 
     const onMessage = (event: MessageEvent) => {
       if (!isPushPayload(event.data)) return;
@@ -81,9 +82,9 @@ export const InAppPushToastListener: React.FC = () => {
       });
     };
 
-    navigator.serviceWorker.addEventListener('message', onMessage);
+    sw.addEventListener('message', onMessage);
     return () => {
-      navigator.serviceWorker.removeEventListener('message', onMessage);
+      sw.removeEventListener?.('message', onMessage);
     };
   }, [navigate, toast]);
 
