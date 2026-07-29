@@ -3,37 +3,27 @@ import {
   faBell,
   faMoon,
   faPenToSquare,
-  faPlus,
   faRightFromBracket,
   faSun,
 } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 
-import { useGroups } from '@@api';
 import { UserAvatar } from '@@components/UserAvatar';
 import { NotificationsSwitch } from '@@components/NotificationsSwitch';
 import { usePushEnabled } from '@@lib/notifications/prefs';
 import { removeCurrentPushSubscription } from '@@lib/notifications/subscribe';
 import { signOut, useAuthState } from '@@lib/supabase/auth';
-import { routes } from '@@routing/routes';
 
 import { DisplayNameForm } from './DisplayNameForm';
-import { NewGroupModal } from './NewGroupModal';
 
 export type UserMenuProps = {
-  /** Include group navigation + New group (mobile — no sidebar). */
-  showGroups?: boolean;
   /** Include the appearance toggle (mobile — no sidebar footer). */
   showColorMode?: boolean;
 };
 
-export const UserMenu: React.FC<UserMenuProps> = ({
-  showGroups,
-  showColorMode,
-}) => {
+export const UserMenu: React.FC<UserMenuProps> = ({ showColorMode }) => {
   const [user] = useAuthState();
   const { colorMode, toggleColorMode } = UI.useColorMode();
-  const newGroupModal = UI.useDisclosure();
   const editNameModal = UI.useDisclosure();
   const notifyModal = UI.useDisclosure();
   const sheet = UI.useDisclosure();
@@ -43,17 +33,11 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   );
   const [pushEnabled] = usePushEnabled(user?.uid);
 
-  const [groups] = useGroups({
-    userId: showGroups ? user?.uid : undefined,
-    channelId: 'user-menu',
-  });
-
   if (!user) return null;
 
   const identityLabel = user.displayName || user.phone || user.email || '';
 
   const openEditName = () => editNameModal.onOpen();
-  const openNewGroup = () => newGroupModal.onOpen();
   const openNotifications = () => notifyModal.onOpen();
 
   const handleSignOut = async () => {
@@ -62,8 +46,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   };
 
   const sheetItems: UI.ActionSheetItem[] = [];
-  // Account actions first (above a long group list) so Maestro + thumbs can
-  // reach appearance / log out without scrolling past every membership.
   if (showColorMode) {
     sheetItems.push({
       id: 'color-mode',
@@ -90,21 +72,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
     icon: faRightFromBracket,
     onClick: () => void handleSignOut(),
   });
-  if (showGroups) {
-    for (const group of groups ?? []) {
-      sheetItems.push({
-        id: `group-${group.id}`,
-        label: group.name,
-        route: routes.group(group.id),
-      });
-    }
-    sheetItems.push({
-      id: 'new-group',
-      label: 'New group',
-      icon: faPlus,
-      onClick: openNewGroup,
-    });
-  }
+
   const avatar = (
     <UserAvatar
       name={identityLabel}
@@ -120,10 +88,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   const modals = (
     <React.Fragment>
-      <NewGroupModal
-        isOpen={newGroupModal.isOpen}
-        onClose={newGroupModal.onClose}
-      />
       <UI.QuickModal
         isOpen={editNameModal.isOpen}
         onClose={editNameModal.onClose}
@@ -189,9 +153,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
             </UI.Text>
           </UI.Box>
           <UI.MenuDivider />
-          {showGroups ? (
-            <GroupMenuItems onNewGroup={openNewGroup} groups={groups} />
-          ) : null}
           <UI.MenuItem
             fontSize="sm"
             icon={<UI.Icon icon={faBell} />}
@@ -226,35 +187,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({
         </UI.MenuList>
       </UI.Menu>
       {modals}
-    </React.Fragment>
-  );
-};
-
-const GroupMenuItems: React.FC<{
-  onNewGroup: () => void;
-  groups: ReturnType<typeof useGroups>[0];
-}> = ({ onNewGroup, groups }) => {
-  return (
-    <React.Fragment>
-      {groups?.map((group) => (
-        <UI.RouteMenuItem
-          key={group.id}
-          route={routes.group(group.id)}
-          fontSize="sm"
-          activeProps={{ bg: 'nav.selected' }}
-        >
-          {group.name}
-        </UI.RouteMenuItem>
-      ))}
-      <UI.MenuItem
-        fontSize="sm"
-        fontWeight="bold"
-        icon={<UI.Icon icon={faPlus} />}
-        onClick={onNewGroup}
-      >
-        New group
-      </UI.MenuItem>
-      <UI.MenuDivider />
     </React.Fragment>
   );
 };

@@ -85,6 +85,8 @@ export const installPushMocks = async (page: Page) => {
           register: async () => registration,
           getRegistration: async () => registration,
           ready: Promise.resolve(registration),
+          addEventListener: () => undefined,
+          removeEventListener: () => undefined,
         },
       });
     },

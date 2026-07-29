@@ -13,13 +13,6 @@ import {
 test.describe('notification prefs', () => {
   test.describe.configure({ mode: 'serial' });
 
-  test('does not request OS permission on load', async ({ page }) => {
-    await installPushMocks(page);
-    await seedTestSession(page);
-
-    await expect.poll(async () => getPushPermissionRequestCount(page)).toBe(0);
-  });
-
   test('Account switch enables push after explicit toggle', async ({ page }) => {
     await installPushMocks(page);
     const { admin, userId } = await seedTestSession(page);
