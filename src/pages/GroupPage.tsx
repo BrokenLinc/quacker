@@ -328,7 +328,7 @@ const GroupOverflowMenu: React.FC<{
     { base: true, md: false },
     { ssr: false }
   );
-  const [members] = useGroupMembers(group.id);
+  const [members] = useGroupMembers(group.id, { channelId: 'overflow' });
   const myMember = members?.find((m) => m.uid === user.uid);
   const notifyLevel = myMember?.notifyLevel ?? 'all';
 
@@ -594,7 +594,9 @@ const MembersList: React.FC<{ group: Group; user: AppUser }> = ({
   group,
   user,
 }) => {
-  const [members, loading, error] = useGroupMembers(group.id);
+  const [members, loading, error] = useGroupMembers(group.id, {
+    channelId: 'members-list',
+  });
   const confirmation = useConfirmation();
   const toast = UI.useToast();
   const isCreator = group.uid === user.uid;

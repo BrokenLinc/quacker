@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useId, useState } from 'react';
 
 import { supabase } from '@@lib/supabase/client';
 import type { NotifyLevel } from '@@lib/notifications/shouldNotify';
@@ -230,7 +230,10 @@ export const useGroupMembers = (
   groupId: string,
   options?: { channelId?: string }
 ): HookResult<GroupMember[]> => {
-  const channelId = options?.channelId ?? 'default';
+  // supabase.channel(name) reuses an existing channel — concurrent mounts with
+  // the same name cannot add .on() after the first .subscribe().
+  const instanceId = useId();
+  const channelId = options?.channelId ?? instanceId;
   const [members, setMembers] = useState<GroupMember[] | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
