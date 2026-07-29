@@ -57,9 +57,18 @@ type HookResult<T> = [T | undefined, boolean, Error | undefined];
 /** Broadcast so every mounted useGroups refetches after local mutations. */
 const GROUPS_CHANGED_EVENT = 'quacker:groups-changed';
 
+/** Broadcast so unread badge hooks refetch after mark-viewed / prefs. */
+const UNREAD_CHANGED_EVENT = 'quacker:unread-changed';
+
 const notifyGroupsChanged = () => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event(GROUPS_CHANGED_EVENT));
+  }
+};
+
+export const notifyUnreadChanged = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(UNREAD_CHANGED_EVENT));
   }
 };
 
@@ -375,4 +384,91 @@ export const isGroupMember = async (
 
   if (error) return false;
   return !!data;
+};
+
+/** Mark the current user's membership as viewed (clears unread for this group). */
+export const markGroupViewed = async (
+  groupId: string,
+  userId: string
+): Promise<void> => {
+  const { error } = await supabase
+    .from('group_members')
+    .update({ last_viewed_at: new Date().toISOString() })
+    .eq('group_id', groupId)
+    .eq('user_id', userId);
+  if (error) throw error;
+  notifyUnreadChanged();
+};
+
+/**
+ * Unread message counts per group for the signed-in user, filtered by that
+ * membership's notify_level (silenced → 0).
+ */
+export const useUnreadCounts = (options: {
+  userId: string | undefined;
+  channelId?: string;
+}): [Record<string, number>, boolean] => {
+  const { userId } = options;
+  const channelId = options.channelId ?? 'default';
+  const [counts, setCounts] = useState<Record<string, number>>({});
+  const [loading, setLoading] = useState(true);
+
+  const fetchCounts = useCallback(async () => {
+    if (!userId) return;
+    const { data, error: fetchError } = await supabase.rpc(
+      'unread_message_counts'
+    );
+    if (fetchError) {
+      setCounts({});
+    } else {
+      const next: Record<string, number> = {};
+      for (const row of data ?? []) {
+        const n = Number(row.count);
+        if (n > 0) next[row.group_id] = n;
+      }
+      setCounts(next);
+    }
+    setLoading(false);
+  }, [userId]);
+
+  useEffect(() => {
+    if (!userId) {
+      setCounts({});
+      setLoading(false);
+      return;
+    }
+    setLoading(true);
+    fetchCounts();
+
+    const onLocalChange = () => fetchCounts();
+    window.addEventListener(GROUPS_CHANGED_EVENT, onLocalChange);
+    window.addEventListener(UNREAD_CHANGED_EVENT, onLocalChange);
+
+    const channel = supabase
+      .channel(`unread-counts:${userId}:${channelId}`)
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        () => fetchCounts()
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'group_members',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => fetchCounts()
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener(GROUPS_CHANGED_EVENT, onLocalChange);
+      window.removeEventListener(UNREAD_CHANGED_EVENT, onLocalChange);
+      supabase.removeChannel(channel);
+    };
+  }, [channelId, fetchCounts, userId]);
+
+  return [counts, loading];
 };

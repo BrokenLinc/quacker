@@ -12,6 +12,7 @@ import {
   isGroupMember,
   joinGroup,
   leaveGroup,
+  markGroupViewed,
   removeGroupMember,
   updateGroup,
   useGroup,
@@ -234,7 +235,7 @@ const GroupBar: React.FC<{
         size="sm"
         onClick={shareModal.onOpen}
       />
-      {isMobile ? <UserMenu showGroups showColorMode /> : null}
+      {isMobile ? <UserMenu showColorMode /> : null}
       <ShareGroupModal group={group} {...shareModal} />
     </UI.HStack>
   );
@@ -862,6 +863,17 @@ const GroupChat: React.FC<{
 
   useChirpOnNewMessages(messages, groupId);
 
+  // Clear unread while the user is actively viewing this group.
+  React.useEffect(() => {
+    const mark = () => {
+      if (document.visibilityState !== 'visible') return;
+      void markGroupViewed(groupId, user.uid).catch(() => undefined);
+    };
+    mark();
+    document.addEventListener('visibilitychange', mark);
+    return () => document.removeEventListener('visibilitychange', mark);
+  }, [groupId, user.uid, messages?.length]);
+
   // Drop pending copies once the server round-trips them back.
   React.useEffect(() => {
     if (!messages?.length) return;
@@ -1001,7 +1013,7 @@ const ChatScrollArea: React.FC<{
       flex={1}
       minH={0}
       overflowY="auto"
-      overscrollBehavior="contain"
+      overscrollBehavior="auto"
       px={4}
       py={3}
     >
@@ -1040,7 +1052,6 @@ export const MessageRow: React.FC<{
       pb={0.5}
       borderRadius="lg"
       opacity={message.pending ? 0.55 : 1}
-      _hover={{ bg: 'surface.sunken' }}
       sx={{
         animation: 'yowl-message-in 160ms ease-out',
         '@media (prefers-reduced-motion: reduce)': { animation: 'none' },

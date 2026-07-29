@@ -1,4 +1,4 @@
-import { useGroups } from '@@api';
+import { useGroups, useUnreadCounts } from '@@api';
 import { RequireAuth } from '@@components/auth/RequireAuth';
 import {
   NewGroupButton,
@@ -20,7 +20,7 @@ const HomePage: React.FC = () => {
         flex={1}
         minH={0}
         overflowY="auto"
-        overscrollBehavior="contain"
+        overscrollBehavior="auto"
       >
         <UI.Box
           maxW="560px"
@@ -43,9 +43,15 @@ const HomePage: React.FC = () => {
 };
 export default HomePage;
 
+const formatUnread = (n: number): string => (n > 99 ? '99+' : String(n));
+
 const GroupList: React.FC = () => {
   const [user] = useAuthState();
   const [groups, loading, error] = useGroups({
+    userId: user?.uid,
+    channelId: 'home',
+  });
+  const [unread] = useUnreadCounts({
     userId: user?.uid,
     channelId: 'home',
   });
@@ -91,22 +97,41 @@ const GroupList: React.FC = () => {
       overflow="hidden"
       divider={<UI.Divider borderColor="border.subtle" />}
     >
-      {groups.map((group) => (
-        <UI.HStack
-          as={UI.RouteLink}
-          key={group.id}
-          route={routes.group(group.id)}
-          px={4}
-          py={3}
-          color="inherit"
-          textDecoration="none"
-          fontWeight="semibold"
-          _hover={{ bg: 'surface.sunken', textDecoration: 'none' }}
-        >
-          <UI.Text noOfLines={1}>{group.name}</UI.Text>
-          <UI.Icon icon={faChevronRight} ml="auto" color="text.muted" />
-        </UI.HStack>
-      ))}
+      {groups.map((group) => {
+        const count = unread[group.id] ?? 0;
+        return (
+          <UI.HStack
+            as={UI.RouteLink}
+            key={group.id}
+            route={routes.group(group.id)}
+            px={4}
+            py={3}
+            color="inherit"
+            textDecoration="none"
+            fontWeight="semibold"
+            _hover={{ bg: 'surface.sunken', textDecoration: 'none' }}
+          >
+            <UI.Text noOfLines={1}>{group.name}</UI.Text>
+            {count > 0 ? (
+              <UI.IndicatorBadge
+                active
+                ml="auto"
+                mr={2}
+                borderRadius="full"
+                minW={5}
+                px={1.5}
+                fontSize="xs"
+                aria-label={`${count} new messages`}
+              >
+                {formatUnread(count)}
+              </UI.IndicatorBadge>
+            ) : (
+              <UI.Box ml="auto" />
+            )}
+            <UI.Icon icon={faChevronRight} color="text.muted" />
+          </UI.HStack>
+        );
+      })}
     </UI.VStack>
   );
 };

@@ -3,10 +3,11 @@ import { faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 import { Outlet, useMatch } from 'react-router-dom';
 
-import { useGroups } from '@@api';
+import { useGroups, useUnreadCounts } from '@@api';
 import { SignInForm } from '@@components/auth/SignInForm';
 import { useSignInPlacement } from '@@components/auth/useSignInPlacement';
 import { SignInPlacementFromAuth } from '@@components/auth/SignInPlacementFromAuth';
+import { InAppPushToastListener } from '@@lib/notifications/inAppPushToast';
 import { useAuthState } from '@@lib/supabase/auth';
 import { useVisualViewportHeight } from '@@lib/pwa/useVisualViewportHeight';
 import { routes } from '@@routing/routes';
@@ -33,6 +34,7 @@ export const AppLayout: React.FC = () => {
 
   return (
     <SignInPlacementFromAuth>
+      <InAppPushToastListener />
       <UI.Flex
         direction="column"
         position="absolute"
@@ -85,7 +87,7 @@ const MobileHeader: React.FC = () => {
       bg="surface.raised"
     >
       <BrandLink mr="auto" />
-      {user ? <UserMenu showGroups showColorMode /> : <HeaderSignIn />}
+      {user ? <UserMenu showColorMode /> : <HeaderSignIn />}
     </UI.HStack>
   );
 };
@@ -115,7 +117,7 @@ const Sidebar: React.FC = () => {
             flex={1}
             minH={0}
             overflowY="auto"
-            overscrollBehavior="contain"
+            overscrollBehavior="auto"
             px={3}
             py={1}
           >
@@ -141,9 +143,15 @@ const Sidebar: React.FC = () => {
   );
 };
 
+const formatUnread = (n: number): string => (n > 99 ? '99+' : String(n));
+
 const SidebarGroupNav: React.FC = () => {
   const [user] = useAuthState();
   const [groups, loading, error] = useGroups({
+    userId: user?.uid,
+    channelId: 'sidebar',
+  });
+  const [unread] = useUnreadCounts({
     userId: user?.uid,
     channelId: 'sidebar',
   });
@@ -174,24 +182,44 @@ const SidebarGroupNav: React.FC = () => {
 
   return (
     <UI.VStack align="stretch" spacing={0.5}>
-      {groups.map((group) => (
-        <UI.RouteLink
-          key={group.id}
-          route={routes.group(group.id)}
-          px={2}
-          py={1.5}
-          borderRadius="md"
-          fontSize="sm"
-          fontWeight="medium"
-          color="inherit"
-          textDecoration="none"
-          noOfLines={1}
-          _hover={{ bg: 'border.subtle', textDecoration: 'none' }}
-          activeProps={{ bg: 'nav.selected', fontWeight: 'bold' }}
-        >
-          {group.name}
-        </UI.RouteLink>
-      ))}
+      {groups.map((group) => {
+        const count = unread[group.id] ?? 0;
+        return (
+          <UI.RouteLink
+            key={group.id}
+            route={routes.group(group.id)}
+            display="flex"
+            alignItems="center"
+            gap={2}
+            px={2}
+            py={1.5}
+            borderRadius="md"
+            fontSize="sm"
+            fontWeight="medium"
+            color="inherit"
+            textDecoration="none"
+            _hover={{ bg: 'border.subtle', textDecoration: 'none' }}
+            activeProps={{ bg: 'nav.selected', fontWeight: 'bold' }}
+          >
+            <UI.Text as="span" noOfLines={1} flex={1} minW={0}>
+              {group.name}
+            </UI.Text>
+            {count > 0 ? (
+              <UI.IndicatorBadge
+                active
+                borderRadius="full"
+                minW={5}
+                px={1.5}
+                fontSize="xs"
+                flexShrink={0}
+                aria-label={`${count} new messages`}
+              >
+                {formatUnread(count)}
+              </UI.IndicatorBadge>
+            ) : null}
+          </UI.RouteLink>
+        );
+      })}
     </UI.VStack>
   );
 };

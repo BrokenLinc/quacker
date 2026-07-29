@@ -19,6 +19,7 @@ export type Database = {
           display_name: string | null;
           group_id: string;
           joined_at: string;
+          last_viewed_at: string;
           notify_level: Database['public']['Enums']['notify_level'];
           photo_url: string | null;
           role: Database['public']['Enums']['group_role'];
@@ -28,6 +29,7 @@ export type Database = {
           display_name?: string | null;
           group_id: string;
           joined_at?: string;
+          last_viewed_at?: string;
           notify_level?: Database['public']['Enums']['notify_level'];
           photo_url?: string | null;
           role?: Database['public']['Enums']['group_role'];
@@ -37,6 +39,7 @@ export type Database = {
           display_name?: string | null;
           group_id?: string;
           joined_at?: string;
+          last_viewed_at?: string;
           notify_level?: Database['public']['Enums']['notify_level'];
           photo_url?: string | null;
           role?: Database['public']['Enums']['group_role'];
@@ -184,7 +187,13 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      unread_message_counts: {
+        Args: Record<PropertyKey, never>;
+        Returns: {
+          count: number;
+          group_id: string;
+        }[];
+      };
     };
     Enums: {
       group_role: 'creator' | 'member';

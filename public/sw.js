@@ -10,26 +10,31 @@ self.addEventListener('push', (event) => {
     (async () => {
       const groupId = data.groupId ?? null;
       const targetUrl = data.url ?? (groupId ? `/${groupId}` : '/');
+      const payload = {
+        type: 'yowl-push',
+        title: data.title ?? 'Yowl',
+        body: data.body ?? 'Someone yowled!',
+        url: targetUrl,
+        groupId,
+      };
 
-      if (groupId) {
-        const windowClients = await self.clients.matchAll({
-          type: 'window',
-          includeUncontrolled: true,
-        });
-        const focusedOnGroup = windowClients.some((client) => {
-          if (!client.focused) return false;
-          try {
-            const path = new URL(client.url).pathname;
-            return path === `/${groupId}` || path.startsWith(`/${groupId}/`);
-          } catch {
-            return false;
-          }
-        });
-        if (focusedOnGroup) return;
+      const windowClients = await self.clients.matchAll({
+        type: 'window',
+        includeUncontrolled: true,
+      });
+      const focusedClients = windowClients.filter((client) => client.focused);
+
+      // App is open and focused — never show an OS notification; let the page
+      // decide whether to toast (e.g. when viewing a different group).
+      if (focusedClients.length > 0) {
+        for (const client of focusedClients) {
+          client.postMessage(payload);
+        }
+        return;
       }
 
-      await self.registration.showNotification(data.title ?? 'Yowl', {
-        body: data.body ?? 'Someone yowled!',
+      await self.registration.showNotification(payload.title, {
+        body: payload.body,
         icon: '/icons/icon-192.png',
         badge: '/icons/icon-192.png',
         tag: groupId ? `yowl-group-${groupId}` : 'yowl',
