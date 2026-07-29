@@ -21,14 +21,26 @@ groups
   id, slug, creator_id, name, author_name, author_photo_url, created_at
 
 group_members
-  group_id, user_id, role (creator|member)
+  group_id, user_id, role (creator|member), notify_level (all|announcements|none)
 
 messages
-  id, group_id, author_id, author_name, author_photo_url, text, created_at
+  id, group_id, author_id, author_name, author_photo_url, text, is_announcement, created_at
+
+user_notification_prefs
+  user_id, push_enabled
 
 push_subscriptions
-  user_id, group_id, endpoint, p256dh, auth
+  user_id, endpoint, p256dh, auth   -- device-level (group_id unused)
 ```
+
+## Push delivery
+
+1. Client opt-in Switch → OS permission → store endpoint in `push_subscriptions`
+2. `messages` INSERT trigger → `pg_net` → Edge `notify-new-message`
+3. Filter by `push_enabled` + per-group `notify_level` + skip author
+4. `web-push` with VAPID; SW shows notification (suppresses if focused on that group)
+
+Setup: `scripts/setup-notify-webhook.sh` + `VITE_VAPID_PUBLIC_KEY` / `yarn sync:vercel-env`
 
 ## Realtime
 

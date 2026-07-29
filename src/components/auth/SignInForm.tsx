@@ -99,7 +99,11 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
   if (step === 'name') {
     return (
       <UI.Box w="full" maxW="320px">
-        <DisplayNameForm allowSkip onDone={() => onSuccess?.()} />
+        <DisplayNameForm
+          allowSkip
+          showNotificationsOptIn
+          onDone={() => onSuccess?.()}
+        />
       </UI.Box>
     );
   }

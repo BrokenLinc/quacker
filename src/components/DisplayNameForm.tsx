@@ -2,25 +2,33 @@ import * as UI from '@@ui';
 import React from 'react';
 
 import { updateMyMemberProfile } from '@@api';
+import { NotificationsSwitch } from '@@components/NotificationsSwitch';
 import {
   resolveAppUserPhotoURL,
   updateDisplayName,
   useAuthState,
 } from '@@lib/supabase/auth';
+import { setPushEnabled } from '@@lib/notifications/prefs';
+import type { EnablePushResult } from '@@lib/notifications/subscribe';
+import { getNotificationPermissionState } from '@@lib/notifications/permission';
 
 export type DisplayNameFormProps = {
   /** Called after saving (or skipping, when allowed). */
   onDone?: () => void;
   allowSkip?: boolean;
+  /** Show notifications Switch (onboarding). Default false for rename-only. */
+  showNotificationsOptIn?: boolean;
 };
 
 /** "What should people call you?" — real identity beats `···1234`. */
 export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
   onDone,
   allowSkip,
+  showNotificationsOptIn = false,
 }) => {
   const [user] = useAuthState();
   const [name, setName] = React.useState('');
+  const [notifyOptIn, setNotifyOptIn] = React.useState(false);
   const [saving, setSaving] = React.useState(false);
   const toast = UI.useToast();
 
@@ -37,6 +45,17 @@ export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
           displayName: trimmed,
           photoURL: resolveAppUserPhotoURL(user),
         }).catch(() => undefined);
+
+        if (showNotificationsOptIn) {
+          if (notifyOptIn) {
+            const result = await setPushEnabled(user.uid, true);
+            if (!result.ok) {
+              toastPushFailure(toast, result);
+            }
+          } else {
+            await setPushEnabled(user.uid, false).catch(() => undefined);
+          }
+        }
       }
       onDone?.();
     } catch {
@@ -70,6 +89,13 @@ export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
           Shown with your messages in every group
         </UI.FormHelperText>
       </UI.FormControl>
+      {showNotificationsOptIn ? (
+        <NotificationsSwitch
+          isChecked={notifyOptIn}
+          onCheckedChange={setNotifyOptIn}
+          persist={false}
+        />
+      ) : null}
       <UI.Button
         type="submit"
         preset="primary"
@@ -77,7 +103,7 @@ export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
         isLoading={saving}
         loadingText="Saving…"
       >
-        Save name
+        {showNotificationsOptIn ? 'Continue' : 'Save name'}
       </UI.Button>
       {allowSkip ? (
         <UI.Button variant="ghost" size="sm" onClick={() => onDone?.()}>
@@ -87,3 +113,36 @@ export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
     </UI.VStack>
   );
 };
+
+function toastPushFailure(
+  toast: ReturnType<typeof UI.useToast>,
+  result: Extract<EnablePushResult, { ok: false }>
+) {
+  const permission = getNotificationPermissionState();
+  if (result.reason === 'ios-needs-install' || permission === 'ios-needs-install') {
+    toast({
+      title: 'Install Yowl on your Home Screen',
+      description:
+        'On iPhone, Add to Home Screen first, then turn on notifications from Account.',
+      status: 'info',
+      duration: 6000,
+    });
+    return;
+  }
+  if (result.reason === 'denied') {
+    toast({
+      title: 'Notifications blocked',
+      description:
+        'Allow notifications for Yowl in your browser settings if you change your mind.',
+      status: 'warning',
+      duration: 5000,
+    });
+    return;
+  }
+  toast({
+    title: "Couldn't enable notifications",
+    description: 'You can turn them on later from Account.',
+    status: 'warning',
+    duration: 4000,
+  });
+}

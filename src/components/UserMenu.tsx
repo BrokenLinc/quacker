@@ -1,5 +1,6 @@
 import * as UI from '@@ui';
 import {
+  faBell,
   faMoon,
   faPenToSquare,
   faPlus,
@@ -10,6 +11,9 @@ import React from 'react';
 
 import { useGroups } from '@@api';
 import { UserAvatar } from '@@components/UserAvatar';
+import { NotificationsSwitch } from '@@components/NotificationsSwitch';
+import { usePushEnabled } from '@@lib/notifications/prefs';
+import { removeCurrentPushSubscription } from '@@lib/notifications/subscribe';
 import { signOut, useAuthState } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 
@@ -31,11 +35,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({
   const { colorMode, toggleColorMode } = UI.useColorMode();
   const newGroupModal = UI.useDisclosure();
   const editNameModal = UI.useDisclosure();
+  const notifyModal = UI.useDisclosure();
   const sheet = UI.useDisclosure();
   const isMobile = UI.useBreakpointValue(
     { base: true, md: false },
     { ssr: false }
   );
+  const [pushEnabled] = usePushEnabled(user?.uid);
 
   const [groups] = useGroups({
     userId: showGroups ? user?.uid : undefined,
@@ -48,6 +54,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({
 
   const openEditName = () => editNameModal.onOpen();
   const openNewGroup = () => newGroupModal.onOpen();
+  const openNotifications = () => notifyModal.onOpen();
+
+  const handleSignOut = async () => {
+    await removeCurrentPushSubscription(user.uid).catch(() => undefined);
+    await signOut();
+  };
 
   const sheetItems: UI.ActionSheetItem[] = [];
   // Account actions first (above a long group list) so Maestro + thumbs can
@@ -61,6 +73,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({
     });
   }
   sheetItems.push({
+    id: 'notifications',
+    label: pushEnabled ? 'Notifications (on)' : 'Notifications',
+    icon: faBell,
+    onClick: openNotifications,
+  });
+  sheetItems.push({
     id: 'change-name',
     label: 'Change name',
     icon: faPenToSquare,
@@ -70,7 +88,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
     id: 'log-out',
     label: 'Log out',
     icon: faRightFromBracket,
-    onClick: () => void signOut(),
+    onClick: () => void handleSignOut(),
   });
   if (showGroups) {
     for (const group of groups ?? []) {
@@ -113,6 +131,15 @@ export const UserMenu: React.FC<UserMenuProps> = ({
       >
         <UI.ModalBody pb={6}>
           <DisplayNameForm onDone={editNameModal.onClose} />
+        </UI.ModalBody>
+      </UI.QuickModal>
+      <UI.QuickModal
+        isOpen={notifyModal.isOpen}
+        onClose={notifyModal.onClose}
+        headerContent="Notifications"
+      >
+        <UI.ModalBody pb={6}>
+          <NotificationsPrefsBody userId={user.uid} />
         </UI.ModalBody>
       </UI.QuickModal>
     </React.Fragment>
@@ -167,6 +194,13 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           ) : null}
           <UI.MenuItem
             fontSize="sm"
+            icon={<UI.Icon icon={faBell} />}
+            onClick={openNotifications}
+          >
+            {pushEnabled ? 'Notifications (on)' : 'Notifications'}
+          </UI.MenuItem>
+          <UI.MenuItem
+            fontSize="sm"
             icon={<UI.Icon icon={faPenToSquare} />}
             onClick={openEditName}
           >
@@ -185,7 +219,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({
           <UI.MenuItem
             fontSize="sm"
             icon={<UI.Icon icon={faRightFromBracket} />}
-            onClick={() => signOut()}
+            onClick={() => void handleSignOut()}
           >
             Log out
           </UI.MenuItem>
@@ -222,5 +256,21 @@ const GroupMenuItems: React.FC<{
       </UI.MenuItem>
       <UI.MenuDivider />
     </React.Fragment>
+  );
+};
+
+const NotificationsPrefsBody: React.FC<{ userId: string }> = ({ userId }) => {
+  const [enabled, loading, , syncLocal] = usePushEnabled(userId);
+
+  if (loading) {
+    return <UI.Skeleton h={12} borderRadius="md" />;
+  }
+
+  return (
+    <NotificationsSwitch
+      isChecked={enabled}
+      onCheckedChange={syncLocal}
+      persist
+    />
   );
 };

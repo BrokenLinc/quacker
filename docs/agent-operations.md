@@ -24,13 +24,23 @@ Full MCP playbook: [`.cursor/rules/mcp-first-ops.mdc`](../.cursor/rules/mcp-firs
 
 ```bash
 yarn check:requirements  # CLIs, .env.local, MCP expectations
-yarn sync:vercel-env     # Preview → dev; Production → prod Supabase
+yarn sync:vercel-env     # Preview → dev; Production → prod Supabase (+ VAPID public)
 yarn bootstrap           # deps; optional local supabase
 yarn dev                 # Vite dev server (dev Supabase)
 yarn verify              # lint + build + test + e2e
 yarn deploy              # prod Supabase + Vercel production only
+scripts/setup-notify-webhook.sh [dev|prod]  # VAPID + webhook vault for Web Push
 supabase db reset        # optional local replay (Docker)
 ```
+
+## Web Push secrets
+
+1. Generate VAPID (or reuse from `.env.local`): `VITE_VAPID_PUBLIC_KEY` = `VAPID_PUBLIC_KEY`; keep `VAPID_PRIVATE_KEY` server-only
+2. `scripts/setup-notify-webhook.sh dev` then `prod` — Management API secrets + Vault for DB trigger
+3. Deploy `notify-new-message` (MCP `deploy_edge_function`, `verify_jwt: false` — auth via `x-webhook-secret`)
+4. `yarn sync:vercel-env` so Preview/Production get `VITE_VAPID_PUBLIC_KEY`
+
+Note: current Supabase CLI may not accept `--token` on `secrets set`; prefer Management API (`/v1/projects/{ref}/secrets`) with `SUPABASE_ACCESS_TOKEN`.
 
 ## Secret propagation (agent runs these)
 
