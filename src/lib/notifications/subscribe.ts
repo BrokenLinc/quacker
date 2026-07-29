@@ -30,7 +30,11 @@ export type EnablePushResult =
 export const enablePushSubscription = async (
   userId: string
 ): Promise<EnablePushResult> => {
-  const vapidKey = import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined;
+  const vapidKey =
+    (import.meta.env.VITE_VAPID_PUBLIC_KEY as string | undefined) ||
+    (typeof window !== 'undefined'
+      ? (window as Window & { __QUACKER_E2E_VAPID__?: string }).__QUACKER_E2E_VAPID__
+      : undefined);
   if (!vapidKey) return { ok: false, reason: 'no-vapid' };
 
   const state = getNotificationPermissionState();

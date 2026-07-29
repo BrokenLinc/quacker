@@ -46,6 +46,7 @@ export const NotifyLevelControl: React.FC<NotifyLevelControlProps> = ({
               borderRadius="md"
               px={3}
               py={2}
+              data-testid={`notify-level-${opt.value}`}
             >
               <UI.HStack align="flex-start" spacing={3}>
                 <UI.Radio value={opt.value} colorScheme="teal" mt={0.5} />
