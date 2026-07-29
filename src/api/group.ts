@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react';
 
 import { supabase } from '@@lib/supabase/client';
+import type { NotifyLevel } from '@@lib/notifications/shouldNotify';
 import type {
   Database,
   GroupMemberRow,
@@ -28,6 +29,7 @@ export interface GroupMember {
   displayName: string | null;
   photoURL: string | null;
   joinedAt: number;
+  notifyLevel: NotifyLevel;
 }
 
 const rowToGroup = (row: GroupRow): Group => ({
@@ -47,6 +49,7 @@ const rowToGroupMember = (row: GroupMemberRow): GroupMember => ({
   displayName: row.display_name,
   photoURL: row.photo_url,
   joinedAt: new Date(row.joined_at).getTime(),
+  notifyLevel: row.notify_level ?? 'all',
 });
 
 type HookResult<T> = [T | undefined, boolean, Error | undefined];
@@ -312,7 +315,12 @@ export const deleteGroup = async (id: string) => {
 
 export const joinGroup = async (
   groupId: string,
-  member: { uid: string; displayName: string | null; photoURL: string | null }
+  member: {
+    uid: string;
+    displayName: string | null;
+    photoURL: string | null;
+    notifyLevel?: NotifyLevel;
+  }
 ) => {
   const { error } = await supabase.from('group_members').insert({
     group_id: groupId,
@@ -320,6 +328,7 @@ export const joinGroup = async (
     role: 'member',
     display_name: member.displayName,
     photo_url: member.photoURL,
+    notify_level: member.notifyLevel ?? 'all',
   });
   // Creator already inserted by trigger; ignore duplicate member rows
   if (error && error.code !== '23505') throw error;

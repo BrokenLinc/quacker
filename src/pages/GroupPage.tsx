@@ -1,4 +1,8 @@
 import { useChirpOnNewMessages } from '@@lib/notifications/chirp';
+import type { NotifyLevel } from '@@lib/notifications/shouldNotify';
+import {
+  updateMyNotifyLevel,
+} from '@@lib/notifications/prefs';
 import { getShareUrl } from '@@lib/share';
 import {
   Group,
@@ -15,6 +19,8 @@ import {
   useGroupMessages,
 } from '@@api';
 import { RequireAuth } from '@@components/auth/RequireAuth';
+import { NotifyLevelControl } from '@@components/NotifyLevelControl';
+import { notifyLevelLabel } from '@@lib/notifications/notifyLevel';
 import { UserAvatar } from '@@components/UserAvatar';
 import { UserMenu } from '@@components/UserMenu';
 import { useConfirmation } from '@@dialogs/confirmation';
@@ -27,6 +33,7 @@ import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
 import {
   faArrowLeft,
+  faBell,
   faComments,
   faCopy,
   faEllipsisVertical,
@@ -107,7 +114,11 @@ const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
       {member ? (
         <GroupChat groupId={groupId} group={group} user={user} />
       ) : (
-        <JoinPrompt group={group} onJoin={state.join} joining={state.joining} />
+        <JoinPrompt
+          group={group}
+          onJoin={state.join}
+          joining={state.joining}
+        />
       )}
     </React.Fragment>
   );
@@ -136,7 +147,7 @@ const useGroupState = (groupId: string) => {
     };
   }, [user, groupId]);
 
-  const join = async () => {
+  const join = async (notifyLevel: NotifyLevel = 'all') => {
     if (!user) return;
     setJoining(true);
     try {
@@ -144,6 +155,7 @@ const useGroupState = (groupId: string) => {
         uid: user.uid,
         displayName: user.displayName,
         photoURL: resolveAppUserPhotoURL(user),
+        notifyLevel,
       });
       setMember(true);
     } finally {
@@ -299,6 +311,7 @@ const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
   const isCreator = group.uid === user.uid;
   const membersModal = UI.useDisclosure();
   const renameModal = UI.useDisclosure();
+  const notifyModal = UI.useDisclosure();
   const sheet = UI.useDisclosure();
   const confirmation = useConfirmation();
   const toast = UI.useToast();
@@ -307,6 +320,9 @@ const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
     { base: true, md: false },
     { ssr: false }
   );
+  const [members] = useGroupMembers(group.id);
+  const myMember = members?.find((m) => m.uid === user.uid);
+  const notifyLevel = myMember?.notifyLevel ?? 'all';
 
   const handleLeave = () => {
     confirmation.open({
@@ -353,6 +369,12 @@ const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
       icon: faUsers,
       onClick: membersModal.onOpen,
     },
+    {
+      id: 'notify',
+      label: `Notifications · ${notifyLevelLabel(notifyLevel)}`,
+      icon: faBell,
+      onClick: notifyModal.onOpen,
+    },
   ];
   if (isCreator) {
     sheetItems.push({
@@ -390,6 +412,13 @@ const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
         group={group}
         isOpen={renameModal.isOpen}
         onClose={renameModal.onClose}
+      />
+      <GroupNotifyLevelModal
+        group={group}
+        user={user}
+        level={notifyLevel}
+        isOpen={notifyModal.isOpen}
+        onClose={notifyModal.onClose}
       />
     </React.Fragment>
   );
@@ -461,6 +490,13 @@ const GroupOverflowMenu: React.FC<{ group: Group; user: AppUser }> = ({
             onClick={membersModal.onOpen}
           >
             Members
+          </UI.MenuItem>
+          <UI.MenuItem
+            fontSize="sm"
+            icon={<UI.Icon icon={faBell} />}
+            onClick={notifyModal.onOpen}
+          >
+            Notifications · {notifyLevelLabel(notifyLevel)}
           </UI.MenuItem>
           {isCreator ? (
             <UI.MenuItem
@@ -666,14 +702,15 @@ const RenameGroupModal: React.FC<{
 
 const JoinPrompt: React.FC<{
   group: Group;
-  onJoin: () => Promise<void>;
+  onJoin: (notifyLevel: NotifyLevel) => Promise<void>;
   joining: boolean;
 }> = ({ group, onJoin, joining }) => {
   const toast = UI.useToast();
+  const [notifyLevel, setNotifyLevel] = React.useState<NotifyLevel>('all');
 
   const handleJoin = async () => {
     try {
-      await onJoin();
+      await onJoin(notifyLevel);
     } catch {
       toast({
         title: "Couldn't join the group",
@@ -690,7 +727,11 @@ const JoinPrompt: React.FC<{
         title={`Join ${group.name}?`}
         description="You've been invited to this group. Members can read and post messages."
         action={
-          <UI.VStack spacing={2}>
+          <UI.VStack spacing={4} align="stretch" maxW="320px" w="full">
+            <NotifyLevelControl
+              value={notifyLevel}
+              onChange={setNotifyLevel}
+            />
             <UI.Button
               preset="primary"
               onClick={handleJoin}
@@ -707,6 +748,62 @@ const JoinPrompt: React.FC<{
         }
       />
     </UI.Box>
+  );
+};
+
+const GroupNotifyLevelModal: React.FC<{
+  group: Group;
+  user: AppUser;
+  level: NotifyLevel;
+  isOpen: boolean;
+  onClose: () => void;
+}> = ({ group, user, level, isOpen, onClose }) => {
+  const [value, setValue] = React.useState<NotifyLevel>(level);
+  const [saving, setSaving] = React.useState(false);
+  const toast = UI.useToast();
+
+  React.useEffect(() => {
+    if (isOpen) setValue(level);
+  }, [isOpen, level]);
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await updateMyNotifyLevel(group.id, user.uid, value);
+      toast({ title: 'Notification preference saved', duration: 2500 });
+      onClose();
+    } catch {
+      toast({
+        title: "Couldn't save preference",
+        description: 'Check your connection and try again.',
+        status: 'error',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <UI.QuickModal
+      isOpen={isOpen}
+      onClose={onClose}
+      headerContent="Group notifications"
+    >
+      <UI.ModalBody pb={6}>
+        <UI.VStack align="stretch" spacing={4}>
+          <NotifyLevelControl value={value} onChange={setValue} />
+          <UI.Button
+            preset="primary"
+            onClick={() => void save()}
+            isLoading={saving}
+            isDisabled={value === level}
+            loadingText="Saving…"
+          >
+            Save
+          </UI.Button>
+        </UI.VStack>
+      </UI.ModalBody>
+    </UI.QuickModal>
   );
 };
 
@@ -754,6 +851,7 @@ const GroupChat: React.FC<{
       time: Date.now(),
       text,
       groupId,
+      isAnnouncement: false,
       pending: true,
     };
     setPendingMessages((p) => [...p, temp]);

@@ -17,18 +17,18 @@ Quacker (code name) is a private, ad-hoc group chat for trips and conferences. I
 | Chirp notifications | Tab title flash + sound when tab is backgrounded |
 | Dark mode | System-aware theme toggle |
 | PWA install | Web manifest, app icons, install banner (Chrome/Android + iOS Add to Home Screen hint) |
-| Web Push (scaffold) | Service worker + subscription table + edge function stub |
+| Web Push | OS notifications when a message arrives (opt-in Switch; per-group All / Announcements only / None) |
 
 ## Auth (MVP)
 
 - **SMS OTP** — enter phone, verify 6-digit code via Twilio Verify
 - **Sign-in UI** — header **Log in** opens a modal; protected pages show the same form inline until authenticated
 - Display name defaults to last 4 digits of phone (`···1234`)
+- Onboarding asks for display name + optional notifications Switch (OS permission only after enable)
 - Gravatar module retained under `src/lib/avatars/gravatar.ts` for future email auth
 
 ## Deferred
 
 - Google OAuth
-- SMS OTP
-- Permissions UI tab
-- Full Web Push delivery (needs VAPID keys)
+- Permissions UI tab (roles beyond creator/member)
+- Announcement composer + special role (schema `is_announcement` + `notify_level=announcements` ready)

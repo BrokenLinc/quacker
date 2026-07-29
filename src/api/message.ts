@@ -11,6 +11,7 @@ export interface Message {
   time: number;
   text: string;
   groupId: string;
+  isAnnouncement: boolean;
 }
 
 const rowToMessage = (row: MessageRow): Message => ({
@@ -21,6 +22,7 @@ const rowToMessage = (row: MessageRow): Message => ({
   time: new Date(row.created_at).getTime(),
   text: row.text,
   groupId: row.group_id,
+  isAnnouncement: row.is_announcement ?? false,
 });
 
 type HookResult<T> = [T | undefined, boolean, Error | undefined];

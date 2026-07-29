@@ -19,6 +19,7 @@ export type Database = {
           display_name: string | null;
           group_id: string;
           joined_at: string;
+          notify_level: Database['public']['Enums']['notify_level'];
           photo_url: string | null;
           role: Database['public']['Enums']['group_role'];
           user_id: string;
@@ -27,6 +28,7 @@ export type Database = {
           display_name?: string | null;
           group_id: string;
           joined_at?: string;
+          notify_level?: Database['public']['Enums']['notify_level'];
           photo_url?: string | null;
           role?: Database['public']['Enums']['group_role'];
           user_id: string;
@@ -35,6 +37,7 @@ export type Database = {
           display_name?: string | null;
           group_id?: string;
           joined_at?: string;
+          notify_level?: Database['public']['Enums']['notify_level'];
           photo_url?: string | null;
           role?: Database['public']['Enums']['group_role'];
           user_id?: string;
@@ -87,6 +90,7 @@ export type Database = {
           created_at: string;
           group_id: string;
           id: string;
+          is_announcement: boolean;
           text: string;
         };
         Insert: {
@@ -96,6 +100,7 @@ export type Database = {
           created_at?: string;
           group_id: string;
           id?: string;
+          is_announcement?: boolean;
           text: string;
         };
         Update: {
@@ -105,6 +110,7 @@ export type Database = {
           created_at?: string;
           group_id?: string;
           id?: string;
+          is_announcement?: boolean;
           text?: string;
         };
         Relationships: [
@@ -155,6 +161,24 @@ export type Database = {
           },
         ];
       };
+      user_notification_prefs: {
+        Row: {
+          push_enabled: boolean;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          push_enabled?: boolean;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          push_enabled?: boolean;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
@@ -164,6 +188,7 @@ export type Database = {
     };
     Enums: {
       group_role: 'creator' | 'member';
+      notify_level: 'all' | 'announcements' | 'none';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -295,6 +320,7 @@ export const Constants = {
   public: {
     Enums: {
       group_role: ['creator', 'member'],
+      notify_level: ['all', 'announcements', 'none'],
     },
   },
 } as const;

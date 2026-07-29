@@ -30,10 +30,16 @@ sync_env() {
 echo "==> Vercel Preview (dev Supabase)"
 sync_env VITE_SUPABASE_URL "$VITE_SUPABASE_URL" preview
 sync_env VITE_SUPABASE_ANON_KEY "$VITE_SUPABASE_ANON_KEY" preview
+if [[ -n "${VITE_VAPID_PUBLIC_KEY:-}" ]]; then
+  sync_env VITE_VAPID_PUBLIC_KEY "$VITE_VAPID_PUBLIC_KEY" preview
+fi
 
 echo "==> Vercel Production (prod Supabase)"
 sync_env VITE_SUPABASE_URL "$VITE_SUPABASE_URL_PROD" production
 sync_env VITE_SUPABASE_ANON_KEY "$VITE_SUPABASE_ANON_KEY_PROD" production
 sync_env VITE_APP_URL "$VITE_APP_URL" production
+if [[ -n "${VITE_VAPID_PUBLIC_KEY:-}" ]]; then
+  sync_env VITE_VAPID_PUBLIC_KEY "$VITE_VAPID_PUBLIC_KEY" production
+fi
 
 echo "==> Vercel env sync complete"
