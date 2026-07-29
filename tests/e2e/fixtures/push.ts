@@ -24,9 +24,11 @@ export const installPushMocks = async (page: Page) => {
       window.__quackerPushSubscribed = false;
 
       // Satisfy feature detection in permission.ts
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).PushManager =
-        (window as any).PushManager || function PushManager() {};
+      const win = window as Window & {
+        PushManager?: new () => unknown;
+        Notification: typeof Notification;
+      };
+      win.PushManager = win.PushManager || function PushManager() {};
 
       let permission: NotificationPermission = 'default';
 
@@ -44,8 +46,7 @@ export const installPushMocks = async (page: Page) => {
         permission = 'granted';
         return permission;
       };
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      (window as any).Notification = FakeNotification;
+      win.Notification = FakeNotification;
 
       const endpoint = `https://push.example.test/e2e/${Math.random().toString(36).slice(2)}`;
       const fakeSubscription = {
