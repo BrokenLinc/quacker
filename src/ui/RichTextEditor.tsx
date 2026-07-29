@@ -13,6 +13,8 @@ export type RichTextEditorProps = {
   onSubmit?: () => void;
   placeholder?: string;
   minH?: UI.BoxProps['minH'];
+  /** Soft limit enforced by TipTap CharacterCount. */
+  maxLength?: number;
 };
 
 export const RichTextEditor: React.FC<RichTextEditorProps> = ({
@@ -21,11 +23,12 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   onSubmit,
   placeholder = 'Say something!',
   minH = 10,
+  maxLength,
 }) => {
   const placeholderColor = UI.useColorModeValue('gray.400', 'gray.500');
   const extensions = React.useMemo(
-    () => createRichTextExtensions({ placeholder }),
-    [placeholder],
+    () => createRichTextExtensions({ placeholder, maxLength }),
+    [placeholder, maxLength],
   );
 
   // Keep the latest onSubmit without re-creating the editor.

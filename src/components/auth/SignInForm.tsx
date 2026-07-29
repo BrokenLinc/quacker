@@ -1,5 +1,6 @@
 import * as UI from '@@ui';
 import React from 'react';
+import { createDefaultMaskGenerator } from 'react-hook-mask';
 
 import {
   getCurrentAuthUser,
@@ -9,6 +10,8 @@ import {
   verifySmsOtp,
 } from '@@lib/supabase/auth';
 import { DisplayNameForm } from '@@components/DisplayNameForm';
+
+const phoneMask = createDefaultMaskGenerator('(999) 999-9999');
 
 export type SignInFormProps = {
   onSuccess?: () => void;
@@ -193,11 +196,14 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
     >
       <UI.FormControl>
         <UI.FormLabel>Phone number</UI.FormLabel>
-        <UI.Input
+        <UI.MaskedInput
           type="tel"
           placeholder="(555) 555-5555"
+          maskGenerator={phoneMask}
           value={phoneInput}
-          onChange={(e) => setPhoneInput(e.target.value)}
+          onChange={(value) =>
+            setPhoneInput(typeof value === 'string' ? value : value.target.value)
+          }
           required
           data-testid="sign-in-phone"
         />

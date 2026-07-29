@@ -18,7 +18,7 @@ test('group page share modal passes a11y', async ({ page }) => {
 
   await gotoGroupPage(page, group);
 
-  await page.getByRole('button', { name: 'Share' }).click();
+  await page.getByRole('button', { name: 'Invite or Share' }).click();
   await expect(page.getByText('Copy link')).toBeVisible();
 
   const results = await new AxeBuilder({ page }).analyze();

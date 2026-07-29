@@ -54,6 +54,23 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
 - Loading: `Skeleton` matching final layout, not bare full-screen spinners
 - Submits: button `isLoading` + double-submit guard; failed sends restore input
 
+## Inputs — constrain early, not only on submit
+
+Prefer foolproof entry over free-text + late validation:
+
+- **Masked** for fixed formats (phone → `UI.MaskedInput` + `react-hook-mask`;
+  see `subtypeMetas`)
+- **Typed / filtered** for constrained char sets (display name → letters +
+  spaces only)
+- **Hard limits** via `maxLength`, TipTap `CharacterCount`, or Zod — show a
+  counter when the limit matters (e.g. message `n/140`)
+- **Purpose-built controls** when they improve a11y and reduce errors:
+  OTP → `PinInput` (one field per digit); picks from a set → combobox /
+  select, not a free text box; dates/money → existing form subtype inputs
+
+Plain `UI.Input` is fine for truly open text. Do not invent a new mask library
+when `MaskedInput` / form subtypes already cover the case.
+
 ## Product rules
 
 - Group lists are **membership-scoped** (`useGroups({ userId })`) — never list

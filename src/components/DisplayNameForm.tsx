@@ -57,7 +57,10 @@ export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
         <UI.FormLabel>What should people call you?</UI.FormLabel>
         <UI.Input
           value={name}
-          onChange={(e) => setName(e.target.value)}
+          onChange={(e) =>
+            setName(e.target.value.replace(/[^\p{L} ]/gu, '').slice(0, 25))
+          }
+          maxLength={25}
           placeholder="Your name"
           autoComplete="name"
           autoFocus
