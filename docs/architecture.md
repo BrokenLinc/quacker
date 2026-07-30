@@ -34,7 +34,7 @@ push_subscriptions
   user_id, endpoint, p256dh, auth   -- device-level (group_id unused)
 ```
 
-Unread badges: RPC `unread_message_counts()` — messages after `last_viewed_at` from others, filtered by `notify_level` (`none` → 0). Author column is `messages.author_id` (not `user_id`).
+Unread badges: RPC `unread_message_counts()` — messages after `last_viewed_at` from others, filtered by `notify_level` (`none` → 0). Author column is `messages.author_id` (not `user_id`). Total across groups also drives tab title `(N)` prefix and PWA icon badge via `src/lib/notifications/documentChrome.ts` (`navigator.setAppBadge` when supported).
 
 ## Push delivery
 

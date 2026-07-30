@@ -7,6 +7,7 @@ import { useGroups, useUnreadCounts } from '@@api';
 import { SignInForm } from '@@components/auth/SignInForm';
 import { useSignInPlacement } from '@@components/auth/useSignInPlacement';
 import { SignInPlacementFromAuth } from '@@components/auth/SignInPlacementFromAuth';
+import { useUnreadAppChrome } from '@@lib/notifications/documentChrome';
 import { InAppPushToastListener } from '@@lib/notifications/inAppPushToast';
 import { useAuthState } from '@@lib/supabase/auth';
 import { useVisualViewportHeight } from '@@lib/pwa/useVisualViewportHeight';
@@ -22,6 +23,12 @@ import { UserMenu } from './UserMenu';
  * Mobile: compact top header on non-group routes; group pages render their
  * own single bar.
  */
+const UnreadAppChrome: React.FC = () => {
+  const [user] = useAuthState();
+  useUnreadAppChrome({ userId: user?.uid });
+  return null;
+};
+
 export const AppLayout: React.FC = () => {
   useVisualViewportHeight();
   const isMobile = UI.useBreakpointValue(
@@ -34,6 +41,7 @@ export const AppLayout: React.FC = () => {
 
   return (
     <SignInPlacementFromAuth>
+      <UnreadAppChrome />
       <InAppPushToastListener />
       <UI.Flex
         direction="column"

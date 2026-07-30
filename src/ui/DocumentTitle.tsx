@@ -1,18 +1,14 @@
 import React from 'react';
 
-// Store the title from index.html in memory.
-const appName = document.title;
+import { setPageLabel } from '@@lib/notifications/documentChrome';
 
 export const DocumentTitle: React.FC<{ children: string }> = ({
   children: title,
 }) => {
   React.useEffect(() => {
-    // Assign a new title based on the component content and the original title.
-    document.title = `${title} - ${appName}`;
-
-    // Fallback to the original title for pages that don't set the title
+    setPageLabel(title);
     return () => {
-      document.title = appName;
+      setPageLabel(null);
     };
   }, [title]);
 

@@ -2,7 +2,7 @@ import { useEffect, useRef } from 'react';
 
 import type { Message } from '@@api';
 
-const DEFAULT_TITLE = 'Yowl';
+import { setChirpOverride } from './documentChrome';
 
 /** Flashes document title when new messages arrive while tab is in background. */
 export const useChirpOnNewMessages = (
@@ -25,19 +25,17 @@ export const useChirpOnNewMessages = (
       latest?.groupId === groupId
     ) {
       const author = latest?.authorName ?? 'Someone';
-      const original = document.title;
+      const chirpText = `🦆 ${author} yowled!`;
       let flash = true;
 
       const interval = window.setInterval(() => {
-        document.title = flash
-          ? `🦆 ${author} yowled!`
-          : original;
+        setChirpOverride(flash ? chirpText : null);
         flash = !flash;
       }, 800);
 
       const stop = () => {
         clearInterval(interval);
-        document.title = original;
+        setChirpOverride(null);
         document.removeEventListener('visibilitychange', onVisible);
       };
 
@@ -65,8 +63,4 @@ export const useChirpOnNewMessages = (
 
     prevCountRef.current = count;
   }, [messages, groupId]);
-
-  useEffect(() => {
-    document.title = DEFAULT_TITLE;
-  }, [groupId]);
 };
