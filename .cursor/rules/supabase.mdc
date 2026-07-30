@@ -10,6 +10,7 @@ alwaysApply: false
 - After migrations: `generate_typescript_types` (MCP) or `supabase gen types typescript --local`
 - Apply locally: `supabase db reset` (optional; needs Docker)
 - Apply remote: `apply_migration` (MCP) or `supabase db push` (CLI) — **agent runs this**
+- If `db push` fails with “Remote migration versions not found in local migrations directory”, apply the new SQL via Management API `POST /v1/projects/{ref}/database/query`, then `insert into supabase_migrations.schema_migrations (version) values ('…') on conflict do nothing` — do not invent repair versions without checking remote history
 - RLS must enforce auth server-side; client checks are UX only
 
 ## Agent-owned Supabase ops (do not defer to user)

@@ -10,7 +10,7 @@ Quacker (code name) is a private, ad-hoc group chat for trips and conferences. I
 | User avatars | Boring Avatars (beam) from user id; explicit photo URL when set |
 | Group list | Browse all groups on home page |
 | Create group | Name a group; auto short slug for sharing |
-| Group chat | Markdown messages with live realtime feed |
+| Group chat | Markdown messages with live realtime feed; live author names; clock times + day dividers |
 | Membership | Auto-join on visit; all members can post |
 | Manage group | Creator can rename group |
 | Share | Short URL `/g/:slug`, QR code, copy link, native share |
@@ -24,6 +24,7 @@ Quacker (code name) is a private, ad-hoc group chat for trips and conferences. I
 - **SMS OTP** — enter phone, verify 6-digit code via Twilio Verify
 - **Sign-in UI** — header **Log in** opens a modal; protected pages show the same form inline until authenticated
 - Display name defaults to last 4 digits of phone (`···1234`)
+- Customized names show a muted `(1234)` last-4 beside the name in chat
 - Onboarding asks for display name + optional notifications Switch (OS permission only after enable)
 - Gravatar module retained under `src/lib/avatars/gravatar.ts` for future email auth
 

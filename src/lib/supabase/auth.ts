@@ -23,6 +23,16 @@ export const displayNameFromPhone = (phone: string) => {
   return `···${digits.slice(-4)}`;
 };
 
+/** Last 4 phone digits for roster chrome; null when phone is missing/short. */
+export const phoneLast4FromPhone = (
+  phone: string | null | undefined
+): string | null => {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  if (digits.length < 4) return null;
+  return digits.slice(-4);
+};
+
 export const toAppUser = (user: User | null): AppUser | null => {
   if (!user) return null;
   const phone = user.phone ?? null;
