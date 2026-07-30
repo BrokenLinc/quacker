@@ -22,10 +22,12 @@ groups
 
 group_members
   group_id, user_id, role (creator|member), notify_level (all|announcements|none),
-  last_viewed_at
+  display_name, photo_url, phone_last4, last_viewed_at
 
 messages
   id, group_id, author_id, author_name, author_photo_url, text, is_announcement, created_at
+  -- author_name/photo stamped at send (notifications + left-member fallback);
+  -- chat UI prefers live group_members.display_name (+ muted phone_last4 when customized)
 
 user_notification_prefs
   user_id, push_enabled

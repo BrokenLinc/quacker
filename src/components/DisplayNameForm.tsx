@@ -4,6 +4,7 @@ import React from 'react';
 import { updateMyMemberProfile } from '@@api';
 import { NotificationsSwitch } from '@@components/NotificationsSwitch';
 import {
+  phoneLast4FromPhone,
   resolveAppUserPhotoURL,
   updateDisplayName,
   useAuthState,
@@ -44,6 +45,7 @@ export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
         await updateMyMemberProfile(user.uid, {
           displayName: trimmed,
           photoURL: resolveAppUserPhotoURL(user),
+          phoneLast4: phoneLast4FromPhone(user.phone),
         }).catch(() => undefined);
 
         if (showNotificationsOptIn) {

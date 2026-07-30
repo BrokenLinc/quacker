@@ -21,6 +21,7 @@ export type Database = {
           joined_at: string;
           last_viewed_at: string;
           notify_level: Database['public']['Enums']['notify_level'];
+          phone_last4: string | null;
           photo_url: string | null;
           role: Database['public']['Enums']['group_role'];
           user_id: string;
@@ -31,6 +32,7 @@ export type Database = {
           joined_at?: string;
           last_viewed_at?: string;
           notify_level?: Database['public']['Enums']['notify_level'];
+          phone_last4?: string | null;
           photo_url?: string | null;
           role?: Database['public']['Enums']['group_role'];
           user_id: string;
@@ -41,6 +43,7 @@ export type Database = {
           joined_at?: string;
           last_viewed_at?: string;
           notify_level?: Database['public']['Enums']['notify_level'];
+          phone_last4?: string | null;
           photo_url?: string | null;
           role?: Database['public']['Enums']['group_role'];
           user_id?: string;

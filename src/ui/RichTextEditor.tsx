@@ -26,6 +26,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   maxLength,
 }) => {
   const placeholderColor = UI.useColorModeValue('gray.400', 'gray.500');
+  const isMobile = UI.useBreakpointValue({ base: true, md: false }) ?? false;
+  const [focused, setFocused] = React.useState(false);
   const extensions = React.useMemo(
     () => createRichTextExtensions({ placeholder, maxLength }),
     [placeholder, maxLength],
@@ -62,6 +64,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     onUpdate: ({ editor: currentEditor }) => {
       onChange(currentEditor.getMarkdown());
     },
+    onFocus: () => setFocused(true),
+    onBlur: () => setFocused(false),
   });
 
   React.useEffect(() => {
@@ -73,6 +77,11 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   }, [editor, value]);
 
   if (!editor) return null;
+
+  const showToolbar = !isMobile || focused;
+  const keepFocus = (e: React.SyntheticEvent) => {
+    e.preventDefault();
+  };
 
   return (
     <UI.Box
@@ -88,24 +97,30 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         boxShadow: '0 0 0 1px var(--chakra-colors-action-500)',
       }}
     >
-      <UI.HStack px={2} py={1} spacing={1}>
-        <IconButton
-          aria-label="Bold"
-          size="xs"
-          variant={editor.isActive('bold') ? 'solid' : 'ghost'}
-          colorScheme={editor.isActive('bold') ? 'action' : undefined}
-          icon={faBold}
-          onClick={() => editor.chain().focus().toggleBold().run()}
-        />
-        <IconButton
-          aria-label="Italic"
-          size="xs"
-          variant={editor.isActive('italic') ? 'solid' : 'ghost'}
-          colorScheme={editor.isActive('italic') ? 'action' : undefined}
-          icon={faItalic}
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-        />
-      </UI.HStack>
+      {showToolbar ? (
+        <UI.HStack px={2} py={1} spacing={1}>
+          <IconButton
+            aria-label="Bold"
+            size="xs"
+            variant={editor.isActive('bold') ? 'solid' : 'ghost'}
+            colorScheme={editor.isActive('bold') ? 'action' : undefined}
+            icon={faBold}
+            onMouseDown={keepFocus}
+            onPointerDown={keepFocus}
+            onClick={() => editor.chain().focus().toggleBold().run()}
+          />
+          <IconButton
+            aria-label="Italic"
+            size="xs"
+            variant={editor.isActive('italic') ? 'solid' : 'ghost'}
+            colorScheme={editor.isActive('italic') ? 'action' : undefined}
+            icon={faItalic}
+            onMouseDown={keepFocus}
+            onPointerDown={keepFocus}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+          />
+        </UI.HStack>
+      ) : null}
       <UI.Box
         px={3}
         py={2}

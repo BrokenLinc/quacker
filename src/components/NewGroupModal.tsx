@@ -4,7 +4,11 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { addGroup } from '@@api';
-import { resolveAppUserPhotoURL, useAuthState } from '@@lib/supabase/auth';
+import {
+  phoneLast4FromPhone,
+  resolveAppUserPhotoURL,
+  useAuthState,
+} from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 
 export const NewGroupModal: React.FC<{
@@ -80,6 +84,7 @@ const NewGroupForm: React.FC<{ onCreated: () => void }> = ({ onCreated }) => {
         authorName: user.displayName,
         authorPhotoURL: resolveAppUserPhotoURL(user),
         name: name.trim(),
+        phoneLast4: phoneLast4FromPhone(user.phone),
       });
       onCreated();
       navigate(routes.group(id).path);

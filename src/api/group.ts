@@ -28,6 +28,7 @@ export interface GroupMember {
   role: 'creator' | 'member';
   displayName: string | null;
   photoURL: string | null;
+  phoneLast4: string | null;
   joinedAt: number;
   notifyLevel: NotifyLevel;
 }
@@ -48,6 +49,7 @@ const rowToGroupMember = (row: GroupMemberRow): GroupMember => ({
   role: row.role,
   displayName: row.display_name,
   photoURL: row.photo_url,
+  phoneLast4: row.phone_last4,
   joinedAt: new Date(row.joined_at).getTime(),
   notifyLevel: row.notify_level ?? 'all',
 });
@@ -282,6 +284,7 @@ export const addGroup = async (data: {
   authorPhotoURL: string | null;
   name: string;
   slug?: string;
+  phoneLast4?: string | null;
 }) => {
   const slug = data.slug ?? generateSlug();
   const { data: row, error } = await supabase
@@ -305,6 +308,16 @@ export const addGroup = async (data: {
     if (await isGroupMember(row.id, data.uid)) break;
     await new Promise((r) => setTimeout(r, 50));
   }
+
+  // Trigger only copies display_name/photo_url — patch phone last-4 for chrome.
+  if (data.phoneLast4) {
+    await supabase
+      .from('group_members')
+      .update({ phone_last4: data.phoneLast4 })
+      .eq('group_id', row.id)
+      .eq('user_id', data.uid);
+  }
+
   notifyGroupsChanged();
 
   return { id: row.id, slug: row.slug };
@@ -331,6 +344,7 @@ export const joinGroup = async (
     uid: string;
     displayName: string | null;
     photoURL: string | null;
+    phoneLast4?: string | null;
     notifyLevel?: NotifyLevel;
   }
 ) => {
@@ -340,6 +354,7 @@ export const joinGroup = async (
     role: 'member',
     display_name: member.displayName,
     photo_url: member.photoURL,
+    phone_last4: member.phoneLast4 ?? null,
     notify_level: member.notifyLevel ?? 'all',
   });
   // Creator already inserted by trigger; ignore duplicate member rows
@@ -362,14 +377,26 @@ export const removeGroupMember = leaveGroup;
 /** Sync denormalized member profile fields across all groups (after rename). */
 export const updateMyMemberProfile = async (
   userId: string,
-  profile: { displayName: string | null; photoURL: string | null }
+  profile: {
+    displayName: string | null;
+    photoURL: string | null;
+    phoneLast4?: string | null;
+  }
 ) => {
+  const patch: {
+    display_name: string | null;
+    photo_url: string | null;
+    phone_last4?: string | null;
+  } = {
+    display_name: profile.displayName,
+    photo_url: profile.photoURL,
+  };
+  if (profile.phoneLast4 !== undefined) {
+    patch.phone_last4 = profile.phoneLast4;
+  }
   const { error } = await supabase
     .from('group_members')
-    .update({
-      display_name: profile.displayName,
-      photo_url: profile.photoURL,
-    })
+    .update(patch)
     .eq('user_id', userId);
   if (error) throw error;
 };

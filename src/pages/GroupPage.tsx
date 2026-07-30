@@ -26,7 +26,14 @@ import { UserAvatar } from '@@components/UserAvatar';
 import { UserMenu } from '@@components/UserMenu';
 import { useConfirmation } from '@@dialogs/confirmation';
 import {
+  formatAuthorLabel,
+  formatMessageDayLabel,
+  formatMessageTime,
+  localDayKey,
+} from '@@lib/chat/messageTime';
+import {
   AppUser,
+  phoneLast4FromPhone,
   resolveAppUserPhotoURL,
   useAuthState,
 } from '@@lib/supabase/auth';
@@ -48,7 +55,6 @@ import {
   faUsers,
   faXmark,
 } from '@fortawesome/free-solid-svg-icons';
-import { formatDistanceToNow } from 'date-fns';
 import React from 'react';
 import QRCode from 'react-qr-code';
 import { useNavigate, useParams } from 'react-router-dom';
@@ -156,6 +162,7 @@ const useGroupState = (groupId: string) => {
         uid: user.uid,
         displayName: user.displayName,
         photoURL: resolveAppUserPhotoURL(user),
+        phoneLast4: phoneLast4FromPhone(user.phone),
         notifyLevel,
       });
       setMember(true);
@@ -855,13 +862,41 @@ const GROUPING_WINDOW_MS = 5 * 60 * 1000;
 
 type ChatItem = Message & { pending?: boolean };
 
+type MemberProfile = {
+  displayName: string | null;
+  photoURL: string | null;
+  phoneLast4: string | null;
+};
+
 const GroupChat: React.FC<{
   groupId: string;
   group: Group;
   user: AppUser;
 }> = ({ groupId, group, user }) => {
   const [messages, loading, error] = useGroupMessages(groupId, { limit: 100 });
+  const [members] = useGroupMembers(groupId, { channelId: 'chat' });
   const [pendingMessages, setPendingMessages] = React.useState<ChatItem[]>([]);
+
+  const memberByUid = (() => {
+    const map = new Map<string, MemberProfile>();
+    for (const m of members ?? []) {
+      map.set(m.uid, {
+        displayName: m.displayName,
+        photoURL: m.photoURL,
+        phoneLast4: m.phoneLast4,
+      });
+    }
+    // Prefer the signed-in user's live auth profile for own messages.
+    map.set(user.uid, {
+      displayName: user.displayName,
+      photoURL: resolveAppUserPhotoURL(user),
+      phoneLast4:
+        phoneLast4FromPhone(user.phone) ??
+        map.get(user.uid)?.phoneLast4 ??
+        null,
+    });
+    return map;
+  })();
 
   useChirpOnNewMessages(messages, groupId);
 
@@ -929,6 +964,7 @@ const GroupChat: React.FC<{
         error={error}
         groupName={group.name}
         currentUid={user.uid}
+        memberByUid={memberByUid}
       />
       <UI.Box
         flexShrink={0}
@@ -953,9 +989,11 @@ const ChatScrollArea: React.FC<{
   error: Error | undefined;
   groupName: string;
   currentUid: string;
-}> = ({ items, loading, error, groupName, currentUid }) => {
+  memberByUid: Map<string, MemberProfile>;
+}> = ({ items, loading, error, groupName, currentUid, memberByUid }) => {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const didInitialScroll = React.useRef(false);
+  const distanceFromBottomRef = React.useRef(0);
   const lastItem = items[items.length - 1];
 
   React.useLayoutEffect(() => {
@@ -968,11 +1006,37 @@ const ChatScrollArea: React.FC<{
     if (!didInitialScroll.current) {
       el.scrollTop = el.scrollHeight;
       didInitialScroll.current = true;
+      distanceFromBottomRef.current = 0;
     } else if (nearBottom || ownMessageArrived) {
       el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' });
+      distanceFromBottomRef.current = 0;
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [items.length]);
+
+  // Keep scroll anchored to the viewport bottom across keyboard resize.
+  const hasItems = items.length > 0;
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el || !hasItems) return;
+
+    const onScroll = () => {
+      distanceFromBottomRef.current =
+        el.scrollHeight - el.scrollTop - el.clientHeight;
+    };
+    el.addEventListener('scroll', onScroll, { passive: true });
+
+    const ro = new ResizeObserver(() => {
+      const distance = distanceFromBottomRef.current;
+      el.scrollTop = el.scrollHeight - el.clientHeight - distance;
+    });
+    ro.observe(el);
+
+    return () => {
+      el.removeEventListener('scroll', onScroll);
+      ro.disconnect();
+    };
+  }, [hasItems]);
 
   if (loading) {
     return (
@@ -1022,17 +1086,28 @@ const ChatScrollArea: React.FC<{
       <UI.VStack align="stretch" spacing={0} maxW="760px" mx="auto">
         {items.map((message, i) => {
           const prev = items[i - 1];
+          const showDayDivider =
+            !prev || localDayKey(prev.time) !== localDayKey(message.time);
           const grouped =
             !!prev &&
+            !showDayDivider &&
             prev.uid === message.uid &&
             message.time - prev.time < GROUPING_WINDOW_MS;
+          const member = memberByUid.get(message.uid);
           return (
-            <MessageRow
-              key={message.id}
-              message={message}
-              grouped={grouped}
-              isOwn={message.uid === currentUid}
-            />
+            <React.Fragment key={message.id}>
+              {showDayDivider ? (
+                <MessageDayDivider time={message.time} />
+              ) : null}
+              <MessageRow
+                message={message}
+                grouped={grouped}
+                isOwn={message.uid === currentUid}
+                liveDisplayName={member?.displayName ?? message.authorName}
+                livePhotoURL={member?.photoURL ?? message.authorPhotoURL}
+                phoneLast4={member?.phoneLast4 ?? null}
+              />
+            </React.Fragment>
           );
         })}
       </UI.VStack>
@@ -1040,11 +1115,35 @@ const ChatScrollArea: React.FC<{
   );
 };
 
+const MessageDayDivider: React.FC<{ time: number }> = ({ time }) => (
+  <UI.Flex align="center" gap={3} py={3} px={3} role="separator">
+    <UI.Box flex={1} h="1px" bg="border.subtle" />
+    <UI.Text fontSize="xs" color="text.muted" flexShrink={0} fontWeight="medium">
+      {formatMessageDayLabel(time)}
+    </UI.Text>
+    <UI.Box flex={1} h="1px" bg="border.subtle" />
+  </UI.Flex>
+);
+
 export const MessageRow: React.FC<{
   message: ChatItem;
   grouped: boolean;
   isOwn: boolean;
-}> = ({ message, grouped, isOwn }) => {
+  liveDisplayName?: string | null;
+  livePhotoURL?: string | null;
+  phoneLast4?: string | null;
+}> = ({
+  message,
+  grouped,
+  isOwn,
+  liveDisplayName,
+  livePhotoURL,
+  phoneLast4,
+}) => {
+  const displayName = liveDisplayName ?? message.authorName;
+  const photoURL = livePhotoURL ?? message.authorPhotoURL;
+  const { name, last4Suffix } = formatAuthorLabel(displayName, phoneLast4);
+
   return (
     <UI.HStack
       align="flex-start"
@@ -1067,9 +1166,9 @@ export const MessageRow: React.FC<{
         <UI.Box w={8} flexShrink={0} />
       ) : (
         <UserAvatar
-          name={message.authorName || ''}
+          name={name}
           seed={message.uid}
-          photoURL={message.authorPhotoURL}
+          photoURL={photoURL}
           size="sm"
           mt={1}
         />
@@ -1078,13 +1177,16 @@ export const MessageRow: React.FC<{
         {grouped ? null : (
           <UI.HStack spacing={2} align="baseline" mb={0.5}>
             <UI.Text fontSize="sm" fontWeight="bold" noOfLines={1}>
-              {message.authorName || 'Someone'}
+              {name}
+              {last4Suffix ? (
+                <UI.Text as="span" fontWeight="normal" color="text.muted" ml={1}>
+                  ({last4Suffix})
+                </UI.Text>
+              ) : null}
               {isOwn ? ' (you)' : ''}
             </UI.Text>
             <UI.Text fontSize="xs" color="text.muted" flexShrink={0}>
-              {message.pending
-                ? 'sending…'
-                : `${formatDistanceToNow(message.time)} ago`}
+              {message.pending ? 'sending…' : formatMessageTime(message.time)}
             </UI.Text>
           </UI.HStack>
         )}
