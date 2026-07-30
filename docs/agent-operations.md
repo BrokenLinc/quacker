@@ -9,7 +9,7 @@ Operational reference for agents working on Quacker.
 | Create GitHub / Supabase / Vercel **accounts** | User (once) |
 | Paste `SUPABASE_ACCESS_TOKEN` / `VERCEL_TOKEN` into `.env.local` | User (once, if MCP not authed) |
 | **Create Supabase projects** | **Agent** — `create_project` MCP |
-| **Apply migrations to cloud** | **Agent** — `apply_migration` or `supabase db push` |
+| **Apply migrations to cloud** | **Agent** — prefer `supabase db push` (keeps versions = filenames). Avoid MCP `apply_migration` for committed files — it stamps a new timestamp and breaks CI `db push`. |
 | **Configure auth redirects** | **Agent** — Management API |
 | **Fetch API keys → `.env.local`** | **Agent** — MCP / `supabase projects api-keys` |
 | **Sync Vercel Preview/Production env** | **Agent** — `yarn sync:vercel-env` |
@@ -61,7 +61,7 @@ gh secret set VERCEL_PROJECT_ID
 
 1. `GetMcpTools` → confirm `plugin-supabase-supabase` is `ready`
 2. `list_organizations` → `get_cost` → `confirm_cost` → `create_project`
-3. `apply_migration` for each file in `supabase/migrations/`
+3. Apply migrations with `supabase db push` (or `execute_sql` + insert matching `schema_migrations` versions). Do **not** use MCP `apply_migration` for files already named in `supabase/migrations/` — it creates orphan remote versions.
 4. `get_publishable_keys` + CLI for service role → update `.env.local`
 5. PATCH auth config (redirect URLs) via Management API
 6. `yarn sync:vercel-env` if Vercel env needs updating
@@ -74,7 +74,8 @@ Do not ask the user to perform steps 2–6.
 | ------- | --- |
 | Missing tool / plugin | `yarn check:requirements`; `GetMcpTools`; `mcp_auth` if needed |
 | No Supabase project | Agent: `create_project` — do not ask user to use dashboard |
-| Migration error | Fix SQL, `supabase db reset` (optional), re-run verify |
+| Migration history mismatch (`Remote migration versions not found…`) | `list_migrations`; repair orphans to match filenames (`migration repair` or `execute_sql` on `schema_migrations`); never leave MCP-stamped versions that differ from git |
+| Migration SQL error | Fix SQL, `supabase db reset` (optional), re-run verify |
 | E2e auth fails | Check dev `SUPABASE_SERVICE_ROLE_KEY`; remote Supabase reachable |
 | Magic link redirect 404 | Agent: PATCH auth `uri_allow_list` — see `docs/environments.md` |
 | Realtime not updating | Confirm tables in `supabase_realtime` publication |
