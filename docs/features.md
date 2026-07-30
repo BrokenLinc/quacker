@@ -15,6 +15,7 @@ Quacker (code name) is a private, ad-hoc group chat for trips and conferences. I
 | Manage group | Creator can rename group |
 | Share | Short URL `/g/:slug`, QR code, copy link, native share |
 | Chirp notifications | Tab title flash + sound when tab is backgrounded |
+| Unread chrome | Tab title `(N)` prefix + PWA icon badge from total unread across groups |
 | Dark mode | System-aware theme toggle |
 | PWA install | Web manifest, app icons, install banner (Chrome/Android + iOS Add to Home Screen hint) |
 | Web Push | OS notifications when a message arrives (opt-in Switch; per-group All / Announcements only / None) |
