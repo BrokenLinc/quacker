@@ -2,6 +2,7 @@ import { describe, expect, test, vi, afterEach } from 'vitest';
 
 import {
   formatAuthorLabel,
+  formatJoinedAt,
   formatMessageDayLabel,
   formatMessageTime,
   localDayKey,
@@ -56,31 +57,23 @@ describe('formatMessageDayLabel', () => {
 });
 
 describe('formatAuthorLabel', () => {
-  test('shows default phone name without suffix', () => {
-    expect(formatAuthorLabel('···0100', '0100')).toEqual({
-      name: '···0100',
-      last4Suffix: null,
-    });
+  test('returns trimmed display name', () => {
+    expect(formatAuthorLabel('  Alex  ')).toBe('Alex');
   });
 
-  test('appends last4 when name is customized', () => {
-    expect(formatAuthorLabel('Alex', '0100')).toEqual({
-      name: 'Alex',
-      last4Suffix: '0100',
-    });
+  test('keeps phone fallback name as-is', () => {
+    expect(formatAuthorLabel('···0100')).toBe('···0100');
   });
 
-  test('falls back to Someone without suffix when empty', () => {
-    expect(formatAuthorLabel(null, '0100')).toEqual({
-      name: 'Someone',
-      last4Suffix: null,
-    });
+  test('falls back to Someone when empty', () => {
+    expect(formatAuthorLabel(null)).toBe('Someone');
+    expect(formatAuthorLabel('')).toBe('Someone');
   });
+});
 
-  test('omits suffix when phone last4 unknown', () => {
-    expect(formatAuthorLabel('Alex', null)).toEqual({
-      name: 'Alex',
-      last4Suffix: null,
-    });
+describe('formatJoinedAt', () => {
+  test('formats a short locale date', () => {
+    const ms = new Date(2024, 7, 23, 12, 0, 0).getTime();
+    expect(formatJoinedAt(ms, 'en-US')).toBe('Aug 23, 2024');
   });
 });

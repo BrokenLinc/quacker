@@ -6,10 +6,10 @@ export const routes = {
   }),
   group: (groupId = ':groupId') => ({
     path: `/${groupId}`,
-    label: 'Group',
+    label: 'Room',
   }),
   groupBySlug: (slug = ':slug') => ({
     path: `/g/${slug}`,
-    label: 'Group',
+    label: 'Room',
   }),
 };

@@ -30,7 +30,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   const [focused, setFocused] = React.useState(false);
   const extensions = React.useMemo(
     () => createRichTextExtensions({ placeholder, maxLength }),
-    [placeholder, maxLength],
+    [placeholder, maxLength]
   );
 
   // Keep the latest onSubmit without re-creating the editor.
@@ -98,7 +98,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       }}
     >
       {showToolbar ? (
-        <UI.HStack px={2} py={1} spacing={1}>
+        <UI.HStack px={2} pt={2} spacing={1}>
           <IconButton
             aria-label="Bold"
             size="xs"
@@ -123,7 +123,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       ) : null}
       <UI.Box
         px={3}
-        py={2}
+        py={3}
         pr={14}
         minH={minH}
         sx={{

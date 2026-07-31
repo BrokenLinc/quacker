@@ -27,6 +27,7 @@ import { UserMenu } from '@@components/UserMenu';
 import { useConfirmation } from '@@dialogs/confirmation';
 import {
   formatAuthorLabel,
+  formatJoinedAt,
   formatMessageDayLabel,
   formatMessageTime,
   localDayKey,
@@ -191,7 +192,7 @@ const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
       ) : error ? (
         <UI.Box flex={1} minH={0} overflowY="auto">
           <UI.ErrorState
-            title="Couldn't load this group"
+            title="Couldn't load this room"
             onRetry={() => window.location.reload()}
           />
         </UI.Box>
@@ -199,8 +200,8 @@ const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
         <UI.Box flex={1} minH={0} overflowY="auto">
           <UI.EmptyState
             icon={faComments}
-            title="Group not found"
-            description="This group may have been deleted, or the link is wrong."
+            title="Room not found"
+            description="This room may have been deleted, or the link is wrong."
             action={
               <UI.RouteButton route={routes.home()} variant="outline">
                 Back home
@@ -411,7 +412,7 @@ const GroupOverflowMenu: React.FC<{
     confirmation.open({
       title: `Leave ${group.name}?`,
       message: 'You can rejoin any time with an invite link.',
-      confirmLabel: 'Leave group',
+      confirmLabel: 'Leave room',
       isDestructive: true,
       onConfirm: async () => {
         try {
@@ -419,7 +420,7 @@ const GroupOverflowMenu: React.FC<{
           navigate(routes.home().path);
           toast({ title: `Left ${group.name}`, duration: 2500 });
         } catch {
-          toast({ title: "Couldn't leave the group", status: 'error' });
+          toast({ title: "Couldn't leave the room", status: 'error' });
         }
       },
       onCancel: () => undefined,
@@ -429,8 +430,8 @@ const GroupOverflowMenu: React.FC<{
   const handleDelete = () => {
     confirmation.open({
       title: `Delete ${group.name}?`,
-      message: 'This deletes the group and all its messages for everyone.',
-      confirmLabel: 'Delete group',
+      message: 'This deletes the room and all its messages for everyone.',
+      confirmLabel: 'Delete room',
       isDestructive: true,
       onConfirm: async () => {
         try {
@@ -438,7 +439,7 @@ const GroupOverflowMenu: React.FC<{
           navigate(routes.home().path);
           toast({ title: `Deleted ${group.name}`, duration: 2500 });
         } catch {
-          toast({ title: "Couldn't delete the group", status: 'error' });
+          toast({ title: "Couldn't delete the room", status: 'error' });
         }
       },
       onCancel: () => undefined,
@@ -468,13 +469,13 @@ const GroupOverflowMenu: React.FC<{
   if (isCreator) {
     sheetItems.push({
       id: 'rename',
-      label: 'Rename group',
+      label: 'Rename room',
       icon: faPenToSquare,
       onClick: renameModal.onOpen,
     });
     sheetItems.push({
       id: 'delete',
-      label: 'Delete group',
+      label: 'Delete room',
       icon: faTrash,
       isDestructive: true,
       onClick: handleDelete,
@@ -482,7 +483,7 @@ const GroupOverflowMenu: React.FC<{
   } else {
     sheetItems.push({
       id: 'leave',
-      label: 'Leave group',
+      label: 'Leave room',
       icon: faRightFromBracket,
       isDestructive: true,
       onClick: handleLeave,
@@ -606,7 +607,7 @@ const GroupOverflowMenu: React.FC<{
               icon={<UI.Icon icon={faPenToSquare} />}
               onClick={renameModal.onOpen}
             >
-              Rename group
+              Rename room
             </UI.MenuItem>
           ) : null}
           <UI.MenuDivider />
@@ -617,7 +618,7 @@ const GroupOverflowMenu: React.FC<{
               icon={<UI.Icon icon={faTrash} />}
               onClick={handleDelete}
             >
-              Delete group
+              Delete room
             </UI.MenuItem>
           ) : (
             <UI.MenuItem
@@ -626,7 +627,7 @@ const GroupOverflowMenu: React.FC<{
               icon={<UI.Icon icon={faRightFromBracket} />}
               onClick={handleLeave}
             >
-              Leave group
+              Leave room
             </UI.MenuItem>
           )}
         </UI.MenuList>
@@ -765,7 +766,7 @@ const RenameGroupModal: React.FC<{
       onClose();
     } catch {
       toast({
-        title: "Couldn't rename the group",
+        title: "Couldn't rename the room",
         description: 'Check your connection and try again.',
         status: 'error',
       });
@@ -778,7 +779,7 @@ const RenameGroupModal: React.FC<{
     <UI.QuickModal
       isOpen={isOpen}
       onClose={onClose}
-      headerContent="Rename group"
+      headerContent="Rename room"
     >
       <UI.ModalBody pb={6}>
         <UI.VStack
@@ -788,7 +789,7 @@ const RenameGroupModal: React.FC<{
           spacing={3}
         >
           <UI.FormControl>
-            <UI.FormLabel>Group name</UI.FormLabel>
+            <UI.FormLabel>Room name</UI.FormLabel>
             <UI.Input
               value={name}
               onChange={(e) => setName(e.target.value)}
@@ -827,7 +828,7 @@ const JoinPrompt: React.FC<{
       await onJoin(notifyLevel);
     } catch {
       toast({
-        title: "Couldn't join the group",
+        title: "Couldn't join the room",
         description: 'Check your connection and try again.',
         status: 'error',
       });
@@ -839,7 +840,7 @@ const JoinPrompt: React.FC<{
       <UI.EmptyState
         icon={faUserPlus}
         title={`Join ${group.name}?`}
-        description="You've been invited to this group. Members can read and post messages."
+        description="You've been invited to this room. Members can read and post messages."
         action={
           <UI.VStack spacing={4} align="stretch" maxW="320px" w="full">
             <NotifyLevelControl
@@ -853,7 +854,7 @@ const JoinPrompt: React.FC<{
               loadingText="Joining…"
               data-testid="join-group"
             >
-              Join group
+              Join room
             </UI.Button>
             <UI.RouteButton route={routes.home()} variant="ghost" size="sm">
               Not now
@@ -901,7 +902,7 @@ const GroupNotifyLevelModal: React.FC<{
     <UI.QuickModal
       isOpen={isOpen}
       onClose={onClose}
-      headerContent="Group notifications"
+      headerContent="Room notifications"
     >
       <UI.ModalBody pb={6}>
         <UI.VStack align="stretch" spacing={4}>
@@ -934,6 +935,18 @@ type MemberProfile = {
   displayName: string | null;
   photoURL: string | null;
   phoneLast4: string | null;
+  joinedAt: number | null;
+  role: 'creator' | 'member' | null;
+};
+
+type MemberProfileTarget = {
+  name: string;
+  uid: string;
+  photoURL: string | null;
+  phoneLast4: string | null;
+  joinedAt: number | null;
+  role: 'creator' | 'member' | null;
+  isOwn: boolean;
 };
 
 const GroupChat: React.FC<{
@@ -952,16 +965,19 @@ const GroupChat: React.FC<{
         displayName: m.displayName,
         photoURL: m.photoURL,
         phoneLast4: m.phoneLast4,
+        joinedAt: m.joinedAt,
+        role: m.role,
       });
     }
     // Prefer the signed-in user's live auth profile for own messages.
+    const existing = map.get(user.uid);
     map.set(user.uid, {
       displayName: user.displayName,
       photoURL: resolveAppUserPhotoURL(user),
       phoneLast4:
-        phoneLast4FromPhone(user.phone) ??
-        map.get(user.uid)?.phoneLast4 ??
-        null,
+        phoneLast4FromPhone(user.phone) ?? existing?.phoneLast4 ?? null,
+      joinedAt: existing?.joinedAt ?? null,
+      role: existing?.role ?? null,
     });
     return map;
   })();
@@ -1063,6 +1079,13 @@ const ChatScrollArea: React.FC<{
   const didInitialScroll = React.useRef(false);
   const distanceFromBottomRef = React.useRef(0);
   const lastItem = items[items.length - 1];
+  const [profileTarget, setProfileTarget] =
+    React.useState<MemberProfileTarget | null>(null);
+
+  const openProfile = (target: MemberProfileTarget) => {
+    setProfileTarget(target);
+  };
+  const closeProfile = () => setProfileTarget(null);
 
   React.useLayoutEffect(() => {
     const el = scrollRef.current;
@@ -1135,7 +1158,7 @@ const ChatScrollArea: React.FC<{
         <UI.EmptyState
           icon={faComments}
           title={`Say hi — this is the start of ${groupName}`}
-          description="Messages show up here for everyone in the group."
+          description="Messages show up here for everyone in the room."
         />
       </UI.Box>
     );
@@ -1149,7 +1172,8 @@ const ChatScrollArea: React.FC<{
       overflowY="auto"
       overscrollBehavior="auto"
       px={4}
-      py={3}
+      pt={3}
+      pb={10}
     >
       <UI.VStack align="stretch" spacing={0} maxW="760px" mx="auto">
         {items.map((message, i) => {
@@ -1174,11 +1198,27 @@ const ChatScrollArea: React.FC<{
                 liveDisplayName={member?.displayName ?? message.authorName}
                 livePhotoURL={member?.photoURL ?? message.authorPhotoURL}
                 phoneLast4={member?.phoneLast4 ?? null}
+                joinedAt={member?.joinedAt ?? null}
+                role={member?.role ?? null}
+                onOpenProfile={openProfile}
               />
             </React.Fragment>
           );
         })}
       </UI.VStack>
+      {profileTarget ? (
+        <MemberProfileModal
+          isOpen
+          onClose={closeProfile}
+          name={profileTarget.name}
+          uid={profileTarget.uid}
+          photoURL={profileTarget.photoURL}
+          phoneLast4={profileTarget.phoneLast4}
+          joinedAt={profileTarget.joinedAt}
+          role={profileTarget.role}
+          isOwn={profileTarget.isOwn}
+        />
+      ) : null}
     </UI.Box>
   );
 };
@@ -1200,6 +1240,9 @@ export const MessageRow: React.FC<{
   liveDisplayName?: string | null;
   livePhotoURL?: string | null;
   phoneLast4?: string | null;
+  joinedAt?: number | null;
+  role?: 'creator' | 'member' | null;
+  onOpenProfile: (target: MemberProfileTarget) => void;
 }> = ({
   message,
   grouped,
@@ -1207,10 +1250,25 @@ export const MessageRow: React.FC<{
   liveDisplayName,
   livePhotoURL,
   phoneLast4,
+  joinedAt,
+  role,
+  onOpenProfile,
 }) => {
   const displayName = liveDisplayName ?? message.authorName;
   const photoURL = livePhotoURL ?? message.authorPhotoURL;
-  const { name, last4Suffix } = formatAuthorLabel(displayName, phoneLast4);
+  const name = formatAuthorLabel(displayName);
+  const profileLabel = `View ${name}'s profile`;
+
+  const open = () =>
+    onOpenProfile({
+      name,
+      uid: message.uid,
+      photoURL: photoURL ?? null,
+      phoneLast4: phoneLast4 ?? null,
+      joinedAt: joinedAt ?? null,
+      role: role ?? null,
+      isOwn,
+    });
 
   return (
     <UI.HStack
@@ -1233,26 +1291,49 @@ export const MessageRow: React.FC<{
       {grouped ? (
         <UI.Box w={8} flexShrink={0} />
       ) : (
-        <UserAvatar
-          name={name}
-          seed={message.uid}
-          photoURL={photoURL}
-          size="sm"
+        <UI.Box
+          as="button"
+          type="button"
+          onClick={open}
+          aria-label={profileLabel}
+          borderRadius="full"
+          lineHeight={0}
+          cursor="pointer"
+          flexShrink={0}
           mt={1}
-        />
+          _hover={{ opacity: 0.85 }}
+          _active={{ transform: 'translateY(1px)' }}
+        >
+          <UserAvatar
+            name={name}
+            seed={message.uid}
+            photoURL={photoURL}
+            size="sm"
+          />
+        </UI.Box>
       )}
       <UI.Box minW={0} flex={1}>
         {grouped ? null : (
           <UI.HStack spacing={2} align="baseline" mb={0.5}>
-            <UI.Text fontSize="sm" fontWeight="bold" noOfLines={1}>
-              {name}
-              {last4Suffix ? (
-                <UI.Text as="span" fontWeight="normal" color="text.muted" ml={1}>
-                  ({last4Suffix})
-                </UI.Text>
-              ) : null}
-              {isOwn ? ' (you)' : ''}
-            </UI.Text>
+            <UI.Button
+              variant="link"
+              color="inherit"
+              fontSize="sm"
+              fontWeight="bold"
+              h="auto"
+              minW={0}
+              maxW="100%"
+              p={0}
+              textDecoration="none"
+              _hover={{ textDecoration: 'underline' }}
+              onClick={open}
+              aria-label={profileLabel}
+            >
+              <UI.Text as="span" noOfLines={1}>
+                {name}
+                {isOwn ? ' (you)' : ''}
+              </UI.Text>
+            </UI.Button>
             <UI.Text fontSize="xs" color="text.muted" flexShrink={0}>
               {message.pending ? 'sending…' : formatMessageTime(message.time)}
             </UI.Text>
@@ -1261,6 +1342,58 @@ export const MessageRow: React.FC<{
         <UI.RichTextContent content={message.text} />
       </UI.Box>
     </UI.HStack>
+  );
+};
+
+const MemberProfileModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  name: string;
+  uid: string;
+  photoURL: string | null;
+  phoneLast4: string | null;
+  joinedAt: number | null;
+  role: 'creator' | 'member' | null;
+  isOwn: boolean;
+}> = ({
+  isOpen,
+  onClose,
+  name,
+  uid,
+  photoURL,
+  phoneLast4,
+  joinedAt,
+  role,
+  isOwn,
+}) => {
+  const title = isOwn ? 'You' : name;
+  return (
+    <UI.QuickModal isOpen={isOpen} onClose={onClose} headerContent={title}>
+      <UI.ModalBody pb={8}>
+        <UI.VStack spacing={3} align="center" textAlign="center" pt={2}>
+          <UserAvatar name={name} seed={uid} photoURL={photoURL} size="xl" />
+          <UI.Heading size="md" noOfLines={2}>
+            {name}
+            {isOwn ? ' (you)' : ''}
+          </UI.Heading>
+          {phoneLast4 ? (
+            <UI.Text fontSize="md" color="text.muted" letterSpacing="wide">
+              ···{phoneLast4}
+            </UI.Text>
+          ) : null}
+          {role === 'creator' ? (
+            <UI.Badge colorScheme="gray" fontSize="xs">
+              Room creator
+            </UI.Badge>
+          ) : null}
+          {joinedAt ? (
+            <UI.Text fontSize="sm" color="text.muted">
+              Joined {formatJoinedAt(joinedAt)}
+            </UI.Text>
+          ) : null}
+        </UI.VStack>
+      </UI.ModalBody>
+    </UI.QuickModal>
   );
 };
 

@@ -88,7 +88,7 @@ export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
           data-testid="display-name-input"
         />
         <UI.FormHelperText>
-          Shown with your messages in every group
+          Shown with your messages in every room
         </UI.FormHelperText>
       </UI.FormControl>
       {showNotificationsOptIn ? (

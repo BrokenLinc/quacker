@@ -31,7 +31,7 @@ const HomePage: React.FC = () => {
         >
           <UI.HStack mb={4}>
             <UI.Heading size="md" mr="auto">
-              Your groups
+              Your rooms
             </UI.Heading>
             <NewGroupIconButton />
           </UI.HStack>
@@ -69,7 +69,7 @@ const GroupList: React.FC = () => {
   if (error) {
     return (
       <UI.ErrorState
-        title="Couldn't load your groups"
+        title="Couldn't load your rooms"
         onRetry={() => window.location.reload()}
       />
     );
@@ -79,8 +79,8 @@ const GroupList: React.FC = () => {
     return (
       <UI.EmptyState
         icon={faComments}
-        title="No groups yet"
-        description="Start a group for your trip or conference and share the link — friends join in one tap."
+        title="No rooms yet"
+        description="Start a room for your trip or conference and share the link — friends join in one tap."
         action={<NewGroupButton size="md" />}
       />
     );

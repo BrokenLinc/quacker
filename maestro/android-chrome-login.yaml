@@ -20,11 +20,11 @@ androidWebViewHierarchy: devtools
     commands:
       - tapOn: "Dismiss install prompt"
 - extendedWaitUntil:
-    visible: ".*Sign in to Yowl|Your groups.*"
+    visible: ".*Sign in to Yowl|Your rooms.*"
     timeout: 20000
 - runFlow:
     when:
-      visible: "Your groups"
+      visible: "Your rooms"
     commands:
       - tapOn: "Account menu"
       - tapOn: "Log out"
@@ -33,4 +33,4 @@ androidWebViewHierarchy: devtools
           timeout: 15000
 - runFlow:
     file: shared/login-steps.yaml
-- assertVisible: "Your groups"
+- assertVisible: "Your rooms"

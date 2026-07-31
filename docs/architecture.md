@@ -27,7 +27,7 @@ group_members
 messages
   id, group_id, author_id, author_name, author_photo_url, text, is_announcement, created_at
   -- author_name/photo stamped at send (notifications + left-member fallback);
-  -- chat UI prefers live group_members.display_name (+ muted phone_last4 when customized)
+  -- chat UI prefers live group_members.display_name; phone_last4 on member profile sheet
 
 user_notification_prefs
   user_id, push_enabled

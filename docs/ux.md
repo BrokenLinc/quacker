@@ -16,23 +16,23 @@ brand. Snappy beats fancy; honest states beat clean-looking blanks.
 
 | Route | Purpose |
 | ----- | ------- |
-| `/` | Your groups (membership-scoped) + create CTA |
+| `/` | Your rooms (membership-scoped) + create CTA |
 | `/:groupId` | Chat. Non-members get an explicit join prompt |
-| `/g/:slug` | Invite link → resolves slug → redirects to the group |
+| `/g/:slug` | Invite link → resolves slug → redirects to the room |
 | `*` | Not-found page with a way home |
 
-Everything secondary (share, members, rename, new group, change name, sign-in)
+Everything secondary (share, members, rename, new room, change name, sign-in)
 is a `QuickModal` — modal on desktop, bottom drawer on mobile. No settings
 pages, no nested routes.
 
 ### Shell
 
-- **Desktop (md+):** persistent left sidebar (brand + plus, group nav,
+- **Desktop (md+):** persistent left sidebar (brand + plus, room nav,
   user + appearance in the footer). Chat pane content is capped at ~760px for
   readable line length.
-- **Mobile:** compact top header on home (brand, avatar); group pages have
+- **Mobile:** compact top header on home (brand, avatar); room pages have
   exactly one bar (back, title, share, overflow, avatar). Never stack two
-  headers. "New group" is a plus icon in the page header (and sidebar brand
+  headers. "New room" is a plus icon in the page header (and sidebar brand
   row on desktop).
 
 ## Color system
@@ -79,7 +79,9 @@ default).
 Phone-only users default to `···1234` — treat that as a bug, not a name. The
 sign-in flow asks "What should people call you?" right after first OTP verify
 (skippable); "Change name" lives in the avatar menu. Names are denormalized
-onto `group_members` for the roster and onto `messages` at send time.
+onto `group_members` for the roster and onto `messages` at send time. Message
+headers show the live display name only — tap avatar or name for a profile
+sheet (`···XXXX`, join date, creator badge when known).
 
 ## Inputs
 
@@ -206,8 +208,7 @@ the frame while auth/group data loads — never withhold the frame until ready
 - Every overlay has an obvious dismiss (X and/or Cancel). Overlay tap and Esc
   remain available unless a flow intentionally requires an explicit choice —
   still keep Cancel.
-- Content sheets use `QuickModal` (modal ≥ md, drawer on mobile). Mobile
-  drawers support drag-to-dismiss (placement-aware) via framer-motion.
+- Content sheets use `QuickModal` (modal ≥ md, drawer on mobile).
 - Confirmations use the **same** mobile drawer shell as `QuickModal`, not a
   centered desktop modal on phones.
 
@@ -215,8 +216,8 @@ the frame while auth/group data loads — never withhold the frame until ready
 
 - **Desktop (md+):** Chakra `Menu` popovers are fine for short action lists.
 - **Mobile:** short action lists → floating **action sheet** (inset from edges,
-  fully rounded corners; group options open from the **top** under the title);
-  longer navigational lists (groups in the avatar menu) → floating bottom
+  fully rounded corners; room options open from the **top** under the title);
+  longer navigational lists (rooms in the avatar menu) → floating bottom
   sheet. Do not leave dense nav lists in floating popovers on small screens.
-- On group pages, the **title is the options control** (name + chevron) — no
+- On room pages, the **title is the options control** (name + chevron) — no
   separate ⋯ button.

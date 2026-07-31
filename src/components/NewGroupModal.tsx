@@ -16,7 +16,7 @@ export const NewGroupModal: React.FC<{
   onClose: () => void;
 }> = ({ isOpen, onClose }) => {
   return (
-    <UI.QuickModal isOpen={isOpen} onClose={onClose} headerContent="New group">
+    <UI.QuickModal isOpen={isOpen} onClose={onClose} headerContent="New room">
       <UI.ModalBody pb={6}>
         <NewGroupForm onCreated={onClose} />
       </UI.ModalBody>
@@ -24,7 +24,7 @@ export const NewGroupModal: React.FC<{
   );
 };
 
-/** "New group" button with its own modal — drop in anywhere. */
+/** "New room" button with its own modal — drop in anywhere. */
 export const NewGroupButton: React.FC<UI.ButtonProps> = (props) => {
   const modal = UI.useDisclosure();
 
@@ -37,7 +37,7 @@ export const NewGroupButton: React.FC<UI.ButtonProps> = (props) => {
         onClick={modal.onOpen}
         {...props}
       >
-        New group
+        New room
       </UI.Button>
       <NewGroupModal isOpen={modal.isOpen} onClose={modal.onClose} />
     </React.Fragment>
@@ -53,7 +53,7 @@ export const NewGroupIconButton: React.FC<
   return (
     <React.Fragment>
       <UI.IconButton
-        aria-label="New group"
+        aria-label="New room"
         icon={faPlus}
         size="sm"
         variant="ghost"
@@ -90,7 +90,7 @@ const NewGroupForm: React.FC<{ onCreated: () => void }> = ({ onCreated }) => {
       navigate(routes.group(id).path);
     } catch {
       toast({
-        title: "Couldn't create the group",
+        title: "Couldn't create the room",
         description: 'Check your connection and try again.',
         status: 'error',
         duration: 4000,
@@ -103,7 +103,7 @@ const NewGroupForm: React.FC<{ onCreated: () => void }> = ({ onCreated }) => {
   return (
     <UI.VStack as="form" onSubmit={handleSubmit} align="stretch" spacing={3}>
       <UI.FormControl>
-        <UI.FormLabel>Group name</UI.FormLabel>
+        <UI.FormLabel>Room name</UI.FormLabel>
         <UI.Input
           value={name}
           onChange={(e) => setName(e.target.value)}
@@ -118,7 +118,7 @@ const NewGroupForm: React.FC<{ onCreated: () => void }> = ({ onCreated }) => {
         isLoading={submitting}
         loadingText="Creating…"
       >
-        Create group
+        Create room
       </UI.Button>
     </UI.VStack>
   );

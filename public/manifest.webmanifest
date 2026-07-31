@@ -1,7 +1,7 @@
 {
   "name": "Yowl",
   "short_name": "Yowl",
-  "description": "Ad-hoc group chat for trips and conferences",
+  "description": "Ad-hoc room chat for trips and conferences",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",

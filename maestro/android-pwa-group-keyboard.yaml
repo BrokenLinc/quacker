@@ -29,12 +29,12 @@ androidWebViewHierarchy: devtools
     commands:
       - tapOn: "Yowl"
       - extendedWaitUntil:
-          visible: ".*Sign in to Yowl|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          visible: ".*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
           timeout: 45000
 # Install if launcher icon missing
 - runFlow:
     when:
-      notVisible: ".*Sign in to Yowl|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+      notVisible: ".*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
     commands:
       - runFlow:
           file: android-chrome-open.yaml
@@ -44,7 +44,7 @@ androidWebViewHierarchy: devtools
           commands:
             - tapOn: "Close"
       - extendedWaitUntil:
-          visible: ".*Sign in to Yowl|Your groups.*"
+          visible: ".*Sign in to Yowl|Your rooms.*"
           timeout: 20000
       - runFlow:
           when:
@@ -73,7 +73,7 @@ androidWebViewHierarchy: devtools
           timeout: 20000
       - tapOn: "Yowl"
       - extendedWaitUntil:
-          visible: ".*Sign in to Yowl|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          visible: ".*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
           timeout: 45000
 # Dismiss leftover Account sheet
 - runFlow:
@@ -85,16 +85,14 @@ androidWebViewHierarchy: devtools
     when:
       visible: "Dark mode"
     commands:
-      - swipe:
-          start: 50%, 35%
-          end: 50%, 95%
+      - tapOn:
+          point: "50%, 12%"
 - runFlow:
     when:
       visible: "Light mode"
     commands:
-      - swipe:
-          start: 50%, 35%
-          end: 50%, 95%
+      - tapOn:
+          point: "50%, 12%"
 - runFlow:
     when:
       visible: "Dismiss install prompt"
@@ -125,17 +123,17 @@ androidWebViewHierarchy: devtools
       visible: "Sign in to Yowl"
     file: shared/login-steps.yaml
 - extendedWaitUntil:
-    visible: "Your groups"
+    visible: "Your rooms"
     timeout: 20000
 # --- Group + keyboard light then dark ---
-- tapOn: "New group"
+- tapOn: "New room"
 - extendedWaitUntil:
-    visible: "Group name"
+    visible: "Room name"
     timeout: 10000
-- tapOn: "Group name"
+- tapOn: "Room name"
 - eraseText
 - inputText: "Android PWA Keyboard Lab"
-- tapOn: "Create group"
+- tapOn: "Create room"
 - extendedWaitUntil:
     visible: "Say hi — this is the start of Android PWA Keyboard Lab"
     timeout: 20000

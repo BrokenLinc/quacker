@@ -24,15 +24,15 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
 - App frame is fixed-viewport (`AppLayout` in `src/components/AppShell.tsx`):
   desktop (md+) = persistent sidebar (brand + plus at top; user + appearance
   in the footer); mobile
-  = compact header, group pages render their own single top bar. Document
+  = compact header, room pages render their own single top bar. Document
   does not scroll — pages scroll internally (`flex={1} minH={0} overflowY="auto"`)
-- **Predictable chrome:** for fixed-size shells (group header, composer, sidebar
+- **Predictable chrome:** for fixed-size shells (room header, composer, sidebar
   width), mount the container at its known dimensions immediately, then fill
   contents when data is ready — never omit the frame until load completes
   (avoids pop-in). Skeletons go *inside* the frame.
 - Chat: chronological messages, composer pinned to bottom, Enter sends
   (Shift+Enter newline), optimistic pending bubbles
-- Overlays use `QuickModal` (modal on md+, drawer on mobile; drag-to-dismiss)
+- Overlays use `QuickModal` (modal on md+, drawer on mobile)
 
 ## Native / PWA
 
@@ -55,7 +55,7 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
 - **Overlays:** every sheet/dialog has X and/or Cancel; confirmations use the
   same mobile drawer shell as `QuickModal`
 - **Menus:** mobile short actions → floating bottom/top action sheet
-  (inset, rounded); mobile nav lists (groups) → floating drawer — not `Menu`
+  (inset, rounded); mobile nav lists (rooms) → floating drawer — not `Menu`
   popovers. Desktop may keep `Menu`
 
 ## States — never blank
@@ -84,8 +84,8 @@ when `MaskedInput` / form subtypes already cover the case.
 
 ## Product rules
 
-- Group lists are **membership-scoped** (`useGroups({ userId })`) — never list
-  all groups
+- Room lists are **membership-scoped** (`useGroups({ userId })`) — never list
+  all rooms
 - Joining is **explicit consent** (join prompt), never a silent side effect
 - Ask for a display name right after first sign-in; `···1234` is a fallback,
   not an identity

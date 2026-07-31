@@ -9,7 +9,7 @@ import { routes } from '@@routing/routes';
 
 const GroupSlugPage: React.FC = () => {
   return (
-    <RequireAuth heading="Sign in to join this group">
+    <RequireAuth heading="Sign in to join this room">
       <GroupSlugRedirect />
     </RequireAuth>
   );
@@ -38,8 +38,8 @@ const GroupSlugRedirect: React.FC = () => {
     <UI.Box flex={1} overflowY="auto">
       <UI.EmptyState
         icon={faComments}
-        title="Group not found"
-        description="This invite link may have expired, or the group was deleted."
+        title="Room not found"
+        description="This invite link may have expired, or the room was deleted."
         action={
           <UI.RouteButton route={routes.home()} variant="outline">
             Back home

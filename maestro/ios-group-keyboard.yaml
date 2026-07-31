@@ -9,15 +9,15 @@ appId: ${APP_ID}
 - openLink: ${APP_URL}
 - runFlow:
     file: shared/ensure-signed-in.yaml
-- assertVisible: "Your groups"
-- tapOn: "New group"
+- assertVisible: "Your rooms"
+- tapOn: "New room"
 - extendedWaitUntil:
-    visible: "Group name"
+    visible: "Room name"
     timeout: 10000
 - tapOn: "WWDC hallway chat"
 - eraseText
 - inputText: "Keyboard Lab"
-- tapOn: "Create group"
+- tapOn: "Create room"
 - extendedWaitUntil:
     visible: "Say hi — this is the start of Keyboard Lab"
     timeout: 20000
