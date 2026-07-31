@@ -149,14 +149,47 @@ Implementation: `index.html` (geometry + `html.standalone`),
 
 **Symptom check:** `screen.height - innerHeight ≈ 60` and `#root.getBoundingClientRect().height === innerHeight` while a canvas strip sits under chrome → missing `html.standalone` / still on `bottom: 0`. After the fix, raised chrome (composer) samples to the physical bottom; safe-area is **inside** that raised fill.
 
+### First paint (no white flash)
+
+- Early in `index.html` `<head>`: `<meta name="color-scheme" content="dark light">`
+  plus inline CSS that defaults `html` to dark **raised** (`#302A44`), with a light
+  `prefers-color-scheme` override (`#FFFFFF`).
+- Inline body script (before the Vite module) applies stored
+  `chakra-ui-color-mode` (or system) to `data-theme`, `color-scheme`,
+  document = raised, `#root` = canvas — same role as Chakra’s `ColorModeScript`,
+  but before React. Do not rely on a React-mounted `ColorModeScript` alone.
+- Wipe installed PWA Storage after `index.html` boot changes (webclip cache).
+
+### Document vs content paint (Safari accessory)
+
+iOS Safari’s keyboard accessory bar (and overscroll rubber-band) sample the
+**document** background (`html`/`body`), not `#root`. Composer / headers use
+`surface.raised`, so:
+
+| Plane | Token | Where |
+| ----- | ----- | ----- |
+| Document / UA chrome | `surface.raised` | `html`, `body`, `theme-color` |
+| App content | `surface.canvas` | `#root`, `AppShell` |
+
+Do not paint `html`/`body` with canvas — that leaves a darker strip under the
+composer when the keyboard is open. Keep content areas on canvas so the chat
+plane stays distinct from chrome.
+
+### Predictable chrome containers
+
+Fixed-size shells (group top bar, composer, sidebar column) must **mount at
+their known dimensions immediately**. Put skeletons or placeholders *inside*
+the frame while auth/group data loads — never withhold the frame until ready
+(that causes header/layout pop-in on group chat).
+
 ### Safe areas and system chrome blending
 
-- Paint `html` / `body` / `#root` with `surface.canvas` so status bar and home
-  indicator gutters match the app, not a white letterbox.
+- Paint `html` / `body` with `surface.raised` (Safari accessory / overscroll);
+  `#root` / shell with `surface.canvas` for the content plane.
 - Extend UI under safe areas; pad **chrome** (headers, composer, fixed banners,
   drawer footers) with `env(safe-area-inset-*)` — do not double-subtract insets
   from both body padding and shell height.
-- `theme-color`, manifest `theme_color`, and `background_color` track canvas
+- `theme-color`, manifest `theme_color`, and `background_color` track **raised**
   (light + dark). Sync `theme-color` when the in-app color mode changes.
   Tests: Playwright `a11y-home` (both modes via localStorage) + `theme-modes`
   (sidebar toggle); Maestro keyboard flows screenshot light then dark in one run.

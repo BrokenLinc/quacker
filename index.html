@@ -2,6 +2,21 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8" />
+    <!-- Prefer dark first so UA chrome never paints white before CSS/JS. -->
+    <meta name="color-scheme" content="dark light" />
+    <style>
+      /* Earliest paint: document = raised (Safari accessory); #root = canvas later. */
+      html {
+        background-color: #302a44;
+        color-scheme: dark light;
+      }
+      @media (prefers-color-scheme: light) {
+        html {
+          background-color: #ffffff;
+          color-scheme: light;
+        }
+      }
+    </style>
     <link rel="icon" type="image/svg+xml" href="/icon.svg" />
     <link rel="icon" href="/favicon.ico" sizes="any" />
     <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
@@ -158,9 +173,9 @@
       content="Ad-hoc group chat for trips and conferences"
     />
     <meta name="twitter:image" content="https://yowl.us/og-image.png" />
-    <!-- theme-color tracks surface.canvas (gray.50 / gray.900); synced at runtime for in-app color mode -->
-    <meta name="theme-color" content="#FAF9FC" media="(prefers-color-scheme: light)" />
-    <meta name="theme-color" content="#221D33" media="(prefers-color-scheme: dark)" />
+    <!-- theme-color tracks surface.raised (chrome); synced at runtime for in-app color mode -->
+    <meta name="theme-color" content="#FFFFFF" media="(prefers-color-scheme: light)" />
+    <meta name="theme-color" content="#302A44" media="(prefers-color-scheme: dark)" />
     <meta name="mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-capable" content="yes" />
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
@@ -192,8 +207,8 @@
         margin: 0;
         overflow: hidden;
         overscroll-behavior: none;
-        /* surface.canvas light — overwritten by Chakra once hydrated */
-        background-color: #faf9fc;
+        /* surface.raised — Safari keyboard accessory / overscroll sample body */
+        background-color: #302a44;
       }
 
       body {
@@ -206,11 +221,14 @@
         height: 100vh;
       }
 
-      @media (prefers-color-scheme: dark) {
+      @media (prefers-color-scheme: light) {
         html,
-        body,
+        body {
+          background-color: #ffffff;
+        }
+
         #root {
-          background-color: #221d33;
+          background-color: #faf9fc;
         }
       }
 
@@ -223,7 +241,8 @@
         bottom: 0;
         width: 100%;
         overflow: hidden;
-        background-color: #faf9fc;
+        /* surface.canvas — app content plane */
+        background-color: #221d33;
       }
 
       html.standalone #root {
@@ -235,6 +254,40 @@
   </head>
   <body>
     <div id="root"></div>
+    <!-- Color mode before React; must be in body (touches document.body). -->
+    <script id="chakra-script">
+      !(function () {
+        try {
+          var raised = { light: '#ffffff', dark: '#302a44' };
+          var canvas = { light: '#faf9fc', dark: '#221d33' };
+          var apply = function (mode) {
+            var prefersDark = window.matchMedia(
+              '(prefers-color-scheme: dark)'
+            ).matches;
+            var resolved =
+              mode === 'system' ? (prefersDark ? 'dark' : 'light') : mode;
+            var isDark = resolved === 'dark';
+            var docColor = isDark ? raised.dark : raised.light;
+            var appColor = isDark ? canvas.dark : canvas.light;
+            var root = document.documentElement;
+            var body = document.body;
+            body.classList.add(isDark ? 'chakra-ui-dark' : 'chakra-ui-light');
+            body.classList.remove(isDark ? 'chakra-ui-light' : 'chakra-ui-dark');
+            root.style.colorScheme = resolved;
+            root.dataset.theme = resolved;
+            root.style.backgroundColor = docColor;
+            body.style.backgroundColor = docColor;
+            var app = document.getElementById('root');
+            if (app) app.style.backgroundColor = appColor;
+            return resolved;
+          };
+          var key = 'chakra-ui-color-mode';
+          var stored = localStorage.getItem(key);
+          if (stored) apply(stored);
+          else localStorage.setItem(key, apply('system'));
+        } catch (e) {}
+      })();
+    </script>
     <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

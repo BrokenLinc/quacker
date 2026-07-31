@@ -6,6 +6,7 @@ import {
   canvasColorForMode,
   getVisibleViewportHeight,
   isVirtualKeyboardOpen,
+  raisedColorForMode,
 } from './canvasColors';
 
 function stubWindow(overrides: Record<string, unknown> = {}) {
@@ -44,6 +45,13 @@ describe('canvasColorForMode', () => {
   it('returns canvas light/dark hexes', () => {
     expect(canvasColorForMode('light')).toBe('#FAF9FC');
     expect(canvasColorForMode('dark')).toBe('#221D33');
+  });
+});
+
+describe('raisedColorForMode', () => {
+  it('returns raised light/dark hexes', () => {
+    expect(raisedColorForMode('light')).toBe('#FFFFFF');
+    expect(raisedColorForMode('dark')).toBe('#302A44');
   });
 });
 

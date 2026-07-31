@@ -59,11 +59,106 @@ import React from 'react';
 import QRCode from 'react-qr-code';
 import { useNavigate, useParams } from 'react-router-dom';
 
+/* ------------------------------------------------------------------ */
+/* Top bar shell (defined before page so auth loading can reuse it)    */
+/* ------------------------------------------------------------------ */
+
+/** sm IconButton (2rem) + py (0.5rem×2); mobile adds safe-area to pt. */
+const GROUP_BAR_MIN_H = {
+  base: 'calc(3rem + env(safe-area-inset-top, 0px))',
+  md: '3rem',
+} as const;
+
+/**
+ * Stable group chrome frame — mount immediately at known size, then fill
+ * children when data/auth is ready (avoids header pop-in).
+ */
+const GroupBarShell: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => (
+  <UI.HStack
+    px={3}
+    pt={{
+      base: 'calc(0.5rem + env(safe-area-inset-top, 0px))',
+      md: 2,
+    }}
+    pb={2}
+    spacing={2}
+    flexShrink={0}
+    minH={GROUP_BAR_MIN_H}
+    align="center"
+    borderBottom="1px solid"
+    borderColor="border.subtle"
+    bg="surface.raised"
+  >
+    {children}
+  </UI.HStack>
+);
+
+const GroupBarBackButton: React.FC = () => (
+  <UI.IconButton
+    as={UI.RouteLink}
+    route={routes.home()}
+    aria-label="Back to home"
+    icon={faArrowLeft}
+    size="sm"
+    variant="ghost"
+    color="inherit"
+  />
+);
+
+/** Placeholder chrome while group/auth loads — same slots as the real bar. */
+const GroupBarPlaceholder: React.FC = () => {
+  const isMobile = UI.useBreakpointValue(
+    { base: true, md: false },
+    { ssr: false, fallback: 'base' }
+  );
+
+  return (
+    <React.Fragment>
+      {isMobile ? <GroupBarBackButton /> : null}
+      <UI.Skeleton h={5} flex={1} maxW="12rem" borderRadius="md" mr="auto" />
+      <UI.Skeleton boxSize={8} borderRadius="md" flexShrink={0} />
+      {isMobile ? (
+        <UI.Skeleton boxSize={8} borderRadius="full" flexShrink={0} />
+      ) : null}
+    </React.Fragment>
+  );
+};
+
+const GroupChatBodySkeleton: React.FC = () => (
+  <UI.Box
+    flex={1}
+    minH={0}
+    overflowY="auto"
+    p={4}
+    maxW="760px"
+    w="full"
+    mx="auto"
+  >
+    <UI.VStack align="stretch" spacing={4}>
+      <UI.SkeletonText noOfLines={3} spacing={3} />
+      <UI.SkeletonText noOfLines={2} spacing={3} />
+      <UI.SkeletonText noOfLines={3} spacing={3} />
+    </UI.VStack>
+  </UI.Box>
+);
+
+/** Full-page loading chrome: fixed bar + message skeletons. */
+const GroupPageLoadingChrome: React.FC = () => (
+  <React.Fragment>
+    <GroupBarShell>
+      <GroupBarPlaceholder />
+    </GroupBarShell>
+    <GroupChatBodySkeleton />
+  </React.Fragment>
+);
+
 const GroupPage: React.FC = () => {
   const { groupId } = useParams() as { groupId: string };
 
   return (
-    <RequireAuth>
+    <RequireAuth loadingFallback={<GroupPageLoadingChrome />}>
       {/* key resets chat state when switching groups via the sidebar */}
       <GroupPageContents key={groupId} groupId={groupId} />
     </RequireAuth>
@@ -74,51 +169,46 @@ export default GroupPage;
 const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
   const state = useGroupState(groupId);
   const { user, group, loading, error, member } = state;
-
-  if (loading || (member === null && !error)) {
-    return (
-      <UI.Box flex={1} overflowY="auto" p={4} maxW="760px" w="full" mx="auto">
-        <UI.VStack align="stretch" spacing={4}>
-          <UI.Skeleton h={8} borderRadius="md" />
-          <UI.SkeletonText noOfLines={3} spacing={3} />
-          <UI.SkeletonText noOfLines={2} spacing={3} />
-        </UI.VStack>
-      </UI.Box>
-    );
-  }
-
-  if (error) {
-    return (
-      <UI.Box flex={1} overflowY="auto">
-        <UI.ErrorState
-          title="Couldn't load this group"
-          onRetry={() => window.location.reload()}
-        />
-      </UI.Box>
-    );
-  }
-
-  if (!group || !user) {
-    return (
-      <UI.Box flex={1} overflowY="auto">
-        <UI.EmptyState
-          icon={faComments}
-          title="Group not found"
-          description="This group may have been deleted, or the link is wrong."
-          action={
-            <UI.RouteButton route={routes.home()} variant="outline">
-              Back home
-            </UI.RouteButton>
-          }
-        />
-      </UI.Box>
-    );
-  }
+  const waiting = loading || (member === null && !error);
+  const ready = Boolean(group && user && !waiting && !error);
 
   return (
     <React.Fragment>
-      <GroupBar group={group} user={user} isMember={member === true} />
-      {member ? (
+      {/* Bar shell mounts immediately at known size; contents fill when ready. */}
+      <GroupBarShell>
+        {ready && group && user ? (
+          <GroupBarContents
+            group={group}
+            user={user}
+            isMember={member === true}
+          />
+        ) : (
+          <GroupBarPlaceholder />
+        )}
+      </GroupBarShell>
+      {waiting ? (
+        <GroupChatBodySkeleton />
+      ) : error ? (
+        <UI.Box flex={1} minH={0} overflowY="auto">
+          <UI.ErrorState
+            title="Couldn't load this group"
+            onRetry={() => window.location.reload()}
+          />
+        </UI.Box>
+      ) : !group || !user ? (
+        <UI.Box flex={1} minH={0} overflowY="auto">
+          <UI.EmptyState
+            icon={faComments}
+            title="Group not found"
+            description="This group may have been deleted, or the link is wrong."
+            action={
+              <UI.RouteButton route={routes.home()} variant="outline">
+                Back home
+              </UI.RouteButton>
+            }
+          />
+        </UI.Box>
+      ) : member ? (
         <GroupChat groupId={groupId} group={group} user={user} />
       ) : (
         <JoinPrompt
@@ -186,42 +276,20 @@ const useGroupState = (groupId: string) => {
 /* Top bar                                                             */
 /* ------------------------------------------------------------------ */
 
-const GroupBar: React.FC<{
+const GroupBarContents: React.FC<{
   group: Group;
   user: AppUser;
   isMember: boolean;
 }> = ({ group, user, isMember }) => {
   const isMobile = UI.useBreakpointValue(
     { base: true, md: false },
-    { ssr: false }
+    { ssr: false, fallback: 'base' }
   );
   const shareModal = UI.useDisclosure();
 
   return (
-    <UI.HStack
-      px={3}
-      pt={{
-        base: 'calc(0.5rem + env(safe-area-inset-top, 0px))',
-        md: 2,
-      }}
-      pb={2}
-      spacing={2}
-      flexShrink={0}
-      borderBottom="1px solid"
-      borderColor="border.subtle"
-      bg="surface.raised"
-    >
-      {isMobile ? (
-        <UI.IconButton
-          as={UI.RouteLink}
-          route={routes.home()}
-          aria-label="Back to home"
-          icon={faArrowLeft}
-          size="sm"
-          variant="ghost"
-          color="inherit"
-        />
-      ) : null}
+    <React.Fragment>
+      {isMobile ? <GroupBarBackButton /> : null}
       {isMember ? (
         <GroupOverflowMenu
           group={group}
@@ -244,7 +312,7 @@ const GroupBar: React.FC<{
       />
       {isMobile ? <UserMenu showColorMode /> : null}
       <ShareGroupModal group={group} {...shareModal} />
-    </UI.HStack>
+    </React.Fragment>
   );
 };
 

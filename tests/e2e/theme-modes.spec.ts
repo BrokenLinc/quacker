@@ -7,7 +7,9 @@ import { expectColorMode, seedColorMode } from './fixtures/theme';
  * In-app toggle (sidebar). Requires auth — smoke project / full e2e only.
  * Unsigned canvas coverage lives in a11y-home (both modes, no Supabase).
  */
-test('color mode toggle switches canvas and theme-color', async ({ page }) => {
+test('color mode toggle switches raised document and theme-color', async ({
+  page,
+}) => {
   await seedColorMode(page, 'light');
   await seedTestSession(page);
   await expect(

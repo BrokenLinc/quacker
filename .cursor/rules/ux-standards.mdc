@@ -26,6 +26,10 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
   in the footer); mobile
   = compact header, group pages render their own single top bar. Document
   does not scroll — pages scroll internally (`flex={1} minH={0} overflowY="auto"`)
+- **Predictable chrome:** for fixed-size shells (group header, composer, sidebar
+  width), mount the container at its known dimensions immediately, then fill
+  contents when data is ready — never omit the frame until load completes
+  (avoids pop-in). Skeletons go *inside* the frame.
 - Chat: chronological messages, composer pinned to bottom, Enter sends
   (Shift+Enter newline), optimistic pending bubbles
 - Overlays use `QuickModal` (modal on md+, drawer on mobile; drag-to-dismiss)
@@ -37,10 +41,17 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
   `bottom:0`/`dvh`). Keyboard open only when VV shrinks **and** editable focused.
   Closed: composer pads safe-area once. Never VV-size `#root` while closed; wipe
   webclip Storage after `index.html` changes; verify bottom gap with pixels
-- **Edges:** paint `html`/`body`/`#root` with `surface.canvas`; pad chrome with
-  `env(safe-area-inset-*)` (no body+shell double-subtract). `theme-color` +
-  manifest colors track canvas (incl. in-app color-mode sync);
-  `apple-mobile-web-app-status-bar-style` = `black-translucent` when edge-to-edge
+- **First paint:** `index.html` sets `color-scheme` (`dark light`), dark-first
+  raised CSS on `html`/`body`, canvas on `#root`, and an early body script
+  (Chakra mode + those bgs) so the UA never flashes white before React. Do not
+  put `ColorModeScript` only inside React.
+- **Document vs content:** `html`/`body`/`theme-color` = `surface.raised`
+  (matches composer; iOS Safari accessory bar samples document bg). `#root` /
+  AppShell = `surface.canvas`. Do not paint document with canvas.
+- **Edges:** pad chrome with `env(safe-area-inset-*)` (no body+shell
+  double-subtract). `theme-color` + manifest colors track raised (incl. in-app
+  color-mode sync); `apple-mobile-web-app-status-bar-style` =
+  `black-translucent` when edge-to-edge
 - **Overlays:** every sheet/dialog has X and/or Cancel; confirmations use the
   same mobile drawer shell as `QuickModal`
 - **Menus:** mobile short actions → floating bottom/top action sheet

@@ -1,11 +1,19 @@
 import { expect, type Page } from '@playwright/test';
 
-import { CANVAS_DARK, CANVAS_LIGHT } from '../../../src/lib/pwa/canvasColors';
+import {
+  CANVAS_DARK,
+  CANVAS_LIGHT,
+  RAISED_DARK,
+  RAISED_LIGHT,
+} from '../../../src/lib/pwa/canvasColors';
 
 export type AppColorMode = 'light' | 'dark';
 
 export const canvasForMode = (mode: AppColorMode): string =>
   mode === 'dark' ? CANVAS_DARK : CANVAS_LIGHT;
+
+export const raisedForMode = (mode: AppColorMode): string =>
+  mode === 'dark' ? RAISED_DARK : RAISED_LIGHT;
 
 /** Chakra persists the binary toggle under this key (`light` | `dark`). */
 export const COLOR_MODE_STORAGE_KEY = 'chakra-ui-color-mode';
@@ -30,6 +38,7 @@ export async function expectColorMode(
   // Chakra v2 with CSS variables uses `data-theme` on <html> (not chakra-ui-* classes).
   await expect(page.locator('html')).toHaveAttribute('data-theme', mode);
 
+  const raised = raisedForMode(mode);
   const canvas = canvasForMode(mode);
   await expect
     .poll(async () =>
@@ -37,9 +46,9 @@ export async function expectColorMode(
         .locator('meta[name="theme-color"]:not([media])')
         .getAttribute('content')
     )
-    .toBe(canvas);
+    .toBe(raised);
 
-  // `style.backgroundColor` is browser-normalized (hex → rgb); compare via probe.
+  // Document (html) = raised; #root = canvas. Compare via probe (hex → rgb).
   await expect
     .poll(async () =>
       page.evaluate((hex) => {
@@ -48,6 +57,19 @@ export async function expectColorMode(
         probe.style.backgroundColor = hex;
         const expected = probe.style.backgroundColor;
         return actual !== '' && actual === expected;
+      }, raised)
+    )
+    .toBe(true);
+
+  await expect
+    .poll(async () =>
+      page.evaluate((hex) => {
+        const root = document.getElementById('root');
+        if (!root) return false;
+        const actual = root.style.backgroundColor;
+        const probe = document.createElement('div');
+        probe.style.backgroundColor = hex;
+        return actual !== '' && actual === probe.style.backgroundColor;
       }, canvas)
     )
     .toBe(true);
