@@ -33,7 +33,7 @@ export default defineConfig({
     },
     {
       name: 'integration',
-      testMatch: /(a11y-group|group-messaging|notification-prefs)\.spec\.ts/,
+      testMatch: /(a11y-group|group-header|group-messaging|notification-prefs)\.spec\.ts/,
       fullyParallel: false,
       workers: 1,
       use: {

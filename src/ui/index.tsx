@@ -76,5 +76,6 @@ export * from './StateViews';
 export * from './TabCarouselControl';
 export * from './TimeLeft';
 export * from './TotalCard';
+export { useToast } from './useToast';
 export * from './ValueDisplay';
 export * from './WarningWell';

@@ -210,21 +210,24 @@ the frame while auth/group data loads — never withhold the frame until ready
   still keep Cancel.
 - **Small dialogs** (menus, popovers, short action lists) → `MorphingPopover`
   (`src/ui/MorphingPopover.tsx`): shared `layoutId` morph from trigger → panel.
-  Account menu is the reference consumer.
+  Account menu is the reference consumer. Uses a 9-point overlapping `anchor`
+  (default `center`) so trigger and panel share a point, then clamps into the
+  visual viewport.
 - **Larger dialogs** (forms, listings, multi-field / multi-step content) →
   `QuickModal` (modal ≥ md, tray/drawer on mobile). Confirmations use the
   **same** mobile drawer shell — not a centered desktop modal on phones.
-- **Trigger-aligned placement:** tray/popover opens from the same edge as the
-  trigger (header / top chrome → top tray or open downward; sidebar footer /
-  bottom chrome → bottom tray or open upward).
+- **Trigger-aligned placement (trays):** QuickModal mobile trays open from the
+  same edge as the trigger (header / top chrome → top tray; sidebar footer /
+  bottom chrome → bottom tray).
 - Morphing spring counts toward the intentional micro-motion budget
   (~≤400ms). Honor `prefers-reduced-motion` (near-instant open/close).
 
 ### Menus
 
-- Prefer `MorphingPopover` for short action lists on **all** viewports.
+- Prefer `MorphingPopover` for short action lists on **all** viewports
+  (Account, room title options, message-author profile).
 - Longer navigational lists (e.g. rooms) may use a floating drawer.
-- Legacy `ActionSheet` / Chakra `Menu` remain until migrated (e.g. room
-  overflow) — new small menus should not add more of those.
-- On room pages, the **title is the options control** (name + chevron) — no
+- Legacy `ActionSheet` / Chakra `Menu` remain only until remaining call
+  sites migrate — new small menus should not add more of those.
+- On room pages, the **title is the options control** (name + ellipsis) — no
   separate ⋯ button.

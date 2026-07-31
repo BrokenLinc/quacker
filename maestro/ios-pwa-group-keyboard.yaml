@@ -10,48 +10,48 @@ appId: ${APP_ID}
 - pressKey: Home
 - runFlow:
     when:
-      notVisible: "Yowl"
+      notVisible: 'Yowl'
     commands:
       - swipe:
           direction: LEFT
 - runFlow:
     when:
-      notVisible: "Yowl"
+      notVisible: 'Yowl'
     commands:
       - swipe:
           direction: LEFT
 - runFlow:
     when:
-      visible: "Yowl"
+      visible: 'Yowl'
     commands:
-      - tapOn: "Yowl"
+      - tapOn: 'Yowl'
       - extendedWaitUntil:
-          visible: ".*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          visible: '.*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*'
           timeout: 45000
 - runFlow:
     when:
-      notVisible: ".*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+      notVisible: '.*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*'
     commands:
       - launchApp
       - openLink: ${APP_URL}
       - runFlow:
           when:
-            visible: "Close"
+            visible: 'Close'
           commands:
-            - tapOn: "Close"
+            - tapOn: 'Close'
       - runFlow:
           when:
-            visible: "Dismiss install prompt"
+            visible: 'Dismiss install prompt'
           commands:
-            - tapOn: "Dismiss install prompt"
+            - tapOn: 'Dismiss install prompt'
       - extendedWaitUntil:
-          visible: ".*Sign in to Yowl|Your rooms.*"
+          visible: '.*Sign in to Yowl|Your rooms.*'
           timeout: 20000
-      - tapOn: "More"
+      - tapOn: 'More'
       - tapOn:
-          id: "ShareButton"
+          id: 'ShareButton'
       - extendedWaitUntil:
-          visible: "Copy"
+          visible: 'Copy'
           timeout: 10000
       - waitForAnimationToEnd
       - swipe:
@@ -59,80 +59,80 @@ appId: ${APP_ID}
           end: 50%, 45%
       - waitForAnimationToEnd
       - extendedWaitUntil:
-          visible: "Add to Home Screen"
+          visible: 'Add to Home Screen'
           timeout: 15000
-      - tapOn: "Add to Home Screen"
+      - tapOn: 'Add to Home Screen'
       - waitForAnimationToEnd
       - tapOn:
-          point: "92%,12%"
+          point: '92%,12%'
       - waitForAnimationToEnd
       - pressKey: Home
       - runFlow:
           when:
-            notVisible: "Yowl"
+            notVisible: 'Yowl'
           commands:
             - swipe:
                 direction: LEFT
       - runFlow:
           when:
-            notVisible: "Yowl"
+            notVisible: 'Yowl'
           commands:
             - swipe:
                 direction: LEFT
       - extendedWaitUntil:
-          visible: "Yowl"
+          visible: 'Yowl'
           timeout: 20000
-      - tapOn: "Yowl"
+      - tapOn: 'Yowl'
       - extendedWaitUntil:
-          visible: ".*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          visible: '.*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*'
           timeout: 45000
 # Dismiss leftover Account sheet from a prior interrupted run.
 - runFlow:
     when:
-      visible: "Dark mode"
+      visible: 'Dark mode'
     commands:
-      - tapOn: "Close"
+      - tapOn: 'Close'
 - runFlow:
     when:
-      visible: "Light mode"
+      visible: 'Light mode'
     commands:
-      - tapOn: "Close"
+      - tapOn: 'Close'
 # --- Reach home signed-in ---
 - runFlow:
     when:
-      visible: "Sign in to Yowl"
+      visible: 'Sign in to Yowl'
     file: shared/login-steps.yaml
 - runFlow:
     when:
-      visible: "Back to home"
+      visible: 'Back to home'
     commands:
-      - tapOn: "Back to home"
+      - tapOn: 'Back to home'
 - runFlow:
     when:
-      visible: "Say something!"
+      visible: 'Say something!'
     commands:
-      - tapOn: "Back to home"
+      - tapOn: 'Back to home'
 # Session may have been cleared (webclip storage wipe) after navigating home.
 - runFlow:
     when:
-      visible: "Sign in to Yowl"
+      visible: 'Sign in to Yowl'
     file: shared/login-steps.yaml
 - extendedWaitUntil:
-    visible: "Your rooms"
+    visible: 'Your rooms'
     timeout: 20000
 # --- Group + keyboard light then dark ---
-- tapOn: "New room"
+- tapOn: 'New room'
 - extendedWaitUntil:
-    visible: "Room name"
+    visible: 'Room name'
     timeout: 10000
-- tapOn: "WWDC hallway chat"
+- tapOn: 'The Den'
 - eraseText
-- inputText: "PWA Keyboard Lab"
-- tapOn: "Create room"
+- inputText: 'PWA Keyboard Lab'
+- tapOn: 'Create room'
 - extendedWaitUntil:
-    visible: "Say hi — this is the start of PWA Keyboard Lab"
+    visible: 'Say hi — this is the start of PWA Keyboard Lab'
     timeout: 20000
-- assertVisible: "PWA Keyboard Lab options"
+- assertVisible: 'PWA Keyboard Lab options'
 - runFlow:
     file: shared/ensure-light-mode.yaml
 - runFlow:
@@ -141,7 +141,7 @@ appId: ${APP_ID}
       SHOT_PREFIX: maestro-pwa-keyboard
 - runFlow:
     file: shared/ensure-dark-mode.yaml
-- assertVisible: "PWA Keyboard Lab options"
+- assertVisible: 'PWA Keyboard Lab options'
 - runFlow:
     file: ios-keyboard-shots.yaml
     env:

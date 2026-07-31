@@ -2,6 +2,7 @@ import * as Chakra from '@chakra-ui/react';
 import { faXmark } from '@fortawesome/free-solid-svg-icons';
 import {
   AnimatePresence,
+  LayoutGroup,
   MotionConfig,
   isValidMotionProp,
   motion,
@@ -9,8 +10,16 @@ import {
   type Variants,
 } from 'framer-motion';
 import React from 'react';
+import { createPortal } from 'react-dom';
 
 import { IconButton } from './IconButton';
+import {
+  placeAndClamp,
+  readVisualViewport,
+  type MorphingPopoverAnchor,
+} from './morphingPopoverPosition';
+
+export type { MorphingPopoverAnchor } from './morphingPopoverPosition';
 
 /** Chakra + framer-motion: use StyleProps (not BoxProps) — BoxProps HTML `onDrag` clashes with Motion. */
 const chakraMotionForwardProp = (prop: string): boolean =>
@@ -35,14 +44,24 @@ const REDUCED_MOTION_TRANSITION: Transition = {
   duration: 0.01,
 };
 
+const VIEWPORT_MARGIN = 12;
+const PANEL_MAX_WIDTH = 320;
+
+type PanelCoords = {
+  left: number;
+  top: number;
+  maxHeight: number;
+  maxWidth: number;
+};
+
 type MorphingPopoverContextValue = {
   isOpen: boolean;
   open: () => void;
   close: () => void;
   uniqueId: string;
   variants?: Variants;
-  placement: 'top' | 'bottom';
-  align: 'start' | 'end';
+  anchor: MorphingPopoverAnchor;
+  rootRef: React.RefObject<HTMLDivElement | null>;
 };
 
 const MorphingPopoverContext =
@@ -93,6 +112,16 @@ function usePrefersReducedMotion(): boolean {
   return reduced;
 }
 
+function coordsEqual(a: PanelCoords | null, b: PanelCoords): boolean {
+  return (
+    !!a &&
+    a.left === b.left &&
+    a.top === b.top &&
+    a.maxHeight === b.maxHeight &&
+    a.maxWidth === b.maxWidth
+  );
+}
+
 export type MorphingPopoverProps = {
   children: React.ReactNode;
   transition?: Transition;
@@ -100,10 +129,11 @@ export type MorphingPopoverProps = {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
   variants?: Variants;
-  /** Panel opens above (top) or below (bottom) the trigger. */
-  placement?: 'top' | 'bottom';
-  /** Horizontal alignment relative to the trigger. */
-  align?: 'start' | 'end';
+  /**
+   * Shared 9-point anchor on trigger and panel. Those points coincide on open;
+   * the panel is then clamped into the visual viewport.
+   */
+  anchor?: MorphingPopoverAnchor;
 } & Omit<Chakra.BoxProps, 'children' | 'transition'>;
 
 export const MorphingPopover: React.FC<MorphingPopoverProps> = ({
@@ -113,11 +143,11 @@ export const MorphingPopover: React.FC<MorphingPopoverProps> = ({
   open: controlledOpen,
   onOpenChange,
   variants,
-  placement = 'bottom',
-  align = 'end',
+  anchor = 'center',
   ...boxProps
 }) => {
   const uniqueId = React.useId();
+  const rootRef = React.useRef<HTMLDivElement>(null);
   const [uncontrolledOpen, setUncontrolledOpen] = React.useState(defaultOpen);
   const isOpen = controlledOpen ?? uncontrolledOpen;
   const reducedMotion = usePrefersReducedMotion();
@@ -133,8 +163,8 @@ export const MorphingPopover: React.FC<MorphingPopoverProps> = ({
   }, [controlledOpen, onOpenChange]);
 
   const value = React.useMemo(
-    () => ({ isOpen, open, close, uniqueId, variants, placement, align }),
-    [isOpen, open, close, uniqueId, variants, placement, align]
+    () => ({ isOpen, open, close, uniqueId, variants, anchor, rootRef }),
+    [isOpen, open, close, uniqueId, variants, anchor]
   );
 
   return (
@@ -142,15 +172,18 @@ export const MorphingPopover: React.FC<MorphingPopoverProps> = ({
       <MotionConfig
         transition={reducedMotion ? REDUCED_MOTION_TRANSITION : transition}
       >
-        <Chakra.Box
-          position="relative"
-          display="inline-flex"
-          alignItems="center"
-          justifyContent="center"
-          {...boxProps}
-        >
-          {children}
-        </Chakra.Box>
+        <LayoutGroup id={uniqueId}>
+          <Chakra.Box
+            ref={rootRef}
+            position="relative"
+            display="inline-flex"
+            alignItems="center"
+            justifyContent="center"
+            {...boxProps}
+          >
+            {children}
+          </Chakra.Box>
+        </LayoutGroup>
       </MotionConfig>
     </MorphingPopoverContext.Provider>
   );
@@ -174,7 +207,8 @@ export const MorphingPopoverTrigger: React.FC<MorphingPopoverTriggerProps> = ({
       layoutId={`popover-trigger-${uniqueId}`}
       onClick={open}
       cursor="pointer"
-      lineHeight={0}
+      // Do not use lineHeight={0} — it collapses text triggers (e.g. room title).
+      lineHeight="normal"
       display="inline-flex"
       alignItems="center"
       justifyContent="center"
@@ -206,9 +240,15 @@ export const MorphingPopoverContent: React.FC<MorphingPopoverContentProps> = ({
   title,
   ...styleProps
 }) => {
-  const { isOpen, close, uniqueId, variants, placement, align } =
+  const { isOpen, close, uniqueId, variants, anchor, rootRef } =
     useMorphingPopoverContext();
   const ref = React.useRef<HTMLDivElement>(null);
+  const [coords, setCoords] = React.useState<PanelCoords | null>(null);
+  const [portalReady, setPortalReady] = React.useState(false);
+
+  React.useEffect(() => {
+    setPortalReady(true);
+  }, []);
 
   useClickOutside(ref, close, isOpen);
 
@@ -221,7 +261,69 @@ export const MorphingPopoverContent: React.FC<MorphingPopoverContentProps> = ({
     return () => document.removeEventListener('keydown', onKey);
   }, [isOpen, close]);
 
-  return (
+  const updatePosition = React.useCallback(() => {
+    const triggerEl = rootRef.current;
+    const panelEl = ref.current;
+    if (!triggerEl || !panelEl) return;
+
+    const trigger = triggerEl.getBoundingClientRect();
+    // Prefer natural content size (scroll*) so clamps don't shrink the measure.
+    const panelSize = {
+      width: Math.min(
+        PANEL_MAX_WIDTH,
+        Math.max(panelEl.offsetWidth, panelEl.scrollWidth)
+      ),
+      height: Math.max(panelEl.offsetHeight, panelEl.scrollHeight),
+    };
+
+    const next = placeAndClamp({
+      trigger,
+      panelSize,
+      anchor,
+      viewport: readVisualViewport(),
+      margin: VIEWPORT_MARGIN,
+    });
+    setCoords((prev) => (coordsEqual(prev, next) ? prev : next));
+  }, [anchor, rootRef]);
+
+  React.useLayoutEffect(() => {
+    if (!isOpen) {
+      setCoords(null);
+      return;
+    }
+    updatePosition();
+  }, [isOpen, updatePosition]);
+
+  React.useEffect(() => {
+    if (!isOpen) return;
+
+    const onReposition = () => updatePosition();
+    window.addEventListener('resize', onReposition);
+    window.addEventListener('scroll', onReposition, true);
+    const vv = window.visualViewport;
+    vv?.addEventListener('resize', onReposition);
+    vv?.addEventListener('scroll', onReposition);
+
+    const panelEl = ref.current;
+    const ro =
+      panelEl && typeof ResizeObserver !== 'undefined'
+        ? new ResizeObserver(onReposition)
+        : null;
+    if (panelEl && ro) ro.observe(panelEl);
+
+    return () => {
+      window.removeEventListener('resize', onReposition);
+      window.removeEventListener('scroll', onReposition, true);
+      vv?.removeEventListener('resize', onReposition);
+      vv?.removeEventListener('scroll', onReposition);
+      ro?.disconnect();
+    };
+  }, [isOpen, updatePosition]);
+
+  // Portal escapes AppShell overflow:hidden; LayoutGroup context keeps layoutId morph.
+  if (!portalReady) return null;
+
+  return createPortal(
     <AnimatePresence>
       {isOpen ? (
         <MotionDiv
@@ -241,20 +343,22 @@ export const MorphingPopoverContent: React.FC<MorphingPopoverContentProps> = ({
               exit: { opacity: 0 },
             }
           }
-          position="absolute"
+          position="fixed"
           zIndex="popover"
-          {...(placement === 'top'
-            ? { bottom: 'calc(100% + 0.5rem)' }
-            : { top: 'calc(100% + 0.5rem)' })}
-          {...(align === 'start' ? { left: 0 } : { right: 0 })}
+          left={coords ? `${coords.left}px` : 0}
+          top={coords ? `${coords.top}px` : 0}
+          w={coords ? `${coords.maxWidth}px` : undefined}
+          maxH={coords ? `${coords.maxHeight}px` : undefined}
+          visibility={coords ? 'visible' : 'hidden'}
           bg="surface.raised"
           borderWidth="1px"
           borderColor="border.subtle"
           borderRadius="xl"
           boxShadow="lg"
           overflow="hidden"
-          minW="220px"
-          maxW="min(320px, calc(100vw - 1.5rem))"
+          overflowY="auto"
+          minW={coords ? undefined : '220px'}
+          maxW={`${PANEL_MAX_WIDTH}px`}
           {...styleProps}
         >
           <Chakra.HStack
@@ -284,6 +388,7 @@ export const MorphingPopoverContent: React.FC<MorphingPopoverContentProps> = ({
           {children}
         </MotionDiv>
       ) : null}
-    </AnimatePresence>
+    </AnimatePresence>,
+    document.body
   );
 };

@@ -1,8 +1,6 @@
 import { useChirpOnNewMessages } from '@@lib/notifications/chirp';
 import type { NotifyLevel } from '@@lib/notifications/shouldNotify';
-import {
-  updateMyNotifyLevel,
-} from '@@lib/notifications/prefs';
+import { updateMyNotifyLevel } from '@@lib/notifications/prefs';
 import { getShareUrl } from '@@lib/share';
 import {
   Group,
@@ -212,11 +210,7 @@ const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
       ) : member ? (
         <GroupChat groupId={groupId} group={group} user={user} />
       ) : (
-        <JoinPrompt
-          group={group}
-          onJoin={state.join}
-          joining={state.joining}
-        />
+        <JoinPrompt group={group} onJoin={state.join} joining={state.joining} />
       )}
     </React.Fragment>
   );
@@ -396,19 +390,23 @@ const GroupOverflowMenu: React.FC<{
   const membersModal = UI.useDisclosure();
   const renameModal = UI.useDisclosure();
   const notifyModal = UI.useDisclosure();
-  const sheet = UI.useDisclosure();
+  const [menuOpen, setMenuOpen] = React.useState(false);
   const confirmation = useConfirmation();
   const toast = UI.useToast();
   const navigate = useNavigate();
-  const isMobile = UI.useBreakpointValue(
-    { base: true, md: false },
-    { ssr: false }
-  );
   const [members] = useGroupMembers(group.id, { channelId: 'overflow' });
   const myMember = members?.find((m) => m.uid === user.uid);
   const notifyLevel = myMember?.notifyLevel ?? 'all';
 
+  const closeMenu = () => setMenuOpen(false);
+
+  const runAndClose = (action: () => void) => {
+    closeMenu();
+    action();
+  };
+
   const handleLeave = () => {
+    closeMenu();
     confirmation.open({
       title: `Leave ${group.name}?`,
       message: 'You can rejoin any time with an invite link.',
@@ -428,6 +426,7 @@ const GroupOverflowMenu: React.FC<{
   };
 
   const handleDelete = () => {
+    closeMenu();
     confirmation.open({
       title: `Delete ${group.name}?`,
       message: 'This deletes the room and all its messages for everyone.',
@@ -446,57 +445,89 @@ const GroupOverflowMenu: React.FC<{
     });
   };
 
-  const sheetItems: UI.ActionSheetItem[] = [
-    {
-      id: 'invite',
-      label: 'Invite or Share',
-      icon: faUserPlus,
-      onClick: onInvite,
-    },
-    {
-      id: 'members',
-      label: 'Members',
-      icon: faUsers,
-      onClick: membersModal.onOpen,
-    },
-    {
-      id: 'notify',
-      label: `Notifications · ${notifyLevelLabel(notifyLevel)}`,
-      icon: faBell,
-      onClick: notifyModal.onOpen,
-    },
-  ];
-  if (isCreator) {
-    sheetItems.push({
-      id: 'rename',
-      label: 'Rename room',
-      icon: faPenToSquare,
-      onClick: renameModal.onOpen,
-    });
-    sheetItems.push({
-      id: 'delete',
-      label: 'Delete room',
-      icon: faTrash,
-      isDestructive: true,
-      onClick: handleDelete,
-    });
-  } else {
-    sheetItems.push({
-      id: 'leave',
-      label: 'Leave room',
-      icon: faRightFromBracket,
-      isDestructive: true,
-      onClick: handleLeave,
-    });
-  }
-
   const openInviteFromMembers = () => {
     membersModal.onClose();
     onInvite();
   };
 
-  const modals = (
+  return (
     <React.Fragment>
+      <UI.MorphingPopover
+        open={menuOpen}
+        onOpenChange={setMenuOpen}
+        flex={1}
+        minW={0}
+        maxW="100%"
+        justifyContent="flex-start"
+        display="flex"
+        anchor="top left"
+      >
+        <UI.MorphingPopoverTrigger
+          aria-label={`${group.name} options`}
+          maxW="100%"
+          minW={0}
+          px={2}
+          py={1}
+          h="auto"
+          fontWeight="bold"
+          fontSize="md"
+          justifyContent="flex-start"
+          gap={2}
+        >
+          <UI.Text as="span" noOfLines={1} data-testid="group-title" minW={0}>
+            {group.name}
+          </UI.Text>
+          <UI.Icon
+            icon={faEllipsisVertical}
+            boxSize={3}
+            color="text.muted"
+            flexShrink={0}
+          />
+        </UI.MorphingPopoverTrigger>
+        <UI.MorphingPopoverContent title={group.name}>
+          <UI.VStack align="stretch" spacing={0} py={1}>
+            <OverflowMenuRow
+              icon={faUserPlus}
+              label="Invite or Share"
+              onClick={() => runAndClose(onInvite)}
+            />
+            <OverflowMenuRow
+              icon={faUsers}
+              label="Members"
+              onClick={() => runAndClose(membersModal.onOpen)}
+            />
+            <OverflowMenuRow
+              icon={faBell}
+              label={`Notifications · ${notifyLevelLabel(notifyLevel)}`}
+              onClick={() => runAndClose(notifyModal.onOpen)}
+            />
+            {isCreator ? (
+              <OverflowMenuRow
+                icon={faPenToSquare}
+                label="Rename room"
+                onClick={() => runAndClose(renameModal.onOpen)}
+              />
+            ) : null}
+            <UI.Box borderTopWidth="1px" borderColor="border.subtle" my={1} />
+            {isCreator ? (
+              <OverflowMenuRow
+                icon={faTrash}
+                label="Delete room"
+                isDestructive
+                onClick={handleDelete}
+              />
+            ) : (
+              <OverflowMenuRow
+                icon={faRightFromBracket}
+                label="Leave room"
+                isDestructive
+                onClick={handleLeave}
+              />
+            )}
+          </UI.VStack>
+        </UI.MorphingPopoverContent>
+      </UI.MorphingPopover>
+
       <MembersModal
         group={group}
         user={user}
@@ -518,124 +549,30 @@ const GroupOverflowMenu: React.FC<{
       />
     </React.Fragment>
   );
-
-  if (isMobile) {
-    return (
-      <React.Fragment>
-        <UI.Button
-          variant="ghost"
-          size="sm"
-          flex={1}
-          minW={0}
-          px={2}
-          h="auto"
-          py={1}
-          fontWeight="bold"
-          fontSize="md"
-          justifyContent="flex-start"
-          rightIcon={
-            <UI.Icon icon={faEllipsisVertical} boxSize={3} color="text.muted" />
-          }
-          onClick={sheet.onOpen}
-          aria-label={`${group.name} options`}
-        >
-          <UI.Text as="span" noOfLines={1} data-testid="group-title">
-            {group.name}
-          </UI.Text>
-        </UI.Button>
-        <UI.ActionSheet
-          isOpen={sheet.isOpen}
-          onClose={sheet.onClose}
-          headerContent={group.name}
-          items={sheetItems}
-          mobilePlacement="top"
-        />
-        {modals}
-      </React.Fragment>
-    );
-  }
-
-  return (
-    <React.Fragment>
-      <UI.Menu>
-        <UI.MenuButton
-          as={UI.Button}
-          variant="ghost"
-          size="sm"
-          flex={1}
-          minW={0}
-          px={2}
-          h="auto"
-          py={1}
-          fontWeight="bold"
-          fontSize="md"
-          justifyContent="flex-start"
-          rightIcon={
-            <UI.Icon icon={faEllipsisVertical} boxSize={3} color="text.muted" />
-          }
-          aria-label={`${group.name} options`}
-        >
-          <UI.Text as="span" noOfLines={1} data-testid="group-title">
-            {group.name}
-          </UI.Text>
-        </UI.MenuButton>
-        <UI.MenuList>
-          <UI.MenuItem
-            fontSize="sm"
-            icon={<UI.Icon icon={faUserPlus} />}
-            onClick={onInvite}
-          >
-            Invite or Share
-          </UI.MenuItem>
-          <UI.MenuItem
-            fontSize="sm"
-            icon={<UI.Icon icon={faUsers} />}
-            onClick={membersModal.onOpen}
-          >
-            Members
-          </UI.MenuItem>
-          <UI.MenuItem
-            fontSize="sm"
-            icon={<UI.Icon icon={faBell} />}
-            onClick={notifyModal.onOpen}
-          >
-            Notifications · {notifyLevelLabel(notifyLevel)}
-          </UI.MenuItem>
-          {isCreator ? (
-            <UI.MenuItem
-              fontSize="sm"
-              icon={<UI.Icon icon={faPenToSquare} />}
-              onClick={renameModal.onOpen}
-            >
-              Rename room
-            </UI.MenuItem>
-          ) : null}
-          <UI.MenuDivider />
-          {isCreator ? (
-            <UI.MenuItem
-              fontSize="sm"
-              color="red.500"
-              icon={<UI.Icon icon={faTrash} />}
-              onClick={handleDelete}
-            >
-              Delete room
-            </UI.MenuItem>
-          ) : (
-            <UI.MenuItem
-              fontSize="sm"
-              color="red.500"
-              icon={<UI.Icon icon={faRightFromBracket} />}
-              onClick={handleLeave}
-            >
-              Leave room
-            </UI.MenuItem>
-          )}
-        </UI.MenuList>
-      </UI.Menu>
-      {modals}
-    </React.Fragment>
-  );
 };
+
+const OverflowMenuRow: React.FC<{
+  icon: typeof faBell;
+  label: string;
+  onClick: () => void;
+  isDestructive?: boolean;
+}> = ({ icon, label, onClick, isDestructive }) => (
+  <UI.Button
+    variant="ghost"
+    justifyContent="flex-start"
+    borderRadius={0}
+    h="auto"
+    py={2.5}
+    px={4}
+    fontWeight="normal"
+    fontSize="sm"
+    color={isDestructive ? 'red.500' : undefined}
+    leftIcon={<UI.Icon icon={icon} />}
+    onClick={onClick}
+  >
+    {label}
+  </UI.Button>
+);
 
 /* ------------------------------------------------------------------ */
 /* Members + rename                                                    */
@@ -843,10 +780,7 @@ const JoinPrompt: React.FC<{
         description="You've been invited to this room. Members can read and post messages."
         action={
           <UI.VStack spacing={4} align="stretch" maxW="320px" w="full">
-            <NotifyLevelControl
-              value={notifyLevel}
-              onChange={setNotifyLevel}
-            />
+            <NotifyLevelControl value={notifyLevel} onChange={setNotifyLevel} />
             <UI.Button
               preset="primary"
               onClick={handleJoin}
@@ -937,16 +871,6 @@ type MemberProfile = {
   phoneLast4: string | null;
   joinedAt: number | null;
   role: 'creator' | 'member' | null;
-};
-
-type MemberProfileTarget = {
-  name: string;
-  uid: string;
-  photoURL: string | null;
-  phoneLast4: string | null;
-  joinedAt: number | null;
-  role: 'creator' | 'member' | null;
-  isOwn: boolean;
 };
 
 const GroupChat: React.FC<{
@@ -1079,13 +1003,6 @@ const ChatScrollArea: React.FC<{
   const didInitialScroll = React.useRef(false);
   const distanceFromBottomRef = React.useRef(0);
   const lastItem = items[items.length - 1];
-  const [profileTarget, setProfileTarget] =
-    React.useState<MemberProfileTarget | null>(null);
-
-  const openProfile = (target: MemberProfileTarget) => {
-    setProfileTarget(target);
-  };
-  const closeProfile = () => setProfileTarget(null);
 
   React.useLayoutEffect(() => {
     const el = scrollRef.current;
@@ -1200,25 +1117,11 @@ const ChatScrollArea: React.FC<{
                 phoneLast4={member?.phoneLast4 ?? null}
                 joinedAt={member?.joinedAt ?? null}
                 role={member?.role ?? null}
-                onOpenProfile={openProfile}
               />
             </React.Fragment>
           );
         })}
       </UI.VStack>
-      {profileTarget ? (
-        <MemberProfileModal
-          isOpen
-          onClose={closeProfile}
-          name={profileTarget.name}
-          uid={profileTarget.uid}
-          photoURL={profileTarget.photoURL}
-          phoneLast4={profileTarget.phoneLast4}
-          joinedAt={profileTarget.joinedAt}
-          role={profileTarget.role}
-          isOwn={profileTarget.isOwn}
-        />
-      ) : null}
     </UI.Box>
   );
 };
@@ -1226,7 +1129,12 @@ const ChatScrollArea: React.FC<{
 const MessageDayDivider: React.FC<{ time: number }> = ({ time }) => (
   <UI.Flex align="center" gap={3} py={3} px={3} role="separator">
     <UI.Box flex={1} h="1px" bg="border.subtle" />
-    <UI.Text fontSize="xs" color="text.muted" flexShrink={0} fontWeight="medium">
+    <UI.Text
+      fontSize="xs"
+      color="text.muted"
+      flexShrink={0}
+      fontWeight="medium"
+    >
       {formatMessageDayLabel(time)}
     </UI.Text>
     <UI.Box flex={1} h="1px" bg="border.subtle" />
@@ -1242,7 +1150,6 @@ export const MessageRow: React.FC<{
   phoneLast4?: string | null;
   joinedAt?: number | null;
   role?: 'creator' | 'member' | null;
-  onOpenProfile: (target: MemberProfileTarget) => void;
 }> = ({
   message,
   grouped,
@@ -1252,23 +1159,13 @@ export const MessageRow: React.FC<{
   phoneLast4,
   joinedAt,
   role,
-  onOpenProfile,
 }) => {
+  const [profileOpen, setProfileOpen] = React.useState(false);
   const displayName = liveDisplayName ?? message.authorName;
   const photoURL = livePhotoURL ?? message.authorPhotoURL;
   const name = formatAuthorLabel(displayName);
   const profileLabel = `View ${name}'s profile`;
-
-  const open = () =>
-    onOpenProfile({
-      name,
-      uid: message.uid,
-      photoURL: photoURL ?? null,
-      phoneLast4: phoneLast4 ?? null,
-      joinedAt: joinedAt ?? null,
-      role: role ?? null,
-      isOwn,
-    });
+  const profileTitle = isOwn ? 'You' : name;
 
   return (
     <UI.HStack
@@ -1291,26 +1188,37 @@ export const MessageRow: React.FC<{
       {grouped ? (
         <UI.Box w={8} flexShrink={0} />
       ) : (
-        <UI.Box
-          as="button"
-          type="button"
-          onClick={open}
-          aria-label={profileLabel}
-          borderRadius="full"
-          lineHeight={0}
-          cursor="pointer"
+        <UI.MorphingPopover
+          open={profileOpen}
+          onOpenChange={setProfileOpen}
+          anchor="top left"
           flexShrink={0}
           mt={1}
-          _hover={{ opacity: 0.85 }}
-          _active={{ transform: 'translateY(1px)' }}
         >
-          <UserAvatar
-            name={name}
-            seed={message.uid}
-            photoURL={photoURL}
-            size="sm"
-          />
-        </UI.Box>
+          <UI.MorphingPopoverTrigger
+            aria-label={profileLabel}
+            borderRadius="full"
+          >
+            <UserAvatar
+              name={name}
+              seed={message.uid}
+              photoURL={photoURL}
+              size="sm"
+              cursor="pointer"
+            />
+          </UI.MorphingPopoverTrigger>
+          <UI.MorphingPopoverContent title={profileTitle}>
+            <MemberProfileBody
+              name={name}
+              uid={message.uid}
+              photoURL={photoURL ?? null}
+              phoneLast4={phoneLast4 ?? null}
+              joinedAt={joinedAt ?? null}
+              role={role ?? null}
+              isOwn={isOwn}
+            />
+          </UI.MorphingPopoverContent>
+        </UI.MorphingPopover>
       )}
       <UI.Box minW={0} flex={1}>
         {grouped ? null : (
@@ -1326,7 +1234,7 @@ export const MessageRow: React.FC<{
               p={0}
               textDecoration="none"
               _hover={{ textDecoration: 'underline' }}
-              onClick={open}
+              onClick={() => setProfileOpen(true)}
               aria-label={profileLabel}
             >
               <UI.Text as="span" noOfLines={1}>
@@ -1345,9 +1253,7 @@ export const MessageRow: React.FC<{
   );
 };
 
-const MemberProfileModal: React.FC<{
-  isOpen: boolean;
-  onClose: () => void;
+const MemberProfileBody: React.FC<{
   name: string;
   uid: string;
   photoURL: string | null;
@@ -1355,47 +1261,30 @@ const MemberProfileModal: React.FC<{
   joinedAt: number | null;
   role: 'creator' | 'member' | null;
   isOwn: boolean;
-}> = ({
-  isOpen,
-  onClose,
-  name,
-  uid,
-  photoURL,
-  phoneLast4,
-  joinedAt,
-  role,
-  isOwn,
-}) => {
-  const title = isOwn ? 'You' : name;
-  return (
-    <UI.QuickModal isOpen={isOpen} onClose={onClose} headerContent={title}>
-      <UI.ModalBody pb={8}>
-        <UI.VStack spacing={3} align="center" textAlign="center" pt={2}>
-          <UserAvatar name={name} seed={uid} photoURL={photoURL} size="xl" />
-          <UI.Heading size="md" noOfLines={2}>
-            {name}
-            {isOwn ? ' (you)' : ''}
-          </UI.Heading>
-          {phoneLast4 ? (
-            <UI.Text fontSize="md" color="text.muted" letterSpacing="wide">
-              ···{phoneLast4}
-            </UI.Text>
-          ) : null}
-          {role === 'creator' ? (
-            <UI.Badge colorScheme="gray" fontSize="xs">
-              Room creator
-            </UI.Badge>
-          ) : null}
-          {joinedAt ? (
-            <UI.Text fontSize="sm" color="text.muted">
-              Joined {formatJoinedAt(joinedAt)}
-            </UI.Text>
-          ) : null}
-        </UI.VStack>
-      </UI.ModalBody>
-    </UI.QuickModal>
-  );
-};
+}> = ({ name, uid, photoURL, phoneLast4, joinedAt, role, isOwn }) => (
+  <UI.VStack spacing={3} align="center" textAlign="center" px={4} py={4}>
+    <UserAvatar name={name} seed={uid} photoURL={photoURL} size="xl" />
+    <UI.Heading size="sm" noOfLines={2}>
+      {name}
+      {isOwn ? ' (you)' : ''}
+    </UI.Heading>
+    {phoneLast4 ? (
+      <UI.Text fontSize="md" color="text.muted" letterSpacing="wide">
+        ···{phoneLast4}
+      </UI.Text>
+    ) : null}
+    {role === 'creator' ? (
+      <UI.Badge colorScheme="gray" fontSize="xs">
+        Room creator
+      </UI.Badge>
+    ) : null}
+    {joinedAt ? (
+      <UI.Text fontSize="sm" color="text.muted">
+        Joined {formatJoinedAt(joinedAt)}
+      </UI.Text>
+    ) : null}
+  </UI.VStack>
+);
 
 const MESSAGE_MAX_LENGTH = 140;
 
