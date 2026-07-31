@@ -125,7 +125,10 @@ test.describe('notification prefs', () => {
     await gotoGroupPage(page, group);
 
     await page.getByRole('button', { name: `${group.name} options` }).click();
-    await page.getByRole('menuitem', { name: /Notifications/i }).click();
+    await page
+      .getByRole('dialog', { name: group.name })
+      .getByRole('button', { name: /Notifications/i })
+      .click();
 
     await expect(page.getByTestId('notify-level')).toBeVisible();
     await page.getByTestId('notify-level-none').click();
