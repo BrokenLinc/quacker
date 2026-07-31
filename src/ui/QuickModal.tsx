@@ -1,14 +1,20 @@
 import * as UI from '@chakra-ui/react';
 import React from 'react';
 
+/**
+ * Experiment flag: when true, viewport < md uses a floating drawer tray
+ * instead of a centered modal. Flip for deploys; leave false while comparing.
+ */
+const QUICK_MODAL_MOBILE_TRAY = false;
+
 export type QuickModalProps = UI.ModalProps & {
   headerContent?: React.ReactNode;
   footerContent?: React.ReactNode;
-  /** Drawer placement when viewport < md (default: 'top') */
+  /** Drawer placement when mobile tray is enabled (default: 'top') */
   mobilePlacement?: UI.DrawerProps['placement'];
   /**
    * Inset the mobile drawer from the screen edges with rounded corners
-   * (floating sheet). Default true for floating sheets.
+   * (floating sheet). Only applies when QUICK_MODAL_MOBILE_TRAY is on.
    */
   floating?: boolean;
 };
@@ -126,7 +132,8 @@ export const QuickModal: React.FC<QuickModalProps> = ({
   ...props
 }) => {
   const isMobile = UI.useBreakpointValue({ base: true, md: false });
-  const shell = isMobile ? 'drawer' : 'modal';
+  const shell: Shell =
+    QUICK_MODAL_MOBILE_TRAY && isMobile ? 'drawer' : 'modal';
 
   const adaptedChildren = adaptQuickModalChildren(children, shell);
   const disclosureProps: QuickModalShellProps = { ...props, isOpen, onClose };

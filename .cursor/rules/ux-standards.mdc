@@ -32,7 +32,10 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
   (avoids pop-in). Skeletons go *inside* the frame.
 - Chat: chronological messages, composer pinned to bottom, Enter sends
   (Shift+Enter newline), optimistic pending bubbles
-- Overlays use `QuickModal` (modal on md+, drawer on mobile)
+- Overlays: small menus/popovers → `MorphingPopover`; larger forms/listings →
+  `QuickModal` (modal on md+, tray/drawer on mobile). Placement follows the
+  trigger (top chrome → open down / top tray; bottom chrome → open up /
+  bottom tray)
 
 ## Native / PWA
 
@@ -52,11 +55,17 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
   double-subtract). `theme-color` + manifest colors track raised (incl. in-app
   color-mode sync); `apple-mobile-web-app-status-bar-style` =
   `black-translucent` when edge-to-edge
-- **Overlays:** every sheet/dialog has X and/or Cancel; confirmations use the
-  same mobile drawer shell as `QuickModal`
-- **Menus:** mobile short actions → floating bottom/top action sheet
-  (inset, rounded); mobile nav lists (rooms) → floating drawer — not `Menu`
-  popovers. Desktop may keep `Menu`
+- **Overlays:** every sheet/dialog has X and/or Cancel. **Small** (menus,
+  short action lists, popovers) → `MorphingPopover`. **Large** (forms,
+  listings, multi-field content) → `QuickModal` tray/modal; confirmations use
+  the same mobile drawer shell. Trigger-aligned placement: top chrome →
+  popover/tray from top (open downward); bottom chrome → from bottom (open
+  upward). Morphing spring counts in the micro-motion budget (~≤400ms);
+  honor `prefers-reduced-motion`
+- **Menus:** prefer `MorphingPopover` for short action lists on all
+  viewports (Account is the reference). Longer navigational lists (rooms)
+  may still use a floating drawer. Legacy `ActionSheet` / `Menu` only until
+  migrated
 
 ## States — never blank
 
@@ -95,8 +104,8 @@ when `MaskedInput` / form subtypes already cover the case.
 ## Motion budget
 
 2–3 intentional micro-motions only (message appear ~160ms, pressed-state
-translate, Chakra modal/drawer defaults). Respect `prefers-reduced-motion`.
-No decorative animation, gradients, or gloss.
+translate, MorphingPopover spring ≤ ~400ms, Chakra modal/drawer defaults).
+Respect `prefers-reduced-motion`. No decorative animation, gradients, or gloss.
 
 ## Copy
 

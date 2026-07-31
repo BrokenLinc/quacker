@@ -4,7 +4,7 @@ import React from 'react';
 /**
  * Provides a context for opening a confirmation dialog via a custom hook.
  * Must be placed inside the ThemeProvider.
- * Uses QuickModal so mobile gets a bottom drawer with an X close control.
+ * Uses QuickModal (same shell as other large dialogs; X close control).
  */
 
 export type ConfirmationOptions = {

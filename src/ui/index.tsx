@@ -67,6 +67,7 @@ export { IconButton, type IconButtonProps } from './IconButton';
 export * from './IndicatorBadge';
 export * from './InfoTooltip';
 export * from './ActionSheet';
+export * from './MorphingPopover';
 export * from './QuickModal';
 export * from './RichTextContent';
 export * from './RichTextEditor';
