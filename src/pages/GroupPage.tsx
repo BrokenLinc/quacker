@@ -1,6 +1,6 @@
 import { useChirpOnNewMessages } from '@@lib/notifications/chirp';
 import type { NotifyLevel } from '@@lib/notifications/shouldNotify';
-import { updateMyNotifyLevel } from '@@lib/notifications/prefs';
+import { updateMyNotifyLevel, usePushEnabled } from '@@lib/notifications/prefs';
 import { getShareUrl } from '@@lib/share';
 import {
   Group,
@@ -18,6 +18,7 @@ import {
   useGroupMessages,
 } from '@@api';
 import { RequireAuth } from '@@components/auth/RequireAuth';
+import { NotificationsSwitch } from '@@components/NotificationsSwitch';
 import { NotifyLevelControl } from '@@components/NotifyLevelControl';
 import { notifyLevelLabel } from '@@lib/notifications/notifyLevel';
 import { UserAvatar } from '@@components/UserAvatar';
@@ -40,19 +41,19 @@ import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
 import {
   faArrowLeft,
+  faBan,
   faBell,
+  faCheck,
   faComments,
   faCopy,
   faEllipsisVertical,
   faPaperPlane,
   faPenToSquare,
-  faQrcode,
   faRightFromBracket,
   faShareFromSquare,
   faTrash,
   faUserPlus,
   faUsers,
-  faXmark,
 } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 import QRCode from 'react-qr-code';
@@ -299,7 +300,7 @@ const GroupBarContents: React.FC<{
         </UI.Heading>
       )}
       <UI.IconButton
-        aria-label="Invite or Share"
+        aria-label="Invite someone"
         icon={faUserPlus}
         variant="ghost"
         size="sm"
@@ -333,19 +334,17 @@ const ShareGroupModal: React.FC<{
   };
 
   return (
-    <UI.QuickModal
-      headerContent={
-        <React.Fragment>
-          <UI.Icon icon={faQrcode} mr={2} />
-          Share {group.name}
-        </React.Fragment>
-      }
-      size="md"
-      isOpen={isOpen}
-      onClose={onClose}
-    >
+    <UI.QuickModal size="md" isOpen={isOpen} onClose={onClose}>
       <UI.ModalBody px={6} pb={6}>
-        <UI.VStack spacing={4}>
+        <UI.VStack spacing={6} align="center">
+          <UI.Text
+            fontSize="sm"
+            color="text.muted"
+            textAlign="center"
+            maxW="280px"
+          >
+            Point your camera at the code to join {group.name}
+          </UI.Text>
           <UI.Box
             bg="white"
             p={6}
@@ -356,25 +355,27 @@ const ShareGroupModal: React.FC<{
           >
             <QRCode value={shareUrl} size={220} />
           </UI.Box>
-          <UI.Text fontSize="sm" fontFamily="mono" wordBreak="break-all">
-            {shareUrl}
-          </UI.Text>
-          <UI.ButtonGroup size="sm">
-            <UI.Button
-              preset="primary"
-              leftIcon={<UI.Icon icon={faCopy} />}
-              onClick={copyLink}
-            >
-              Copy link
-            </UI.Button>
-            <UI.Button
-              variant="outline"
-              leftIcon={<UI.Icon icon={faShareFromSquare} />}
-              onClick={nativeShare}
-            >
-              Share
-            </UI.Button>
-          </UI.ButtonGroup>
+          <UI.VStack spacing={3} w="100%" align="center">
+            <UI.Text fontSize="sm" fontFamily="mono" wordBreak="break-all">
+              {shareUrl}
+            </UI.Text>
+            <UI.ButtonGroup size="sm">
+              <UI.Button
+                variant="outline"
+                leftIcon={<UI.Icon icon={faCopy} />}
+                onClick={copyLink}
+              >
+                Copy link
+              </UI.Button>
+              <UI.Button
+                variant="outline"
+                leftIcon={<UI.Icon icon={faShareFromSquare} />}
+                onClick={nativeShare}
+              >
+                Share
+              </UI.Button>
+            </UI.ButtonGroup>
+          </UI.VStack>
         </UI.VStack>
       </UI.ModalBody>
     </UI.QuickModal>
@@ -397,6 +398,7 @@ const GroupOverflowMenu: React.FC<{
   const [members] = useGroupMembers(group.id, { channelId: 'overflow' });
   const myMember = members?.find((m) => m.uid === user.uid);
   const notifyLevel = myMember?.notifyLevel ?? 'all';
+  const [pushEnabled] = usePushEnabled(user.uid);
 
   const closeMenu = () => setMenuOpen(false);
 
@@ -484,25 +486,29 @@ const GroupOverflowMenu: React.FC<{
             flexShrink={0}
           />
         </UI.MorphingPopoverTrigger>
-        <UI.MorphingPopoverContent title={group.name}>
+        <UI.MorphingPopoverContent title="Room options">
           <UI.VStack align="stretch" spacing={0} py={1}>
-            <OverflowMenuRow
+            <UI.PopoverMenuRow
               icon={faUserPlus}
-              label="Invite or Share"
+              label="Invite someone"
               onClick={() => runAndClose(onInvite)}
             />
-            <OverflowMenuRow
+            <UI.PopoverMenuRow
               icon={faUsers}
               label="Members"
               onClick={() => runAndClose(membersModal.onOpen)}
             />
-            <OverflowMenuRow
+            <UI.PopoverMenuRow
               icon={faBell}
-              label={`Notifications · ${notifyLevelLabel(notifyLevel)}`}
+              label={
+                pushEnabled
+                  ? `Notifications · ${notifyLevelLabel(notifyLevel)}`
+                  : 'Notifications · Off'
+              }
               onClick={() => runAndClose(notifyModal.onOpen)}
             />
             {isCreator ? (
-              <OverflowMenuRow
+              <UI.PopoverMenuRow
                 icon={faPenToSquare}
                 label="Rename room"
                 onClick={() => runAndClose(renameModal.onOpen)}
@@ -510,14 +516,14 @@ const GroupOverflowMenu: React.FC<{
             ) : null}
             <UI.Box borderTopWidth="1px" borderColor="border.subtle" my={1} />
             {isCreator ? (
-              <OverflowMenuRow
+              <UI.PopoverMenuRow
                 icon={faTrash}
                 label="Delete room"
                 isDestructive
                 onClick={handleDelete}
               />
             ) : (
-              <OverflowMenuRow
+              <UI.PopoverMenuRow
                 icon={faRightFromBracket}
                 label="Leave room"
                 isDestructive
@@ -551,29 +557,6 @@ const GroupOverflowMenu: React.FC<{
   );
 };
 
-const OverflowMenuRow: React.FC<{
-  icon: typeof faBell;
-  label: string;
-  onClick: () => void;
-  isDestructive?: boolean;
-}> = ({ icon, label, onClick, isDestructive }) => (
-  <UI.Button
-    variant="ghost"
-    justifyContent="flex-start"
-    borderRadius={0}
-    h="auto"
-    py={2.5}
-    px={4}
-    fontWeight="normal"
-    fontSize="sm"
-    color={isDestructive ? 'red.500' : undefined}
-    leftIcon={<UI.Icon icon={icon} />}
-    onClick={onClick}
-  >
-    {label}
-  </UI.Button>
-);
-
 /* ------------------------------------------------------------------ */
 /* Members + rename                                                    */
 /* ------------------------------------------------------------------ */
@@ -586,17 +569,19 @@ const MembersModal: React.FC<{
   onInvite: () => void;
 }> = ({ group, user, isOpen, onClose, onInvite }) => {
   return (
-    <UI.QuickModal isOpen={isOpen} onClose={onClose} headerContent="Members">
-      <UI.ModalBody pb={6}>
-        <UI.HStack justify="flex-end" mb={2}>
-          <UI.IconButton
-            aria-label="Invite or Share"
-            icon={faUserPlus}
-            size="sm"
-            variant="ghost"
-            onClick={onInvite}
-          />
+    <UI.QuickModal
+      isOpen={isOpen}
+      onClose={onClose}
+      headerContent={
+        <UI.HStack justify="space-between" align="center" w="100%" pr={8}>
+          <UI.Text as="span">Room members</UI.Text>
+          <UI.Button size="sm" variant="outline" onClick={onInvite}>
+            Invite
+          </UI.Button>
         </UI.HStack>
+      }
+    >
+      <UI.ModalBody pb={6}>
         {isOpen ? <MembersList group={group} user={user} /> : null}
       </UI.ModalBody>
     </UI.QuickModal>
@@ -626,17 +611,17 @@ const MembersList: React.FC<{ group: Group; user: AppUser }> = ({
     return <UI.ErrorState title="Couldn't load members" py={4} />;
   }
 
-  const handleRemove = (memberUid: string, memberName: string) => {
+  const handleBan = (memberUid: string, memberName: string) => {
     confirmation.open({
-      title: `Remove ${memberName}?`,
+      title: `Ban ${memberName}?`,
       message: 'They can rejoin with an invite link.',
-      confirmLabel: 'Remove',
+      confirmLabel: 'Ban',
       isDestructive: true,
       onConfirm: async () => {
         try {
           await removeGroupMember(group.id, memberUid);
         } catch {
-          toast({ title: "Couldn't remove member", status: 'error' });
+          toast({ title: "Couldn't ban member", status: 'error' });
         }
       },
       onCancel: () => undefined,
@@ -669,12 +654,13 @@ const MembersList: React.FC<{ group: Group; user: AppUser }> = ({
             ) : null}
             {isCreator && member.uid !== user.uid ? (
               <UI.IconButton
-                aria-label={`Remove ${name}`}
-                icon={faXmark}
+                aria-label={`Ban ${name}`}
+                icon={faBan}
                 size="xs"
                 variant="ghost"
+                color="red.500"
                 ml="auto"
-                onClick={() => handleRemove(member.uid, name)}
+                onClick={() => handleBan(member.uid, name)}
               />
             ) : null}
           </UI.HStack>
@@ -693,10 +679,14 @@ const RenameGroupModal: React.FC<{
   const [saving, setSaving] = React.useState(false);
   const toast = UI.useToast();
 
+  React.useEffect(() => {
+    if (isOpen) setName(group.name);
+  }, [isOpen, group.name]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     const trimmed = name.trim();
-    if (!trimmed || saving) return;
+    if (!trimmed || trimmed === group.name || saving) return;
     setSaving(true);
     try {
       await updateGroup(group.id, { name: trimmed });
@@ -712,37 +702,41 @@ const RenameGroupModal: React.FC<{
     }
   };
 
+  const canSubmit = !!name.trim() && name.trim() !== group.name && !saving;
+
   return (
     <UI.QuickModal
       isOpen={isOpen}
       onClose={onClose}
       headerContent="Rename room"
+      size="sm"
     >
       <UI.ModalBody pb={6}>
-        <UI.VStack
-          as="form"
-          onSubmit={handleSubmit}
-          align="stretch"
-          spacing={3}
-        >
+        <UI.Box as="form" onSubmit={handleSubmit}>
           <UI.FormControl>
-            <UI.FormLabel>Room name</UI.FormLabel>
-            <UI.Input
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              autoFocus
-            />
+            <UI.FormLabel>New room name</UI.FormLabel>
+            <UI.InputGroup>
+              <UI.Input
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                autoFocus
+                autoComplete="off"
+                pe={12}
+              />
+              <UI.InputRightElement h="100%" width="2.75rem">
+                <UI.IconButton
+                  type="submit"
+                  aria-label="Save"
+                  icon={faCheck}
+                  size="sm"
+                  colorScheme="action"
+                  isDisabled={!canSubmit}
+                  isLoading={saving}
+                />
+              </UI.InputRightElement>
+            </UI.InputGroup>
           </UI.FormControl>
-          <UI.Button
-            type="submit"
-            preset="primary"
-            isDisabled={!name.trim() || name.trim() === group.name}
-            isLoading={saving}
-            loadingText="Saving…"
-          >
-            Save
-          </UI.Button>
-        </UI.VStack>
+        </UI.Box>
       </UI.ModalBody>
     </UI.QuickModal>
   );
@@ -810,6 +804,7 @@ const GroupNotifyLevelModal: React.FC<{
   const [value, setValue] = React.useState<NotifyLevel>(level);
   const [saving, setSaving] = React.useState(false);
   const toast = UI.useToast();
+  const [pushEnabled, pushLoading, , syncPushLocal] = usePushEnabled(user.uid);
 
   React.useEffect(() => {
     if (isOpen) setValue(level);
@@ -832,6 +827,8 @@ const GroupNotifyLevelModal: React.FC<{
     }
   };
 
+  const roomDisabled = pushLoading || !pushEnabled;
+
   return (
     <UI.QuickModal
       isOpen={isOpen}
@@ -840,12 +837,28 @@ const GroupNotifyLevelModal: React.FC<{
     >
       <UI.ModalBody pb={6}>
         <UI.VStack align="stretch" spacing={4}>
-          <NotifyLevelControl value={value} onChange={setValue} />
+          {pushLoading ? (
+            <UI.Skeleton h={12} borderRadius="md" />
+          ) : (
+            <NotificationsSwitch
+              isChecked={pushEnabled}
+              onCheckedChange={syncPushLocal}
+              persist
+            />
+          )}
+          <NotifyLevelControl
+            value={value}
+            onChange={setValue}
+            isDisabled={roomDisabled}
+          />
           <UI.Button
             preset="primary"
+            alignSelf="center"
+            minW="8rem"
+            px={8}
             onClick={() => void save()}
             isLoading={saving}
-            isDisabled={value === level}
+            isDisabled={roomDisabled || value === level}
             loadingText="Saving…"
           >
             Save
@@ -971,7 +984,9 @@ const GroupChat: React.FC<{
         loading={loading}
         error={error}
         groupName={group.name}
+        groupId={groupId}
         currentUid={user.uid}
+        isRoomCreator={group.uid === user.uid}
         memberByUid={memberByUid}
       />
       <UI.Box
@@ -996,9 +1011,20 @@ const ChatScrollArea: React.FC<{
   loading: boolean;
   error: Error | undefined;
   groupName: string;
+  groupId: string;
   currentUid: string;
+  isRoomCreator: boolean;
   memberByUid: Map<string, MemberProfile>;
-}> = ({ items, loading, error, groupName, currentUid, memberByUid }) => {
+}> = ({
+  items,
+  loading,
+  error,
+  groupName,
+  groupId,
+  currentUid,
+  isRoomCreator,
+  memberByUid,
+}) => {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const didInitialScroll = React.useRef(false);
   const distanceFromBottomRef = React.useRef(0);
@@ -1112,6 +1138,8 @@ const ChatScrollArea: React.FC<{
                 message={message}
                 grouped={grouped}
                 isOwn={message.uid === currentUid}
+                canBan={isRoomCreator && message.uid !== currentUid}
+                groupId={groupId}
                 liveDisplayName={member?.displayName ?? message.authorName}
                 livePhotoURL={member?.photoURL ?? message.authorPhotoURL}
                 phoneLast4={member?.phoneLast4 ?? null}
@@ -1145,6 +1173,8 @@ export const MessageRow: React.FC<{
   message: ChatItem;
   grouped: boolean;
   isOwn: boolean;
+  canBan?: boolean;
+  groupId?: string;
   liveDisplayName?: string | null;
   livePhotoURL?: string | null;
   phoneLast4?: string | null;
@@ -1154,6 +1184,8 @@ export const MessageRow: React.FC<{
   message,
   grouped,
   isOwn,
+  canBan = false,
+  groupId,
   liveDisplayName,
   livePhotoURL,
   phoneLast4,
@@ -1161,11 +1193,31 @@ export const MessageRow: React.FC<{
   role,
 }) => {
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const confirmation = useConfirmation();
+  const toast = UI.useToast();
   const displayName = liveDisplayName ?? message.authorName;
   const photoURL = livePhotoURL ?? message.authorPhotoURL;
   const name = formatAuthorLabel(displayName);
   const profileLabel = `View ${name}'s profile`;
-  const profileTitle = isOwn ? 'You' : name;
+
+  const handleBan = () => {
+    setProfileOpen(false);
+    if (!groupId) return;
+    confirmation.open({
+      title: `Ban ${name}?`,
+      message: 'They can rejoin with an invite link.',
+      confirmLabel: 'Ban',
+      isDestructive: true,
+      onConfirm: async () => {
+        try {
+          await removeGroupMember(groupId, message.uid);
+        } catch {
+          toast({ title: "Couldn't ban member", status: 'error' });
+        }
+      },
+      onCancel: () => undefined,
+    });
+  };
 
   return (
     <UI.HStack
@@ -1207,7 +1259,7 @@ export const MessageRow: React.FC<{
               cursor="pointer"
             />
           </UI.MorphingPopoverTrigger>
-          <UI.MorphingPopoverContent title={profileTitle}>
+          <UI.MorphingPopoverContent aria-label={profileLabel}>
             <MemberProfileBody
               name={name}
               uid={message.uid}
@@ -1216,6 +1268,8 @@ export const MessageRow: React.FC<{
               joinedAt={joinedAt ?? null}
               role={role ?? null}
               isOwn={isOwn}
+              canBan={canBan}
+              onBan={handleBan}
             />
           </UI.MorphingPopoverContent>
         </UI.MorphingPopover>
@@ -1261,29 +1315,53 @@ const MemberProfileBody: React.FC<{
   joinedAt: number | null;
   role: 'creator' | 'member' | null;
   isOwn: boolean;
-}> = ({ name, uid, photoURL, phoneLast4, joinedAt, role, isOwn }) => (
-  <UI.VStack spacing={3} align="center" textAlign="center" px={4} py={4}>
-    <UserAvatar name={name} seed={uid} photoURL={photoURL} size="xl" />
-    <UI.Heading size="sm" noOfLines={2}>
-      {name}
-      {isOwn ? ' (you)' : ''}
-    </UI.Heading>
-    {phoneLast4 ? (
-      <UI.Text fontSize="md" color="text.muted" letterSpacing="wide">
-        ···{phoneLast4}
-      </UI.Text>
+  canBan?: boolean;
+  onBan?: () => void;
+}> = ({
+  name,
+  uid,
+  photoURL,
+  phoneLast4,
+  joinedAt,
+  role,
+  isOwn,
+  canBan,
+  onBan,
+}) => (
+  <UI.Box>
+    <UI.VStack spacing={2} align="center" textAlign="center" px={4} py={4}>
+      <UserAvatar name={name} seed={uid} photoURL={photoURL} size="lg" />
+      <UI.Heading size="md" noOfLines={2}>
+        {name}
+        {isOwn ? ' (you)' : ''}
+      </UI.Heading>
+      {phoneLast4 ? (
+        <UI.Text fontSize="xs" color="text.muted" letterSpacing="wide">
+          ···{phoneLast4}
+        </UI.Text>
+      ) : null}
+      {role === 'creator' ? (
+        <UI.Badge colorScheme="gray" fontSize="xs">
+          Room creator
+        </UI.Badge>
+      ) : null}
+      {joinedAt ? (
+        <UI.Text fontSize="sm" color="text.muted">
+          Joined {formatJoinedAt(joinedAt)}
+        </UI.Text>
+      ) : null}
+    </UI.VStack>
+    {canBan && onBan ? (
+      <UI.Box borderTopWidth="1px" borderColor="border.subtle">
+        <UI.PopoverMenuRow
+          icon={faBan}
+          label="Ban from room"
+          isDestructive
+          onClick={onBan}
+        />
+      </UI.Box>
     ) : null}
-    {role === 'creator' ? (
-      <UI.Badge colorScheme="gray" fontSize="xs">
-        Room creator
-      </UI.Badge>
-    ) : null}
-    {joinedAt ? (
-      <UI.Text fontSize="sm" color="text.muted">
-        Joined {formatJoinedAt(joinedAt)}
-      </UI.Text>
-    ) : null}
-  </UI.VStack>
+  </UI.Box>
 );
 
 const MESSAGE_MAX_LENGTH = 140;

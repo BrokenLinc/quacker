@@ -58,6 +58,10 @@ export { AccordionItem } from './AccordionItem';
 export * from './AccordionToggler';
 export * from './AsteriskListItem';
 export { Button, type ButtonProps } from './Button';
+export { Input, type InputProps } from './Input';
+export {
+  passwordManagerIgnoreProps,
+} from './passwordManagerIgnore';
 export * from './DebouncedInput';
 export * from './DelayedSpinner';
 export * from './DocumentTitle';
@@ -68,6 +72,7 @@ export * from './IndicatorBadge';
 export * from './InfoTooltip';
 export * from './ActionSheet';
 export * from './MorphingPopover';
+export { PopoverMenuRow, type PopoverMenuRowProps } from './PopoverMenuRow';
 export * from './QuickModal';
 export * from './RichTextContent';
 export * from './RichTextEditor';

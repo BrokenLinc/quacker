@@ -68,18 +68,38 @@ export const AppLayout: React.FC = () => {
   );
 };
 
-export const BrandLink: React.FC<Omit<UI.LinkProps, 'children'>> = (props) => (
-  <UI.RouteLink
-    route={routes.home()}
-    display="inline-flex"
-    alignItems="center"
-    textDecoration="none"
-    _hover={{ textDecoration: 'none' }}
-    {...props}
-  >
-    <UI.Image src="/yowl-logo.svg" alt="Yowl" h="22px" w="auto" />
-  </UI.RouteLink>
-);
+export const BrandLink: React.FC<UI.BoxProps> = (props) => {
+  const [open, setOpen] = React.useState(false);
+
+  return (
+    <UI.Box display="inline-flex" alignItems="center" {...props}>
+      <UI.MorphingPopover
+        open={open}
+        onOpenChange={setOpen}
+        anchor="top left"
+      >
+        <UI.MorphingPopoverTrigger aria-label="Yowl">
+          <UI.Image
+            src="/yowl-logo.svg"
+            alt=""
+            h="22px"
+            w="auto"
+            aria-hidden
+          />
+        </UI.MorphingPopoverTrigger>
+        <UI.MorphingPopoverContent aria-label="About Yowl">
+          <UI.Box px={4} py={4} maxW="280px">
+            <UI.Text fontSize="sm" whiteSpace="pre-wrap">
+              {
+                "Hi! Thanks for trying my app. I made Yowl after bar-hopping with randos at a developer conference. SMS groups were too messy, and Slack/Discord were too complicated. I hope you like it!\n❤️ Linc"
+              }
+            </UI.Text>
+          </UI.Box>
+        </UI.MorphingPopoverContent>
+      </UI.MorphingPopover>
+    </UI.Box>
+  );
+};
 
 const MobileHeader: React.FC = () => {
   const [user] = useAuthState();

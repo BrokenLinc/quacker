@@ -6,6 +6,8 @@ import {
 import React from 'react';
 import { useDebounce, usePrevious } from 'react-use';
 
+import { Input, type InputProps } from './Input';
+
 export const INPUT_DEBOUNCE_MS = 500;
 
 export type DebouncedInputProps = {
@@ -14,7 +16,7 @@ export type DebouncedInputProps = {
   debounce?: number;
   leftIcon?: FontAwesomeIconProps;
   rightIcon?: FontAwesomeIconProps;
-} & Omit<UI.InputProps, 'value' | 'onChange'>;
+} & Omit<InputProps, 'value' | 'onChange'>;
 
 export const DebouncedInput: React.FC<DebouncedInputProps> = (props) => {
   const {
@@ -58,7 +60,7 @@ export const DebouncedInput: React.FC<DebouncedInputProps> = (props) => {
           <FontAwesomeIcon {...leftIcon} />
         </UI.InputLeftElement>
       ) : null}
-      <UI.Input {...inputProps} value={value} onChange={handleChange} />
+      <Input {...inputProps} value={value} onChange={handleChange} />
       {rightIcon ? (
         <UI.InputLeftElement>
           <FontAwesomeIcon {...rightIcon} />

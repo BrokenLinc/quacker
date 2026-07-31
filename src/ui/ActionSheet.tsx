@@ -88,7 +88,20 @@ const ActionSheetRow: React.FC<{
       fontSize="sm"
       color={color}
       isDisabled={item.isDisabled}
-      leftIcon={item.icon ? <Icon icon={item.icon} /> : undefined}
+      leftIcon={
+        item.icon ? (
+          <Chakra.Box
+            as="span"
+            w={5}
+            display="inline-flex"
+            justifyContent="center"
+            alignItems="center"
+            flexShrink={0}
+          >
+            <Icon icon={item.icon} fixedWidth />
+          </Chakra.Box>
+        ) : undefined
+      }
       onClick={() => {
         item.onClick?.();
         onClose();
@@ -122,7 +135,20 @@ const ActionSheetRouteRow: React.FC<{
       color={color}
       bg={isActive ? 'nav.selected' : undefined}
       isDisabled={item.isDisabled}
-      leftIcon={item.icon ? <Icon icon={item.icon} /> : undefined}
+      leftIcon={
+        item.icon ? (
+          <Chakra.Box
+            as="span"
+            w={5}
+            display="inline-flex"
+            justifyContent="center"
+            alignItems="center"
+            flexShrink={0}
+          >
+            <Icon icon={item.icon} fixedWidth />
+          </Chakra.Box>
+        ) : undefined
+      }
       onClick={onClose}
       textDecoration="none"
       _hover={{ textDecoration: 'none' }}

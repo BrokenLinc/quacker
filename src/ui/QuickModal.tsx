@@ -129,6 +129,7 @@ export const QuickModal: React.FC<QuickModalProps> = ({
   floating = true,
   isOpen,
   onClose,
+  isCentered = true,
   ...props
 }) => {
   const isMobile = UI.useBreakpointValue({ base: true, md: false });
@@ -136,7 +137,12 @@ export const QuickModal: React.FC<QuickModalProps> = ({
     QUICK_MODAL_MOBILE_TRAY && isMobile ? 'drawer' : 'modal';
 
   const adaptedChildren = adaptQuickModalChildren(children, shell);
-  const disclosureProps: QuickModalShellProps = { ...props, isOpen, onClose };
+  const disclosureProps: QuickModalShellProps = {
+    ...props,
+    isOpen,
+    onClose,
+    isCentered,
+  };
 
   if (shell === 'drawer') {
     const drawerProps = pickDrawerProps(disclosureProps, mobilePlacement);
@@ -164,7 +170,7 @@ export const QuickModal: React.FC<QuickModalProps> = ({
   return (
     <UI.Modal {...disclosureProps}>
       <UI.ModalOverlay />
-      <UI.ModalContent>
+      <UI.ModalContent mx={4}>
         <UI.ModalHeader>
           {headerContent ? headerContent : null}
           <UI.ModalCloseButton />

@@ -189,6 +189,13 @@ export const theme = extendTheme({
         },
       },
     },
+    // Programmatic focus (modal open) should not glow; keyboard Tab still rings.
+    CloseButton: {
+      baseStyle: {
+        _focus: { boxShadow: 'none' },
+        _focusVisible: { boxShadow: 'outline' },
+      },
+    },
     Menu: {
       baseStyle: {
         list: {

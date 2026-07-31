@@ -114,4 +114,18 @@ describe('morphingPopoverPosition', () => {
     expect(result.top).toBe(200);
     expect(result.left).toBe(50);
   });
+
+  test('asymmetric top inset clamps below notch / safe area', () => {
+    const result = placeAndClamp({
+      trigger: { left: 4, top: 4, width: 24, height: 24 },
+      panelSize: { width: 220, height: 200 },
+      anchor: 'center',
+      viewport,
+      margin: { top: 59, right: 12, bottom: 12, left: 12 },
+    });
+    expect(result.top).toBe(59);
+    expect(result.left).toBe(12);
+    // Panel height (200) still fits under the larger top inset.
+    expect(result.maxHeight).toBe(200);
+  });
 });

@@ -55,17 +55,21 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
   double-subtract). `theme-color` + manifest colors track raised (incl. in-app
   color-mode sync); `apple-mobile-web-app-status-bar-style` =
   `black-translucent` when edge-to-edge
-- **Overlays:** every sheet/dialog has X and/or Cancel. **Small** (menus,
+- **Overlays:** QuickModal has X (and/or Cancel). MorphingPopover dismisses via
+  Esc / outside click; Close is optional (`showClose`). **Small** (menus,
   short action lists, popovers) → `MorphingPopover` (overlapping `anchor` +
-  viewport clamp). **Large** (forms, listings, multi-field content) →
-  `QuickModal` tray/modal; confirmations use the same mobile drawer shell.
+  viewport clamp with safe-area). **Large** (forms, listings, multi-field
+  content) → `QuickModal` tray/modal (centered by default, ≥16px from edges);
+  confirmations use the same mobile drawer shell.
   Tray placement: top chrome → top tray; bottom chrome → bottom tray.
   Morphing spring counts in the micro-motion budget (~≤400ms); honor
-  `prefers-reduced-motion`
+  `prefers-reduced-motion`. Overlay focus rings use `_focusVisible` so
+  programmatic open focus does not glow.
 - **Menus:** prefer `MorphingPopover` for short action lists on all
-  viewports (Account, room title, message author). Longer navigational
-  lists (rooms) may still use a floating drawer. Legacy `ActionSheet` /
-  `Menu` only until migrated
+  viewports (Account, room title, message author). Use `PopoverMenuRow`
+  (fixed-width icon column + FontAwesome `fixedWidth`) so labels align.
+  Longer navigational lists (rooms) may still use a floating drawer. Legacy
+  `ActionSheet` / `Menu` only until migrated
 
 ## States — never blank
 
@@ -87,6 +91,16 @@ Prefer foolproof entry over free-text + late validation:
 - **Purpose-built controls** when they improve a11y and reduce errors:
   OTP → `PinInput` (one field per digit); picks from a set → combobox /
   select, not a free text box; dates/money → existing form subtype inputs
+- **Single-field rename/prompt modals** (change name, rename room): keep the
+  dialog narrow (`QuickModal` `size="sm"`) and put an **inset Save icon
+  button** in the input (`InputGroup` + `InputRightElement`) — not a
+  full-width footer primary
+- **Password managers:** `@@ui` `Input` / `MaskedInput` default to
+  `passwordManagerIgnoreProps` (1Password / LastPass / Bitwarden / Dashlane).
+  Do **not** rely on `autoComplete="off"` alone. Set semantic
+  `autoComplete` when it helps (`nickname`, `tel`, `one-time-code`) and
+  only pass `allowPasswordManager` on real credential fields (sign-in
+  phone). Never disable managers on authentic login/OTP entry.
 
 Plain `UI.Input` is fine for truly open text. Do not invent a new mask library
 when `MaskedInput` / form subtypes already cover the case.
@@ -98,7 +112,7 @@ when `MaskedInput` / form subtypes already cover the case.
 - Joining is **explicit consent** (join prompt), never a silent side effect
 - Ask for a display name right after first sign-in; `···1234` is a fallback,
   not an identity
-- Destructive actions (leave/delete/remove) go through `useConfirmation` with
+- Destructive actions (leave/delete/ban) go through `useConfirmation` with
   `isDestructive: true`; never confirm create/send
 
 ## Motion budget
@@ -109,9 +123,11 @@ Respect `prefers-reduced-motion`. No decorative animation, gradients, or gloss.
 
 ## Copy
 
+- **Sentence case** for UI labels, titles, and buttons (e.g. "Room options",
+  "Invite someone") — not Title Case. Brand **Yowl** stays capitalized.
 - User-facing strings say **Yowl** (capital Y), never Quacker and never
   lowercase **yowl** as brand text; no developer copy in error screens (no
   "Vite", "dev server")
-- Brand chrome: header logo is `/yowl-logo.svg` with `alt="Yowl"` — tests must
-  match that accessible name (`getByRole('link', { name: 'Yowl' })`)
+- Brand chrome: header logo opens an about popover; accessible name is
+  **Yowl** (`getByRole('button', { name: 'Yowl' })`)
 - Errors are human + actionable ("Check your connection and try again.")
