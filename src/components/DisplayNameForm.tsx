@@ -82,7 +82,7 @@ export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
             setName(e.target.value.replace(/[^\p{L} ]/gu, '').slice(0, 25))
           }
           maxLength={25}
-          placeholder="Your name"
+          placeholder="Fox"
           autoComplete="name"
           autoFocus
           data-testid="display-name-input"
@@ -121,7 +121,10 @@ function toastPushFailure(
   result: Extract<EnablePushResult, { ok: false }>
 ) {
   const permission = getNotificationPermissionState();
-  if (result.reason === 'ios-needs-install' || permission === 'ios-needs-install') {
+  if (
+    result.reason === 'ios-needs-install' ||
+    permission === 'ios-needs-install'
+  ) {
     toast({
       title: 'Install Yowl on your Home Screen',
       description:

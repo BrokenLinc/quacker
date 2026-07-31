@@ -50,18 +50,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ showColorMode }) => {
     await signOut();
   };
 
-  // Header/group chrome is top → open downward; sidebar footer → open upward.
-  const placement = showColorMode ? 'bottom' : 'top';
-  const align = showColorMode ? 'end' : 'start';
+  // QuickModal trays follow chrome edge; MorphingPopover uses overlapping anchors.
+  const mobilePlacement = showColorMode ? 'bottom' : 'top';
 
   return (
     <React.Fragment>
-      <UI.MorphingPopover
-        placement={placement}
-        align={align}
-        open={menuOpen}
-        onOpenChange={setMenuOpen}
-      >
+      <UI.MorphingPopover open={menuOpen} onOpenChange={setMenuOpen}>
         <UI.MorphingPopoverTrigger
           data-testid="user-menu-button"
           aria-label="Account menu"
@@ -119,7 +113,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ showColorMode }) => {
         isOpen={editNameModal.isOpen}
         onClose={editNameModal.onClose}
         headerContent="Change name"
-        mobilePlacement={placement}
+        mobilePlacement={mobilePlacement}
       >
         <UI.ModalBody pb={6}>
           <DisplayNameForm onDone={editNameModal.onClose} />
@@ -129,7 +123,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ showColorMode }) => {
         isOpen={notifyModal.isOpen}
         onClose={notifyModal.onClose}
         headerContent="Notifications"
-        mobilePlacement={placement}
+        mobilePlacement={mobilePlacement}
       >
         <UI.ModalBody pb={6}>
           <NotificationsPrefsBody userId={user.uid} />

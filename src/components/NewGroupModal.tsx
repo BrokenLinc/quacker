@@ -107,7 +107,7 @@ const NewGroupForm: React.FC<{ onCreated: () => void }> = ({ onCreated }) => {
         <UI.Input
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="WWDC hallway chat"
+          placeholder="The Den"
           autoFocus
         />
       </UI.FormControl>

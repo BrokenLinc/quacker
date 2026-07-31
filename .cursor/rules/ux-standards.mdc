@@ -32,10 +32,10 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
   (avoids pop-in). Skeletons go *inside* the frame.
 - Chat: chronological messages, composer pinned to bottom, Enter sends
   (Shift+Enter newline), optimistic pending bubbles
-- Overlays: small menus/popovers → `MorphingPopover`; larger forms/listings →
-  `QuickModal` (modal on md+, tray/drawer on mobile). Placement follows the
-  trigger (top chrome → open down / top tray; bottom chrome → open up /
-  bottom tray)
+- Overlays: small menus/popovers → `MorphingPopover` (9-point overlapping
+  `anchor`, default `center`, then viewport clamp); larger forms/listings →
+  `QuickModal` (modal on md+, tray/drawer on mobile). Tray placement follows
+  the trigger (top chrome → top tray; bottom chrome → bottom tray)
 
 ## Native / PWA
 
@@ -56,16 +56,16 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
   color-mode sync); `apple-mobile-web-app-status-bar-style` =
   `black-translucent` when edge-to-edge
 - **Overlays:** every sheet/dialog has X and/or Cancel. **Small** (menus,
-  short action lists, popovers) → `MorphingPopover`. **Large** (forms,
-  listings, multi-field content) → `QuickModal` tray/modal; confirmations use
-  the same mobile drawer shell. Trigger-aligned placement: top chrome →
-  popover/tray from top (open downward); bottom chrome → from bottom (open
-  upward). Morphing spring counts in the micro-motion budget (~≤400ms);
-  honor `prefers-reduced-motion`
+  short action lists, popovers) → `MorphingPopover` (overlapping `anchor` +
+  viewport clamp). **Large** (forms, listings, multi-field content) →
+  `QuickModal` tray/modal; confirmations use the same mobile drawer shell.
+  Tray placement: top chrome → top tray; bottom chrome → bottom tray.
+  Morphing spring counts in the micro-motion budget (~≤400ms); honor
+  `prefers-reduced-motion`
 - **Menus:** prefer `MorphingPopover` for short action lists on all
-  viewports (Account is the reference). Longer navigational lists (rooms)
-  may still use a floating drawer. Legacy `ActionSheet` / `Menu` only until
-  migrated
+  viewports (Account, room title, message author). Longer navigational
+  lists (rooms) may still use a floating drawer. Legacy `ActionSheet` /
+  `Menu` only until migrated
 
 ## States — never blank
 
