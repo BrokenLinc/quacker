@@ -20,7 +20,10 @@ test.describe('notification prefs', () => {
     await expect.poll(async () => getPushPermissionRequestCount(page)).toBe(0);
 
     await page.getByTestId('user-menu-button').click();
-    await page.getByRole('menuitem', { name: /Notifications/i }).click();
+    await page
+      .getByRole('dialog', { name: 'Account' })
+      .getByRole('button', { name: /Notifications/i })
+      .click();
 
     const toggle = page.getByTestId('notifications-switch');
     await expect(toggle).toBeVisible();
