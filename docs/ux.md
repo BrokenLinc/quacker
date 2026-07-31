@@ -205,19 +205,26 @@ the frame while auth/group data loads — never withhold the frame until ready
 
 ### Overlays
 
-- Every overlay has an obvious dismiss (X and/or Cancel). Overlay tap and Esc
+- Every overlay has an obvious dismiss (X and/or Cancel). Outside click and Esc
   remain available unless a flow intentionally requires an explicit choice —
   still keep Cancel.
-- Content sheets use `QuickModal` (modal ≥ md, drawer on mobile).
-- Confirmations use the **same** mobile drawer shell as `QuickModal`, not a
-  centered desktop modal on phones.
+- **Small dialogs** (menus, popovers, short action lists) → `MorphingPopover`
+  (`src/ui/MorphingPopover.tsx`): shared `layoutId` morph from trigger → panel.
+  Account menu is the reference consumer.
+- **Larger dialogs** (forms, listings, multi-field / multi-step content) →
+  `QuickModal` (modal ≥ md, tray/drawer on mobile). Confirmations use the
+  **same** mobile drawer shell — not a centered desktop modal on phones.
+- **Trigger-aligned placement:** tray/popover opens from the same edge as the
+  trigger (header / top chrome → top tray or open downward; sidebar footer /
+  bottom chrome → bottom tray or open upward).
+- Morphing spring counts toward the intentional micro-motion budget
+  (~≤400ms). Honor `prefers-reduced-motion` (near-instant open/close).
 
 ### Menus
 
-- **Desktop (md+):** Chakra `Menu` popovers are fine for short action lists.
-- **Mobile:** short action lists → floating **action sheet** (inset from edges,
-  fully rounded corners; room options open from the **top** under the title);
-  longer navigational lists (rooms in the avatar menu) → floating bottom
-  sheet. Do not leave dense nav lists in floating popovers on small screens.
+- Prefer `MorphingPopover` for short action lists on **all** viewports.
+- Longer navigational lists (e.g. rooms) may use a floating drawer.
+- Legacy `ActionSheet` / Chakra `Menu` remain until migrated (e.g. room
+  overflow) — new small menus should not add more of those.
 - On room pages, the **title is the options control** (name + chevron) — no
   separate ⋯ button.

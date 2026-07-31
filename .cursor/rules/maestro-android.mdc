@@ -17,9 +17,8 @@ alwaysApply: false
 - Do **not** put `androidWebViewHierarchy: devtools` on FRE/open steps — it can hide native Chrome welcome UI
 - Android keyboard shots: `android-keyboard-shots.yaml` (dismiss via `pressKey: back`). Dismiss install banner first — it covers the composer and steals taps
 - Android WebView often omits input placeholders — tap labels (`Phone number`, `Room name`) not `(555)…` / `WWDC…`
-- Dismiss Account sheet: prefer `Close`; if missing from a11y, tap overlay
-  above the floating sheet (`point: "50%, 12%"`) — never Android `back`
-  (leaves the room)
+- Dismiss Account menu (`MorphingPopover`): prefer `Close`; else tap outside
+  the panel (e.g. `point: "50%, 12%"`) — never Android `back` (leaves the room)
 - Overrides: `APP_URL=http://…` or `MAESTRO_PORT=4173`
 - **`clearState` is OK** on Chrome (unlike Safari) — login/PWA flows clear Chrome state at launch
 - Prefer `adb reverse` + `http://localhost:<port>` (secure context). Fallback `http://10.0.2.2:<port>` is not a secure context
