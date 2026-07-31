@@ -53,30 +53,25 @@ export function formatMessageDayLabel(
   }).format(new Date(timeMs));
 }
 
-const DEFAULT_PHONE_NAME = /^···\d{4}$/;
-
-export type AuthorLabel = {
-  name: string;
-  /** Four digits to show muted in parentheses when the name is customized. */
-  last4Suffix: string | null;
-};
-
 /**
- * Live author chrome: current display name, plus muted (last4) when the user
- * has customized away from the ···XXXX phone default.
+ * Live author name for message chrome. Prefer current display name; fall back
+ * to "Someone" when empty. Phone last-4 lives on the member profile sheet, not
+ * inline next to the name.
  */
 export function formatAuthorLabel(
-  displayName: string | null | undefined,
-  phoneLast4: string | null | undefined
-): AuthorLabel {
-  const trimmed = displayName?.trim() || '';
-  const name = trimmed || 'Someone';
-  if (!trimmed || !phoneLast4 || DEFAULT_PHONE_NAME.test(name)) {
-    return { name, last4Suffix: null };
-  }
-  const defaultName = `···${phoneLast4}`;
-  if (name === defaultName) {
-    return { name, last4Suffix: null };
-  }
-  return { name, last4Suffix: phoneLast4 };
+  displayName: string | null | undefined
+): string {
+  return displayName?.trim() || 'Someone';
+}
+
+/** Join date for member profile sheets (e.g. "Aug 23, 2024"). */
+export function formatJoinedAt(
+  timeMs: number,
+  locale?: string
+): string {
+  return new Intl.DateTimeFormat(locale, {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  }).format(new Date(timeMs));
 }

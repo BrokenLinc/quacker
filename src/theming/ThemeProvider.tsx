@@ -1,4 +1,4 @@
-import { ChakraProvider, ColorModeScript, extendTheme } from '@chakra-ui/react';
+import { ChakraProvider, extendTheme } from '@chakra-ui/react';
 import React from 'react';
 
 import { useThemeColorMeta } from '@@lib/pwa/useThemeColorMeta';
@@ -84,8 +84,10 @@ export const theme = extendTheme({
   },
   styles: {
     global: {
+      // Document plane = raised (Safari accessory / overscroll sample body).
+      // Content plane = canvas on #root / AppShell.
       'html, body': {
-        bg: 'surface.canvas',
+        bg: 'surface.raised',
         overflow: 'hidden',
         overscrollBehavior: 'none',
         // Drive iOS system keyboard / form controls to match in-app mode.
@@ -211,7 +213,7 @@ const ThemeColorSync: React.FC = () => {
 export const ThemeProvider: React.FC<React.PropsWithChildren> = (props) => {
   return (
     <ChakraProvider theme={theme}>
-      <ColorModeScript initialColorMode={theme.config.initialColorMode} />
+      {/* ColorModeScript lives in index.html (before React) to avoid canvas flash. */}
       <ThemeColorSync />
       {props.children}
     </ChakraProvider>

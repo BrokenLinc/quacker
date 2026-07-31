@@ -16,23 +16,23 @@ brand. Snappy beats fancy; honest states beat clean-looking blanks.
 
 | Route | Purpose |
 | ----- | ------- |
-| `/` | Your groups (membership-scoped) + create CTA |
+| `/` | Your rooms (membership-scoped) + create CTA |
 | `/:groupId` | Chat. Non-members get an explicit join prompt |
-| `/g/:slug` | Invite link → resolves slug → redirects to the group |
+| `/g/:slug` | Invite link → resolves slug → redirects to the room |
 | `*` | Not-found page with a way home |
 
-Everything secondary (share, members, rename, new group, change name, sign-in)
+Everything secondary (share, members, rename, new room, change name, sign-in)
 is a `QuickModal` — modal on desktop, bottom drawer on mobile. No settings
 pages, no nested routes.
 
 ### Shell
 
-- **Desktop (md+):** persistent left sidebar (brand + plus, group nav,
+- **Desktop (md+):** persistent left sidebar (brand + plus, room nav,
   user + appearance in the footer). Chat pane content is capped at ~760px for
   readable line length.
-- **Mobile:** compact top header on home (brand, avatar); group pages have
+- **Mobile:** compact top header on home (brand, avatar); room pages have
   exactly one bar (back, title, share, overflow, avatar). Never stack two
-  headers. "New group" is a plus icon in the page header (and sidebar brand
+  headers. "New room" is a plus icon in the page header (and sidebar brand
   row on desktop).
 
 ## Color system
@@ -79,7 +79,9 @@ default).
 Phone-only users default to `···1234` — treat that as a bug, not a name. The
 sign-in flow asks "What should people call you?" right after first OTP verify
 (skippable); "Change name" lives in the avatar menu. Names are denormalized
-onto `group_members` for the roster and onto `messages` at send time.
+onto `group_members` for the roster and onto `messages` at send time. Message
+headers show the live display name only — tap avatar or name for a profile
+sheet (`···XXXX`, join date, creator badge when known).
 
 ## Inputs
 
@@ -149,14 +151,47 @@ Implementation: `index.html` (geometry + `html.standalone`),
 
 **Symptom check:** `screen.height - innerHeight ≈ 60` and `#root.getBoundingClientRect().height === innerHeight` while a canvas strip sits under chrome → missing `html.standalone` / still on `bottom: 0`. After the fix, raised chrome (composer) samples to the physical bottom; safe-area is **inside** that raised fill.
 
+### First paint (no white flash)
+
+- Early in `index.html` `<head>`: `<meta name="color-scheme" content="dark light">`
+  plus inline CSS that defaults `html` to dark **raised** (`#302A44`), with a light
+  `prefers-color-scheme` override (`#FFFFFF`).
+- Inline body script (before the Vite module) applies stored
+  `chakra-ui-color-mode` (or system) to `data-theme`, `color-scheme`,
+  document = raised, `#root` = canvas — same role as Chakra’s `ColorModeScript`,
+  but before React. Do not rely on a React-mounted `ColorModeScript` alone.
+- Wipe installed PWA Storage after `index.html` boot changes (webclip cache).
+
+### Document vs content paint (Safari accessory)
+
+iOS Safari’s keyboard accessory bar (and overscroll rubber-band) sample the
+**document** background (`html`/`body`), not `#root`. Composer / headers use
+`surface.raised`, so:
+
+| Plane | Token | Where |
+| ----- | ----- | ----- |
+| Document / UA chrome | `surface.raised` | `html`, `body`, `theme-color` |
+| App content | `surface.canvas` | `#root`, `AppShell` |
+
+Do not paint `html`/`body` with canvas — that leaves a darker strip under the
+composer when the keyboard is open. Keep content areas on canvas so the chat
+plane stays distinct from chrome.
+
+### Predictable chrome containers
+
+Fixed-size shells (group top bar, composer, sidebar column) must **mount at
+their known dimensions immediately**. Put skeletons or placeholders *inside*
+the frame while auth/group data loads — never withhold the frame until ready
+(that causes header/layout pop-in on group chat).
+
 ### Safe areas and system chrome blending
 
-- Paint `html` / `body` / `#root` with `surface.canvas` so status bar and home
-  indicator gutters match the app, not a white letterbox.
+- Paint `html` / `body` with `surface.raised` (Safari accessory / overscroll);
+  `#root` / shell with `surface.canvas` for the content plane.
 - Extend UI under safe areas; pad **chrome** (headers, composer, fixed banners,
   drawer footers) with `env(safe-area-inset-*)` — do not double-subtract insets
   from both body padding and shell height.
-- `theme-color`, manifest `theme_color`, and `background_color` track canvas
+- `theme-color`, manifest `theme_color`, and `background_color` track **raised**
   (light + dark). Sync `theme-color` when the in-app color mode changes.
   Tests: Playwright `a11y-home` (both modes via localStorage) + `theme-modes`
   (sidebar toggle); Maestro keyboard flows screenshot light then dark in one run.
@@ -173,8 +208,7 @@ Implementation: `index.html` (geometry + `html.standalone`),
 - Every overlay has an obvious dismiss (X and/or Cancel). Overlay tap and Esc
   remain available unless a flow intentionally requires an explicit choice —
   still keep Cancel.
-- Content sheets use `QuickModal` (modal ≥ md, drawer on mobile). Mobile
-  drawers support drag-to-dismiss (placement-aware) via framer-motion.
+- Content sheets use `QuickModal` (modal ≥ md, drawer on mobile).
 - Confirmations use the **same** mobile drawer shell as `QuickModal`, not a
   centered desktop modal on phones.
 
@@ -182,8 +216,8 @@ Implementation: `index.html` (geometry + `html.standalone`),
 
 - **Desktop (md+):** Chakra `Menu` popovers are fine for short action lists.
 - **Mobile:** short action lists → floating **action sheet** (inset from edges,
-  fully rounded corners; group options open from the **top** under the title);
-  longer navigational lists (groups in the avatar menu) → floating bottom
+  fully rounded corners; room options open from the **top** under the title);
+  longer navigational lists (rooms in the avatar menu) → floating bottom
   sheet. Do not leave dense nav lists in floating popovers on small screens.
-- On group pages, the **title is the options control** (name + chevron) — no
+- On room pages, the **title is the options control** (name + chevron) — no
   separate ⋯ button.

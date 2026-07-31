@@ -10,7 +10,7 @@ const OPTIONS: { value: NotifyLevel; label: string; hint: string }[] = [
     label: 'Announcements only',
     hint: 'Important updates only (coming soon)',
   },
-  { value: 'none', label: 'None', hint: 'Silence this group' },
+  { value: 'none', label: 'None', hint: 'Silence this room' },
 ];
 
 export type NotifyLevelControlProps = {
@@ -24,7 +24,7 @@ export type NotifyLevelControlProps = {
 export const NotifyLevelControl: React.FC<NotifyLevelControlProps> = ({
   value,
   onChange,
-  label = 'Notifications for this group',
+  label = 'Notifications for this room',
 }) => {
   return (
     <UI.FormControl>

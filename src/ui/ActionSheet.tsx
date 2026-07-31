@@ -89,8 +89,6 @@ const ActionSheetRow: React.FC<{
       color={color}
       isDisabled={item.isDisabled}
       leftIcon={item.icon ? <Icon icon={item.icon} /> : undefined}
-      // Framer-motion sheet drag steals taps without this.
-      onPointerDown={(e) => e.stopPropagation()}
       onClick={() => {
         item.onClick?.();
         onClose();
@@ -125,7 +123,6 @@ const ActionSheetRouteRow: React.FC<{
       bg={isActive ? 'nav.selected' : undefined}
       isDisabled={item.isDisabled}
       leftIcon={item.icon ? <Icon icon={item.icon} /> : undefined}
-      onPointerDown={(e) => e.stopPropagation()}
       onClick={onClose}
       textDecoration="none"
       _hover={{ textDecoration: 'none' }}

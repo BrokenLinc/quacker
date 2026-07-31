@@ -4,6 +4,15 @@ import { isStandaloneDisplay } from './standalone';
 export const CANVAS_LIGHT = '#FAF9FC';
 export const CANVAS_DARK = '#221D33';
 
+/**
+ * Matches `surface.raised` → white / gray.800.
+ * Used for `html`/`body` (and theme-color) so iOS Safari’s keyboard accessory
+ * bar / overscroll match composer + header chrome — those UA chrome strips
+ * sample the document background, not `#root`.
+ */
+export const RAISED_LIGHT = '#FFFFFF';
+export const RAISED_DARK = '#302A44';
+
 /** Layout vs visual height delta above this ⇒ candidate soft keyboard. */
 export const KEYBOARD_OPEN_THRESHOLD_PX = 120;
 
@@ -12,6 +21,10 @@ export const COMPOSER_PADDING_CLOSED =
 
 export function canvasColorForMode(mode: 'light' | 'dark'): string {
   return mode === 'dark' ? CANVAS_DARK : CANVAS_LIGHT;
+}
+
+export function raisedColorForMode(mode: 'light' | 'dark'): string {
+  return mode === 'dark' ? RAISED_DARK : RAISED_LIGHT;
 }
 
 /**

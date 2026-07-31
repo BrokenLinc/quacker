@@ -1,13 +1,13 @@
 {
   "name": "Yowl",
   "short_name": "Yowl",
-  "description": "Ad-hoc group chat for trips and conferences",
+  "description": "Ad-hoc room chat for trips and conferences",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
-  "background_color": "#FAF9FC",
-  "theme_color": "#FAF9FC",
+  "background_color": "#FFFFFF",
+  "theme_color": "#FFFFFF",
   "icons": [
     {
       "src": "/icons/icon-192.png",

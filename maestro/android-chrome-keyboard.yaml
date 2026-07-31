@@ -10,15 +10,15 @@ androidWebViewHierarchy: devtools
     file: android-chrome-open.yaml
 - runFlow:
     file: shared/ensure-signed-in.yaml
-- assertVisible: "Your groups"
-- tapOn: "New group"
+- assertVisible: "Your rooms"
+- tapOn: "New room"
 - extendedWaitUntil:
-    visible: "Group name"
+    visible: "Room name"
     timeout: 10000
-- tapOn: "Group name"
+- tapOn: "Room name"
 - eraseText
 - inputText: "Android Keyboard Lab"
-- tapOn: "Create group"
+- tapOn: "Create room"
 - extendedWaitUntil:
     visible: "Say hi — this is the start of Android Keyboard Lab"
     timeout: 20000

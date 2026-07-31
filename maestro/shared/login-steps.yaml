@@ -31,5 +31,5 @@ appId: ${APP_ID}
     commands:
       - tapOn: "Verify"
 - extendedWaitUntil:
-    visible: "Your groups"
+    visible: "Your rooms"
     timeout: 20000

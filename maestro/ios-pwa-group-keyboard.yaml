@@ -26,11 +26,11 @@ appId: ${APP_ID}
     commands:
       - tapOn: "Yowl"
       - extendedWaitUntil:
-          visible: ".*Sign in to Yowl|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          visible: ".*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
           timeout: 45000
 - runFlow:
     when:
-      notVisible: ".*Sign in to Yowl|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+      notVisible: ".*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
     commands:
       - launchApp
       - openLink: ${APP_URL}
@@ -45,7 +45,7 @@ appId: ${APP_ID}
           commands:
             - tapOn: "Dismiss install prompt"
       - extendedWaitUntil:
-          visible: ".*Sign in to Yowl|Your groups.*"
+          visible: ".*Sign in to Yowl|Your rooms.*"
           timeout: 20000
       - tapOn: "More"
       - tapOn:
@@ -84,7 +84,7 @@ appId: ${APP_ID}
           timeout: 20000
       - tapOn: "Yowl"
       - extendedWaitUntil:
-          visible: ".*Sign in to Yowl|Your groups|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          visible: ".*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
           timeout: 45000
 # Dismiss leftover Account sheet from a prior interrupted run.
 - runFlow:
@@ -118,17 +118,17 @@ appId: ${APP_ID}
       visible: "Sign in to Yowl"
     file: shared/login-steps.yaml
 - extendedWaitUntil:
-    visible: "Your groups"
+    visible: "Your rooms"
     timeout: 20000
 # --- Group + keyboard light then dark ---
-- tapOn: "New group"
+- tapOn: "New room"
 - extendedWaitUntil:
-    visible: "Group name"
+    visible: "Room name"
     timeout: 10000
 - tapOn: "WWDC hallway chat"
 - eraseText
 - inputText: "PWA Keyboard Lab"
-- tapOn: "Create group"
+- tapOn: "Create room"
 - extendedWaitUntil:
     visible: "Say hi — this is the start of PWA Keyboard Lab"
     timeout: 20000

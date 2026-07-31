@@ -1,18 +1,21 @@
 import { useColorMode } from '@chakra-ui/react';
 import React from 'react';
 
-import { canvasColorForMode } from './canvasColors';
+import { canvasColorForMode, raisedColorForMode } from './canvasColors';
 
 /**
- * Syncs the primary `theme-color` meta (and document background) with the
- * in-app color mode so system chrome matches `surface.canvas` even when the
- * user overrides prefers-color-scheme.
+ * Syncs theme-color + document backgrounds with in-app color mode.
+ *
+ * - `html`/`body` → `surface.raised` so iOS Safari keyboard accessory /
+ *   overscroll match composer & header chrome (UA samples document bg).
+ * - `#root` → `surface.canvas` for the app content plane.
  */
 export function useThemeColorMeta(): void {
   const { colorMode } = useColorMode();
 
   React.useEffect(() => {
-    const color = canvasColorForMode(colorMode);
+    const raised = raisedColorForMode(colorMode);
+    const canvas = canvasColorForMode(colorMode);
     let meta = document.querySelector(
       'meta[name="theme-color"]:not([media])'
     ) as HTMLMetaElement | null;
@@ -22,10 +25,12 @@ export function useThemeColorMeta(): void {
       meta.name = 'theme-color';
       document.head.appendChild(meta);
     }
-    meta.content = color;
+    meta.content = raised;
 
-    document.documentElement.style.backgroundColor = color;
-    document.body.style.backgroundColor = color;
+    document.documentElement.style.backgroundColor = raised;
+    document.body.style.backgroundColor = raised;
+    const root = document.getElementById('root');
+    if (root) root.style.backgroundColor = canvas;
     // Match iOS system keyboard / form controls to in-app mode.
     document.documentElement.style.colorScheme = colorMode;
   }, [colorMode]);

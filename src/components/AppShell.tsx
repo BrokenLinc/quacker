@@ -176,14 +176,14 @@ const SidebarGroupNav: React.FC = () => {
   if (error) {
     return (
       <UI.Text fontSize="sm" color="text.muted" px={2} py={1}>
-        Couldn't load groups.
+        Couldn't load rooms.
       </UI.Text>
     );
   }
   if (!groups?.length) {
     return (
       <UI.Text fontSize="sm" color="text.muted" px={2} py={1}>
-        No groups yet
+        No rooms yet
       </UI.Text>
     );
   }

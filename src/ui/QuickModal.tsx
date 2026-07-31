@@ -1,5 +1,4 @@
 import * as UI from '@chakra-ui/react';
-import { motion, PanInfo, useAnimation } from 'framer-motion';
 import React from 'react';
 
 export type QuickModalProps = UI.ModalProps & {
@@ -24,9 +23,6 @@ const modalOnlyProps = new Set([
   'variant',
   'motionPreset',
 ] satisfies (keyof UI.ModalProps)[]);
-
-const DRAG_CLOSE_FRACTION = 0.4;
-const DRAG_VELOCITY_THRESHOLD = 500;
 
 function mapModalSizeToDrawerSize(
   size: UI.ModalProps['size']
@@ -119,115 +115,6 @@ const floatingDrawerContentSx = (
   };
 };
 
-function isScrollableOverflow(el: HTMLElement): boolean {
-  const { overflowY } = window.getComputedStyle(el);
-  return (
-    (overflowY === 'auto' || overflowY === 'scroll') &&
-    el.scrollHeight > el.clientHeight + 1
-  );
-}
-
-/**
- * Allow sheet drag only when the gesture is not fighting an inner scroller
- * (or the scroller is already at the edge in the dismiss direction).
- */
-function canStartSheetDrag(
-  target: EventTarget | null,
-  dismissDirection: 'up' | 'down'
-): boolean {
-  if (!(target instanceof Element)) return true;
-  let node: HTMLElement | null =
-    target instanceof HTMLElement ? target : target.parentElement;
-  while (node) {
-    if (isScrollableOverflow(node)) {
-      if (dismissDirection === 'down') {
-        return node.scrollTop <= 0;
-      }
-      return node.scrollTop + node.clientHeight >= node.scrollHeight - 1;
-    }
-    if (node.dataset.sheetRoot === 'true') break;
-    node = node.parentElement;
-  }
-  return true;
-}
-
-const MotionDrawerContent = motion(UI.DrawerContent);
-
-const SwipeableDrawerContent: React.FC<{
-  placement: UI.DrawerProps['placement'];
-  floating: boolean;
-  onClose: () => void;
-  children: React.ReactNode;
-}> = ({ placement, floating, onClose, children }) => {
-  const controls = useAnimation();
-  const dismissDirection: 'up' | 'down' =
-    placement === 'top' ? 'up' : 'down';
-  const allowDragRef = React.useRef(true);
-
-  const onDragEnd = (
-    e: MouseEvent | TouchEvent | PointerEvent,
-    info: PanInfo
-  ) => {
-    if (!allowDragRef.current) {
-      void controls.start({ y: 0 });
-      return;
-    }
-    const el = e.currentTarget as HTMLElement | null;
-    const height = el?.offsetHeight ?? 300;
-    const { offset, velocity } = info;
-    const draggedFarEnough =
-      dismissDirection === 'down'
-        ? offset.y > height * DRAG_CLOSE_FRACTION
-        : offset.y < -height * DRAG_CLOSE_FRACTION;
-    const flicked =
-      dismissDirection === 'down'
-        ? velocity.y > DRAG_VELOCITY_THRESHOLD
-        : velocity.y < -DRAG_VELOCITY_THRESHOLD;
-
-    if (draggedFarEnough || flicked) {
-      onClose();
-      return;
-    }
-    void controls.start({ y: 0 });
-  };
-
-  return (
-    <MotionDrawerContent
-      data-sheet-root="true"
-      borderTopRadius={floating ? undefined : 'xl'}
-      sx={floating ? floatingDrawerContentSx(placement) : undefined}
-      drag="y"
-      dragConstraints={{ top: 0, bottom: 0 }}
-      dragElastic={0.2}
-      dragDirectionLock
-      animate={controls}
-      initial={{ y: 0 }}
-      onDragStart={(e) => {
-        allowDragRef.current = canStartSheetDrag(e.target, dismissDirection);
-        if (!allowDragRef.current) {
-          void controls.set({ y: 0 });
-        }
-      }}
-      onDrag={(_e, info) => {
-        if (!allowDragRef.current) {
-          void controls.set({ y: 0 });
-          return;
-        }
-        // Only allow drag toward dismiss direction.
-        if (dismissDirection === 'down' && info.offset.y < 0) {
-          void controls.set({ y: 0 });
-        }
-        if (dismissDirection === 'up' && info.offset.y > 0) {
-          void controls.set({ y: 0 });
-        }
-      }}
-      onDragEnd={onDragEnd}
-    >
-      {children}
-    </MotionDrawerContent>
-  );
-};
-
 export const QuickModal: React.FC<QuickModalProps> = ({
   headerContent,
   footerContent,
@@ -246,15 +133,13 @@ export const QuickModal: React.FC<QuickModalProps> = ({
 
   if (shell === 'drawer') {
     const drawerProps = pickDrawerProps(disclosureProps, mobilePlacement);
-    const handleClose = onClose ?? (() => undefined);
 
     return (
       <UI.Drawer {...drawerProps}>
         <UI.DrawerOverlay />
-        <SwipeableDrawerContent
-          placement={mobilePlacement}
-          floating={floating}
-          onClose={handleClose}
+        <UI.DrawerContent
+          borderTopRadius={floating ? undefined : 'xl'}
+          sx={floating ? floatingDrawerContentSx(mobilePlacement) : undefined}
         >
           <UI.DrawerHeader>
             {headerContent ? headerContent : null}
@@ -264,7 +149,7 @@ export const QuickModal: React.FC<QuickModalProps> = ({
           {footerContent ? (
             <UI.DrawerFooter>{footerContent}</UI.DrawerFooter>
           ) : null}
-        </SwipeableDrawerContent>
+        </UI.DrawerContent>
       </UI.Drawer>
     );
   }

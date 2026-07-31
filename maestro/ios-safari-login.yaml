@@ -14,12 +14,12 @@ appId: ${APP_ID}
     commands:
       - tapOn: "Close"
 - extendedWaitUntil:
-    visible: ".*Sign in to Yowl|Your groups.*"
+    visible: ".*Sign in to Yowl|Your rooms.*"
     timeout: 20000
 # Clear a leftover session so this flow always exercises OTP.
 - runFlow:
     when:
-      visible: "Your groups"
+      visible: "Your rooms"
     commands:
       - tapOn: "Account menu"
       - tapOn: "Log out"
@@ -28,4 +28,4 @@ appId: ${APP_ID}
           timeout: 15000
 - runFlow:
     file: shared/login-steps.yaml
-- assertVisible: "Your groups"
+- assertVisible: "Your rooms"
