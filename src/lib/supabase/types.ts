@@ -58,6 +58,41 @@ export type Database = {
           },
         ];
       };
+      group_silences: {
+        Row: {
+          created_at: string;
+          display_name: string | null;
+          group_id: string;
+          photo_url: string | null;
+          silenced_by: string | null;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          display_name?: string | null;
+          group_id: string;
+          photo_url?: string | null;
+          silenced_by?: string | null;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          display_name?: string | null;
+          group_id?: string;
+          photo_url?: string | null;
+          silenced_by?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'group_silences_group_id_fkey';
+            columns: ['group_id'];
+            isOneToOne: false;
+            referencedRelation: 'groups';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       groups: {
         Row: {
           author_name: string | null;
@@ -190,6 +225,11 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      is_group_staff: { Args: { gid: string }; Returns: boolean };
+      is_silenced_in_group: {
+        Args: { gid: string; uid: string };
+        Returns: boolean;
+      };
       unread_message_counts: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -199,7 +239,7 @@ export type Database = {
       };
     };
     Enums: {
-      group_role: 'creator' | 'member';
+      group_role: 'creator' | 'mod' | 'member';
       notify_level: 'all' | 'announcements' | 'none';
     };
     CompositeTypes: {
@@ -331,7 +371,7 @@ export type CompositeTypes<
 export const Constants = {
   public: {
     Enums: {
-      group_role: ['creator', 'member'],
+      group_role: ['creator', 'mod', 'member'],
       notify_level: ['all', 'announcements', 'none'],
     },
   },
@@ -341,3 +381,5 @@ export type GroupRow = Database['public']['Tables']['groups']['Row'];
 export type MessageRow = Database['public']['Tables']['messages']['Row'];
 export type GroupMemberRow =
   Database['public']['Tables']['group_members']['Row'];
+export type GroupSilenceRow =
+  Database['public']['Tables']['group_silences']['Row'];

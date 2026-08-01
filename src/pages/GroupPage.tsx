@@ -11,16 +11,23 @@ import {
   joinGroup,
   leaveGroup,
   markGroupViewed,
-  removeGroupMember,
+  setMemberMod,
+  setMemberSilenced,
   updateGroup,
   useGroup,
   useGroupMembers,
   useGroupMessages,
+  useGroupSilences,
 } from '@@api';
 import { RequireAuth } from '@@components/auth/RequireAuth';
 import { NotificationsSwitch } from '@@components/NotificationsSwitch';
 import { NotifyLevelControl } from '@@components/NotifyLevelControl';
 import { notifyLevelLabel } from '@@lib/notifications/notifyLevel';
+import {
+  canManageMember,
+  isStaffRole,
+  type GroupMemberRole,
+} from '@@lib/moderation/memberPermissions';
 import { UserAvatar } from '@@components/UserAvatar';
 import { UserMenu } from '@@components/UserMenu';
 import { useConfirmation } from '@@dialogs/confirmation';
@@ -41,7 +48,6 @@ import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
 import {
   faArrowLeft,
-  faBan,
   faBell,
   faCheck,
   faComments,
@@ -397,6 +403,7 @@ const GroupOverflowMenu: React.FC<{
   const navigate = useNavigate();
   const [members] = useGroupMembers(group.id, { channelId: 'overflow' });
   const myMember = members?.find((m) => m.uid === user.uid);
+  const isStaff = isStaffRole(myMember?.role ?? null, isCreator);
   const notifyLevel = myMember?.notifyLevel ?? 'all';
   const [pushEnabled] = usePushEnabled(user.uid);
 
@@ -507,7 +514,7 @@ const GroupOverflowMenu: React.FC<{
               }
               onClick={() => runAndClose(notifyModal.onOpen)}
             />
-            {isCreator ? (
+            {isStaff ? (
               <UI.PopoverMenuRow
                 icon={faPenToSquare}
                 label="Rename room"
@@ -595,11 +602,17 @@ const MembersList: React.FC<{ group: Group; user: AppUser }> = ({
   const [members, loading, error] = useGroupMembers(group.id, {
     channelId: 'members-list',
   });
-  const confirmation = useConfirmation();
-  const toast = UI.useToast();
+  const [silences, silencesLoading] = useGroupSilences(group.id, {
+    channelId: 'members-list-silences',
+  });
   const isCreator = group.uid === user.uid;
+  const myMember = members?.find((m) => m.uid === user.uid);
+  const actorIsStaff = isStaffRole(myMember?.role ?? null, isCreator);
+  const silencedUids = new Set((silences ?? []).map((s) => s.uid));
+  const memberUids = new Set((members ?? []).map((m) => m.uid));
+  const silencedLeavers = (silences ?? []).filter((s) => !memberUids.has(s.uid));
 
-  if (loading) {
+  if (loading || silencesLoading) {
     return (
       <UI.VStack align="stretch" spacing={3}>
         <UI.Skeleton h={8} borderRadius="md" />
@@ -611,62 +624,185 @@ const MembersList: React.FC<{ group: Group; user: AppUser }> = ({
     return <UI.ErrorState title="Couldn't load members" py={4} />;
   }
 
-  const handleBan = (memberUid: string, memberName: string) => {
-    confirmation.open({
-      title: `Ban ${memberName}?`,
-      message: 'They can rejoin with an invite link.',
-      confirmLabel: 'Ban',
-      isDestructive: true,
-      onConfirm: async () => {
-        try {
-          await removeGroupMember(group.id, memberUid);
-        } catch {
-          toast({ title: "Couldn't ban member", status: 'error' });
-        }
-      },
-      onCancel: () => undefined,
-    });
-  };
+  return (
+    <UI.VStack align="stretch" spacing={4}>
+      <UI.VStack align="stretch" spacing={1}>
+        {members?.map((member) => {
+          const name =
+            member.uid === user.uid
+              ? user.displayName || 'You'
+              : member.displayName || 'Member';
+          const isSilenced = silencedUids.has(member.uid);
+          return (
+            <MemberRosterRow
+              key={member.uid}
+              group={group}
+              user={user}
+              uid={member.uid}
+              name={name}
+              photoURL={member.photoURL}
+              phoneLast4={member.phoneLast4}
+              joinedAt={member.joinedAt}
+              role={member.role}
+              isOwn={member.uid === user.uid}
+              isSilenced={isSilenced}
+              targetIsMember
+              actorRole={myMember?.role ?? null}
+            />
+          );
+        })}
+      </UI.VStack>
+      {actorIsStaff && silencedLeavers.length > 0 ? (
+        <UI.VStack align="stretch" spacing={1}>
+          <UI.Text
+            fontSize="xs"
+            fontWeight="semibold"
+            color="text.muted"
+            textTransform="uppercase"
+            letterSpacing="wide"
+            px={1}
+          >
+            Silenced
+          </UI.Text>
+          {silencedLeavers.map((silence) => {
+            const name = silence.displayName || 'Member';
+            return (
+              <MemberRosterRow
+                key={`silence-${silence.uid}`}
+                group={group}
+                user={user}
+                uid={silence.uid}
+                name={name}
+                photoURL={silence.photoURL}
+                phoneLast4={null}
+                joinedAt={null}
+                role={null}
+                isOwn={false}
+                isSilenced
+                targetIsMember={false}
+                actorRole={myMember?.role ?? null}
+              />
+            );
+          })}
+        </UI.VStack>
+      ) : null}
+    </UI.VStack>
+  );
+};
+
+const MemberRosterRow: React.FC<{
+  group: Group;
+  user: AppUser;
+  uid: string;
+  name: string;
+  photoURL: string | null;
+  phoneLast4: string | null;
+  joinedAt: number | null;
+  role: GroupMemberRole | null;
+  isOwn: boolean;
+  isSilenced: boolean;
+  targetIsMember: boolean;
+  actorRole: GroupMemberRole | null;
+}> = ({
+  group,
+  user,
+  uid,
+  name,
+  photoURL,
+  phoneLast4,
+  joinedAt,
+  role,
+  isOwn,
+  isSilenced,
+  targetIsMember,
+  actorRole,
+}) => {
+  const [profileOpen, setProfileOpen] = React.useState(false);
+  const profileLabel = `View ${name}'s profile`;
+  const perms = canManageMember({
+    actorUid: user.uid,
+    actorRole,
+    actorIsCreator: group.uid === user.uid,
+    targetUid: uid,
+    targetRole: role,
+    isCreatorTarget: uid === group.uid,
+    targetIsMember,
+  });
 
   return (
-    <UI.VStack align="stretch" spacing={1}>
-      {members?.map((member) => {
-        const name =
-          member.uid === user.uid
-            ? user.displayName || 'You'
-            : member.displayName || 'Member';
-        return (
-          <UI.HStack key={member.uid} py={1.5} spacing={3}>
-            <UserAvatar
-              name={name}
-              seed={member.uid}
-              photoURL={member.photoURL}
-              size="sm"
-            />
-            <UI.Text fontSize="sm" fontWeight="medium" noOfLines={1}>
-              {name}
-              {member.uid === user.uid ? ' (you)' : ''}
-            </UI.Text>
-            {member.role === 'creator' ? (
-              <UI.Badge colorScheme="gray" fontSize="2xs">
-                creator
-              </UI.Badge>
-            ) : null}
-            {isCreator && member.uid !== user.uid ? (
-              <UI.IconButton
-                aria-label={`Ban ${name}`}
-                icon={faBan}
-                size="xs"
-                variant="ghost"
-                color="red.500"
-                ml="auto"
-                onClick={() => handleBan(member.uid, name)}
-              />
-            ) : null}
-          </UI.HStack>
-        );
-      })}
-    </UI.VStack>
+    <UI.HStack py={1.5} spacing={3} minW={0}>
+      <UI.MorphingPopover
+        open={profileOpen}
+        onOpenChange={setProfileOpen}
+        anchor="top left"
+        flexShrink={0}
+      >
+        <UI.MorphingPopoverTrigger
+          aria-label={profileLabel}
+          borderRadius="full"
+        >
+          <UserAvatar
+            name={name}
+            seed={uid}
+            photoURL={photoURL}
+            size="sm"
+            cursor="pointer"
+          />
+        </UI.MorphingPopoverTrigger>
+        <UI.MorphingPopoverContent aria-label={profileLabel}>
+          <MemberProfileBody
+            groupId={group.id}
+            name={name}
+            uid={uid}
+            photoURL={photoURL}
+            phoneLast4={phoneLast4}
+            joinedAt={joinedAt}
+            role={role}
+            isOwn={isOwn}
+            isSilenced={isSilenced}
+            targetIsMember={targetIsMember}
+            canSilence={perms.canSilence}
+            canToggleMod={perms.canToggleMod}
+          />
+        </UI.MorphingPopoverContent>
+      </UI.MorphingPopover>
+      <UI.Button
+        variant="link"
+        color="inherit"
+        fontSize="sm"
+        fontWeight="medium"
+        h="auto"
+        minW={0}
+        maxW="100%"
+        p={0}
+        textDecoration="none"
+        _hover={{ textDecoration: 'underline' }}
+        onClick={() => setProfileOpen(true)}
+        aria-label={profileLabel}
+      >
+        <UI.Text as="span" noOfLines={1}>
+          {name}
+          {isOwn ? ' (you)' : ''}
+        </UI.Text>
+      </UI.Button>
+      <UI.HStack spacing={1} flexShrink={0} ml="auto">
+        {role === 'creator' ? (
+          <UI.Badge colorScheme="gray" fontSize="2xs">
+            creator
+          </UI.Badge>
+        ) : null}
+        {role === 'mod' ? (
+          <UI.Badge colorScheme="purple" fontSize="2xs">
+            mod
+          </UI.Badge>
+        ) : null}
+        {isSilenced ? (
+          <UI.Badge colorScheme="orange" fontSize="2xs">
+            silenced
+          </UI.Badge>
+        ) : null}
+      </UI.HStack>
+    </UI.HStack>
   );
 };
 
@@ -883,7 +1019,7 @@ type MemberProfile = {
   photoURL: string | null;
   phoneLast4: string | null;
   joinedAt: number | null;
-  role: 'creator' | 'member' | null;
+  role: GroupMemberRole | null;
 };
 
 const GroupChat: React.FC<{
@@ -893,7 +1029,15 @@ const GroupChat: React.FC<{
 }> = ({ groupId, group, user }) => {
   const [messages, loading, error] = useGroupMessages(groupId, { limit: 100 });
   const [members] = useGroupMembers(groupId, { channelId: 'chat' });
+  const [silences] = useGroupSilences(groupId, { channelId: 'chat-silences' });
   const [pendingMessages, setPendingMessages] = React.useState<ChatItem[]>([]);
+
+  const silencedUids = React.useMemo(
+    () => new Set((silences ?? []).map((s) => s.uid)),
+    [silences]
+  );
+  const iAmSilenced = silencedUids.has(user.uid);
+  const myMember = members?.find((m) => m.uid === user.uid);
 
   const memberByUid = (() => {
     const map = new Map<string, MemberProfile>();
@@ -985,8 +1129,10 @@ const GroupChat: React.FC<{
         error={error}
         groupName={group.name}
         groupId={groupId}
+        groupCreatorId={group.uid}
         currentUid={user.uid}
-        isRoomCreator={group.uid === user.uid}
+        actorRole={myMember?.role ?? null}
+        silencedUids={silencedUids}
         memberByUid={memberByUid}
       />
       <UI.Box
@@ -999,7 +1145,7 @@ const GroupChat: React.FC<{
         bg="surface.raised"
       >
         <UI.Box maxW="760px" mx="auto">
-          <Composer onSend={sendMessage} />
+          <Composer onSend={sendMessage} isSilenced={iAmSilenced} />
         </UI.Box>
       </UI.Box>
     </React.Fragment>
@@ -1012,8 +1158,10 @@ const ChatScrollArea: React.FC<{
   error: Error | undefined;
   groupName: string;
   groupId: string;
+  groupCreatorId: string;
   currentUid: string;
-  isRoomCreator: boolean;
+  actorRole: GroupMemberRole | null;
+  silencedUids: Set<string>;
   memberByUid: Map<string, MemberProfile>;
 }> = ({
   items,
@@ -1021,8 +1169,10 @@ const ChatScrollArea: React.FC<{
   error,
   groupName,
   groupId,
+  groupCreatorId,
   currentUid,
-  isRoomCreator,
+  actorRole,
+  silencedUids,
   memberByUid,
 }) => {
   const scrollRef = React.useRef<HTMLDivElement>(null);
@@ -1138,8 +1288,12 @@ const ChatScrollArea: React.FC<{
                 message={message}
                 grouped={grouped}
                 isOwn={message.uid === currentUid}
-                canBan={isRoomCreator && message.uid !== currentUid}
                 groupId={groupId}
+                groupCreatorId={groupCreatorId}
+                currentUid={currentUid}
+                actorRole={actorRole}
+                isSilenced={silencedUids.has(message.uid)}
+                targetIsMember={memberByUid.has(message.uid)}
                 liveDisplayName={member?.displayName ?? message.authorName}
                 livePhotoURL={member?.photoURL ?? message.authorPhotoURL}
                 phoneLast4={member?.phoneLast4 ?? null}
@@ -1173,19 +1327,27 @@ export const MessageRow: React.FC<{
   message: ChatItem;
   grouped: boolean;
   isOwn: boolean;
-  canBan?: boolean;
   groupId?: string;
+  groupCreatorId?: string;
+  currentUid?: string;
+  actorRole?: GroupMemberRole | null;
+  isSilenced?: boolean;
+  targetIsMember?: boolean;
   liveDisplayName?: string | null;
   livePhotoURL?: string | null;
   phoneLast4?: string | null;
   joinedAt?: number | null;
-  role?: 'creator' | 'member' | null;
+  role?: GroupMemberRole | null;
 }> = ({
   message,
   grouped,
   isOwn,
-  canBan = false,
   groupId,
+  groupCreatorId,
+  currentUid,
+  actorRole = null,
+  isSilenced = false,
+  targetIsMember = true,
   liveDisplayName,
   livePhotoURL,
   phoneLast4,
@@ -1193,31 +1355,23 @@ export const MessageRow: React.FC<{
   role,
 }) => {
   const [profileOpen, setProfileOpen] = React.useState(false);
-  const confirmation = useConfirmation();
-  const toast = UI.useToast();
   const displayName = liveDisplayName ?? message.authorName;
   const photoURL = livePhotoURL ?? message.authorPhotoURL;
   const name = formatAuthorLabel(displayName);
   const profileLabel = `View ${name}'s profile`;
 
-  const handleBan = () => {
-    setProfileOpen(false);
-    if (!groupId) return;
-    confirmation.open({
-      title: `Ban ${name}?`,
-      message: 'They can rejoin with an invite link.',
-      confirmLabel: 'Ban',
-      isDestructive: true,
-      onConfirm: async () => {
-        try {
-          await removeGroupMember(groupId, message.uid);
-        } catch {
-          toast({ title: "Couldn't ban member", status: 'error' });
-        }
-      },
-      onCancel: () => undefined,
-    });
-  };
+  const perms =
+    groupId && groupCreatorId && currentUid
+      ? canManageMember({
+          actorUid: currentUid,
+          actorRole,
+          actorIsCreator: currentUid === groupCreatorId,
+          targetUid: message.uid,
+          targetRole: role ?? null,
+          isCreatorTarget: message.uid === groupCreatorId,
+          targetIsMember,
+        })
+      : { canSilence: false, canToggleMod: false, canSelfUnmod: false };
 
   return (
     <UI.HStack
@@ -1261,6 +1415,7 @@ export const MessageRow: React.FC<{
           </UI.MorphingPopoverTrigger>
           <UI.MorphingPopoverContent aria-label={profileLabel}>
             <MemberProfileBody
+              groupId={groupId}
               name={name}
               uid={message.uid}
               photoURL={photoURL ?? null}
@@ -1268,8 +1423,10 @@ export const MessageRow: React.FC<{
               joinedAt={joinedAt ?? null}
               role={role ?? null}
               isOwn={isOwn}
-              canBan={canBan}
-              onBan={handleBan}
+              isSilenced={isSilenced}
+              targetIsMember={targetIsMember}
+              canSilence={perms.canSilence}
+              canToggleMod={perms.canToggleMod}
             />
           </UI.MorphingPopoverContent>
         </UI.MorphingPopover>
@@ -1308,16 +1465,20 @@ export const MessageRow: React.FC<{
 };
 
 const MemberProfileBody: React.FC<{
+  groupId?: string;
   name: string;
   uid: string;
   photoURL: string | null;
   phoneLast4: string | null;
   joinedAt: number | null;
-  role: 'creator' | 'member' | null;
+  role: GroupMemberRole | null;
   isOwn: boolean;
-  canBan?: boolean;
-  onBan?: () => void;
+  isSilenced: boolean;
+  targetIsMember: boolean;
+  canSilence: boolean;
+  canToggleMod: boolean;
 }> = ({
+  groupId,
   name,
   uid,
   photoURL,
@@ -1325,53 +1486,158 @@ const MemberProfileBody: React.FC<{
   joinedAt,
   role,
   isOwn,
-  canBan,
-  onBan,
-}) => (
-  <UI.Box>
-    <UI.VStack spacing={2} align="center" textAlign="center" px={4} py={4}>
-      <UserAvatar name={name} seed={uid} photoURL={photoURL} size="lg" />
-      <UI.Heading size="md" noOfLines={2}>
-        {name}
-        {isOwn ? ' (you)' : ''}
-      </UI.Heading>
-      {phoneLast4 ? (
-        <UI.Text fontSize="xs" color="text.muted" letterSpacing="wide">
-          ···{phoneLast4}
-        </UI.Text>
+  isSilenced,
+  canSilence,
+  canToggleMod,
+}) => {
+  const toast = UI.useToast();
+  const [silenceBusy, setSilenceBusy] = React.useState(false);
+  const [modBusy, setModBusy] = React.useState(false);
+  const [silenceChecked, setSilenceChecked] = React.useState(isSilenced);
+  const [modChecked, setModChecked] = React.useState(role === 'mod');
+
+  React.useEffect(() => {
+    setSilenceChecked(isSilenced);
+  }, [isSilenced]);
+
+  React.useEffect(() => {
+    setModChecked(role === 'mod');
+  }, [role]);
+
+  const onSilenceChange = async (next: boolean) => {
+    if (!groupId || silenceBusy) return;
+    const prev = silenceChecked;
+    setSilenceChecked(next);
+    setSilenceBusy(true);
+    try {
+      await setMemberSilenced(groupId, uid, next, {
+        displayName: name === 'You' ? null : name,
+        photoURL,
+      });
+    } catch {
+      setSilenceChecked(prev);
+      toast({
+        title: next ? "Couldn't silence member" : "Couldn't remove silence",
+        status: 'error',
+      });
+    } finally {
+      setSilenceBusy(false);
+    }
+  };
+
+  const onModChange = async (next: boolean) => {
+    if (!groupId || modBusy) return;
+    const prev = modChecked;
+    setModChecked(next);
+    setModBusy(true);
+    try {
+      await setMemberMod(groupId, uid, next);
+    } catch {
+      setModChecked(prev);
+      toast({
+        title: next ? "Couldn't make mod" : "Couldn't remove mod",
+        status: 'error',
+      });
+    } finally {
+      setModBusy(false);
+    }
+  };
+
+  const showControls = canSilence || canToggleMod;
+
+  return (
+    <UI.Box>
+      <UI.VStack spacing={2} align="center" textAlign="center" px={4} py={4}>
+        <UserAvatar name={name} seed={uid} photoURL={photoURL} size="lg" />
+        <UI.Heading size="md" noOfLines={2}>
+          {name}
+          {isOwn ? ' (you)' : ''}
+        </UI.Heading>
+        {phoneLast4 ? (
+          <UI.Text fontSize="xs" color="text.muted" letterSpacing="wide">
+            ···{phoneLast4}
+          </UI.Text>
+        ) : null}
+        {role === 'creator' ? (
+          <UI.Text fontSize="sm" color="text.muted">
+            Room creator
+          </UI.Text>
+        ) : null}
+        {joinedAt ? (
+          <UI.Text fontSize="sm" color="text.muted">
+            Joined {formatJoinedAt(joinedAt)}
+          </UI.Text>
+        ) : null}
+      </UI.VStack>
+      {showControls ? (
+        <UI.VStack
+          align="stretch"
+          spacing={3}
+          px={4}
+          py={3}
+          borderTopWidth="1px"
+          borderColor="border.subtle"
+        >
+          {canSilence ? (
+            <UI.FormControl
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+            >
+              <UI.FormLabel mb={0} cursor="pointer">
+                <UI.Badge colorScheme="orange" fontSize="xs">
+                  Silenced
+                </UI.Badge>
+              </UI.FormLabel>
+              <UI.Switch
+                colorScheme="teal"
+                size="md"
+                isChecked={silenceChecked}
+                isDisabled={silenceBusy || !groupId}
+                onChange={(e) => void onSilenceChange(e.target.checked)}
+                aria-label={`Silence ${name}`}
+                data-testid="member-silence-switch"
+              />
+            </UI.FormControl>
+          ) : null}
+          {canToggleMod ? (
+            <UI.FormControl
+              display="flex"
+              alignItems="center"
+              justifyContent="space-between"
+            >
+              <UI.FormLabel mb={0} cursor="pointer">
+                <UI.Badge colorScheme="purple" fontSize="xs">
+                  Mod
+                </UI.Badge>
+              </UI.FormLabel>
+              <UI.Switch
+                colorScheme="teal"
+                size="md"
+                isChecked={modChecked}
+                isDisabled={modBusy || !groupId}
+                onChange={(e) => void onModChange(e.target.checked)}
+                aria-label={`Mod ${name}`}
+                data-testid="member-mod-switch"
+              />
+            </UI.FormControl>
+          ) : null}
+        </UI.VStack>
       ) : null}
-      {role === 'creator' ? (
-        <UI.Badge colorScheme="gray" fontSize="xs">
-          Room creator
-        </UI.Badge>
-      ) : null}
-      {joinedAt ? (
-        <UI.Text fontSize="sm" color="text.muted">
-          Joined {formatJoinedAt(joinedAt)}
-        </UI.Text>
-      ) : null}
-    </UI.VStack>
-    {canBan && onBan ? (
-      <UI.Box borderTopWidth="1px" borderColor="border.subtle">
-        <UI.PopoverMenuRow
-          icon={faBan}
-          label="Ban from room"
-          isDestructive
-          onClick={onBan}
-        />
-      </UI.Box>
-    ) : null}
-  </UI.Box>
-);
+    </UI.Box>
+  );
+};
 
 const MESSAGE_MAX_LENGTH = 140;
 
-const Composer: React.FC<{ onSend: (text: string) => Promise<void> }> = ({
-  onSend,
-}) => {
+const Composer: React.FC<{
+  onSend: (text: string) => Promise<void>;
+  isSilenced?: boolean;
+}> = ({ onSend, isSilenced = false }) => {
   const [text, setText] = React.useState('');
   const toast = UI.useToast();
-  const canSend = !!text.trim() && text.length <= MESSAGE_MAX_LENGTH;
+  const canSend =
+    !isSilenced && !!text.trim() && text.length <= MESSAGE_MAX_LENGTH;
 
   const handleSend = async () => {
     if (!canSend) return;
@@ -1389,6 +1655,24 @@ const Composer: React.FC<{ onSend: (text: string) => Promise<void> }> = ({
       });
     }
   };
+
+  if (isSilenced) {
+    return (
+      <UI.Box
+        px={3}
+        py={3}
+        borderRadius="md"
+        bg="surface.sunken"
+        borderWidth="1px"
+        borderColor="border.subtle"
+        data-testid="composer-silenced"
+      >
+        <UI.Text fontSize="sm" color="text.muted" textAlign="center">
+          You’re silenced in this room.
+        </UI.Text>
+      </UI.Box>
+    );
+  }
 
   return (
     <UI.Box position="relative">

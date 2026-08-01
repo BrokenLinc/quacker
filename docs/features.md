@@ -11,8 +11,10 @@ Quacker (code name) is a private, ad-hoc room chat for trips and conferences. It
 | Room list | Browse your rooms on home page |
 | Create room | Name a room; auto short slug for sharing |
 | Room chat | Markdown messages with live realtime feed; live author names; clock times + day dividers |
-| Membership | Explicit join on invite; all members can post |
-| Manage room | Creator can rename room |
+| Membership | Explicit join on invite; members can post unless silenced |
+| Manage room | Creator and mods can rename; creator can delete; mods/creator silence and mod |
+| Moderators | `role=mod` — rename, silence, mod/unmod (not delete room); self-unmod allowed |
+| Silence | Persistent mute via `group_silences` (survives leave/rejoin); composer blocked |
 | Share | Short URL `/g/:slug`, QR code, copy link, native share |
 | Chirp notifications | Tab title flash + sound when tab is backgrounded |
 | Unread chrome | Tab title `(N)` prefix + PWA icon badge from total unread across rooms |
@@ -25,12 +27,11 @@ Quacker (code name) is a private, ad-hoc room chat for trips and conferences. It
 - **SMS OTP** — enter phone, verify 6-digit code via Twilio Verify
 - **Sign-in UI** — header **Log in** opens a modal; protected pages show the same form inline until authenticated
 - Display name defaults to last 4 digits of phone (`···1234`)
-- Tap avatar/name in chat for a profile sheet (`···XXXX`, join date, creator badge)
+- Tap avatar/name in chat for a profile sheet (`···XXXX`, join date; staff get Silenced / Mod switches)
 - Onboarding asks for display name + optional notifications Switch (OS permission only after enable)
 - Gravatar module retained under `src/lib/avatars/gravatar.ts` for future email auth
 
 ## Deferred
 
 - Google OAuth
-- Permissions UI tab (roles beyond creator/member)
-- Announcement composer + special role (schema `is_announcement` + `notify_level=announcements` ready)
+- Announcement composer (schema `is_announcement` + `notify_level=announcements` ready; staff will post)

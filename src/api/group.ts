@@ -2,10 +2,12 @@ import { useCallback, useEffect, useId, useState } from 'react';
 
 import { supabase } from '@@lib/supabase/client';
 import type { NotifyLevel } from '@@lib/notifications/shouldNotify';
+import type { GroupMemberRole } from '@@lib/moderation/memberPermissions';
 import type {
   Database,
   GroupMemberRow,
   GroupRow,
+  GroupSilenceRow,
 } from '@@lib/supabase/types';
 import { generateSlug } from '@@lib/share';
 
@@ -25,12 +27,22 @@ export interface Group {
 export interface GroupMember {
   groupId: string;
   uid: string;
-  role: 'creator' | 'member';
+  role: GroupMemberRole;
   displayName: string | null;
   photoURL: string | null;
   phoneLast4: string | null;
   joinedAt: number;
   notifyLevel: NotifyLevel;
+}
+
+/** Persistent silence row (survives leave/rejoin). */
+export interface GroupSilence {
+  groupId: string;
+  uid: string;
+  displayName: string | null;
+  photoURL: string | null;
+  silencedBy: string | null;
+  createdAt: number;
 }
 
 const rowToGroup = (row: GroupRow): Group => ({
@@ -54,6 +66,15 @@ const rowToGroupMember = (row: GroupMemberRow): GroupMember => ({
   notifyLevel: row.notify_level ?? 'all',
 });
 
+const rowToGroupSilence = (row: GroupSilenceRow): GroupSilence => ({
+  groupId: row.group_id,
+  uid: row.user_id,
+  displayName: row.display_name,
+  photoURL: row.photo_url,
+  silencedBy: row.silenced_by,
+  createdAt: new Date(row.created_at).getTime(),
+});
+
 type HookResult<T> = [T | undefined, boolean, Error | undefined];
 
 /** Broadcast so every mounted useGroups refetches after local mutations. */
@@ -61,6 +82,9 @@ const GROUPS_CHANGED_EVENT = 'quacker:groups-changed';
 
 /** Broadcast so unread badge hooks refetch after mark-viewed / prefs. */
 const UNREAD_CHANGED_EVENT = 'quacker:unread-changed';
+
+/** Broadcast so silence hooks refetch after local mute toggles. */
+const SILENCES_CHANGED_EVENT = 'quacker:silences-changed';
 
 const notifyGroupsChanged = () => {
   if (typeof window !== 'undefined') {
@@ -71,6 +95,12 @@ const notifyGroupsChanged = () => {
 export const notifyUnreadChanged = () => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event(UNREAD_CHANGED_EVENT));
+  }
+};
+
+const notifySilencesChanged = () => {
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new Event(SILENCES_CHANGED_EVENT));
   }
 };
 
@@ -278,6 +308,59 @@ export const useGroupMembers = (
   return [members, loading, error];
 };
 
+export const useGroupSilences = (
+  groupId: string,
+  options?: { channelId?: string }
+): HookResult<GroupSilence[]> => {
+  const instanceId = useId();
+  const channelId = options?.channelId ?? instanceId;
+  const [silences, setSilences] = useState<GroupSilence[] | undefined>();
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | undefined>();
+
+  const fetchSilences = useCallback(async () => {
+    if (!groupId) return;
+    const { data, error: fetchError } = await supabase
+      .from('group_silences')
+      .select('*')
+      .eq('group_id', groupId)
+      .order('created_at', { ascending: true });
+
+    if (fetchError) setError(fetchError);
+    else setSilences(data?.map(rowToGroupSilence) ?? []);
+    setLoading(false);
+  }, [groupId]);
+
+  useEffect(() => {
+    if (!groupId) return;
+    fetchSilences();
+
+    const onLocalChange = () => fetchSilences();
+    window.addEventListener(SILENCES_CHANGED_EVENT, onLocalChange);
+
+    const channel = supabase
+      .channel(`group-silences:${groupId}:${channelId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'group_silences',
+          filter: `group_id=eq.${groupId}`,
+        },
+        () => fetchSilences()
+      )
+      .subscribe();
+
+    return () => {
+      window.removeEventListener(SILENCES_CHANGED_EVENT, onLocalChange);
+      supabase.removeChannel(channel);
+    };
+  }, [channelId, fetchSilences, groupId]);
+
+  return [silences, loading, error];
+};
+
 export const addGroup = async (data: {
   uid: string;
   authorName: string | null;
@@ -372,7 +455,49 @@ export const leaveGroup = async (groupId: string, userId: string) => {
   notifyGroupsChanged();
 };
 
-export const removeGroupMember = leaveGroup;
+export const setMemberSilenced = async (
+  groupId: string,
+  userId: string,
+  silenced: boolean,
+  profile?: { displayName?: string | null; photoURL?: string | null }
+) => {
+  if (silenced) {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const silencedBy = sessionData.session?.user.id ?? null;
+    const { error } = await supabase.from('group_silences').upsert(
+      {
+        group_id: groupId,
+        user_id: userId,
+        display_name: profile?.displayName ?? null,
+        photo_url: profile?.photoURL ?? null,
+        silenced_by: silencedBy,
+      },
+      { onConflict: 'group_id,user_id' }
+    );
+    if (error) throw error;
+  } else {
+    const { error } = await supabase
+      .from('group_silences')
+      .delete()
+      .eq('group_id', groupId)
+      .eq('user_id', userId);
+    if (error) throw error;
+  }
+  notifySilencesChanged();
+};
+
+export const setMemberMod = async (
+  groupId: string,
+  userId: string,
+  isMod: boolean
+) => {
+  const { error } = await supabase
+    .from('group_members')
+    .update({ role: isMod ? 'mod' : 'member' })
+    .eq('group_id', groupId)
+    .eq('user_id', userId);
+  if (error) throw error;
+};
 
 /** Sync denormalized member profile fields across all groups (after rename). */
 export const updateMyMemberProfile = async (

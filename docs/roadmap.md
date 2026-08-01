@@ -21,9 +21,8 @@
 
 ## Tier 3 — ideas
 
-- **Announcements** — flag messages + role that can announce (`is_announcement` placeholder shipped)
+- **Announcements** — flag messages; staff (creator/mod) can announce (`is_announcement` placeholder shipped)
 - **Quack Codes** — `!quack 42` filters notifications to subscribers with code 42
 - Live pin / broadcast chirp for "meet at lobby"
-- Permissions UI (roles beyond creator/member)
 - Message reactions
 - Ephemeral groups (auto-expire after N days)
