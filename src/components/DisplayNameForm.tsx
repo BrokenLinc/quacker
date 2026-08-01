@@ -1,4 +1,5 @@
 import * as UI from '@@ui';
+import { faCheck } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 
 import { updateMyMemberProfile } from '@@api';
@@ -72,21 +73,51 @@ export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
     }
   };
 
+  const canSubmit = !!name.trim() && !saving;
+
   return (
     <UI.VStack as="form" onSubmit={handleSubmit} align="stretch" spacing={3}>
       <UI.FormControl>
         <UI.FormLabel>What should people call you?</UI.FormLabel>
-        <UI.Input
-          value={name}
-          onChange={(e) =>
-            setName(e.target.value.replace(/[^\p{L} ]/gu, '').slice(0, 25))
-          }
-          maxLength={25}
-          placeholder="Fox"
-          autoComplete="name"
-          autoFocus
-          data-testid="display-name-input"
-        />
+        {showNotificationsOptIn ? (
+          <UI.Input
+            value={name}
+            onChange={(e) =>
+              setName(e.target.value.replace(/[^\p{L} ]/gu, '').slice(0, 25))
+            }
+            maxLength={25}
+            placeholder="Fox"
+            autoComplete="nickname"
+            autoFocus
+            data-testid="display-name-input"
+          />
+        ) : (
+          <UI.InputGroup>
+            <UI.Input
+              value={name}
+              onChange={(e) =>
+                setName(e.target.value.replace(/[^\p{L} ]/gu, '').slice(0, 25))
+              }
+              maxLength={25}
+              placeholder="Fox"
+              autoComplete="nickname"
+              autoFocus
+              data-testid="display-name-input"
+              pe={12}
+            />
+            <UI.InputRightElement h="100%" width="2.75rem">
+              <UI.IconButton
+                type="submit"
+                aria-label="Save"
+                icon={faCheck}
+                size="sm"
+                colorScheme="action"
+                isDisabled={!canSubmit}
+                isLoading={saving}
+              />
+            </UI.InputRightElement>
+          </UI.InputGroup>
+        )}
         <UI.FormHelperText>
           Shown with your messages in every room
         </UI.FormHelperText>
@@ -98,15 +129,17 @@ export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
           persist={false}
         />
       ) : null}
-      <UI.Button
-        type="submit"
-        preset="primary"
-        isDisabled={!name.trim()}
-        isLoading={saving}
-        loadingText="Saving…"
-      >
-        {showNotificationsOptIn ? 'Continue' : 'Save name'}
-      </UI.Button>
+      {showNotificationsOptIn ? (
+        <UI.Button
+          type="submit"
+          preset="primary"
+          isDisabled={!name.trim()}
+          isLoading={saving}
+          loadingText="Saving…"
+        >
+          Continue
+        </UI.Button>
+      ) : null}
       {allowSkip ? (
         <UI.Button variant="ghost" size="sm" onClick={() => onDone?.()}>
           Skip for now

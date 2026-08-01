@@ -3,6 +3,8 @@ import { subtypeMetas } from '@@helpers/subtypeMetas';
 import * as UI from '@chakra-ui/react';
 import _ from 'lodash';
 import React from 'react';
+
+import { passwordManagerIgnoreProps } from '../../ui/passwordManagerIgnore';
 import {
   CheckboxGroupWithOptions,
   CheckboxGroupWithOptionsProps,
@@ -327,7 +329,7 @@ const renderBaseInputWithRef = (
     const mask = subtypeMetas[type].mask;
     return (
       <MaskedInput
-        data-lpignore="true"
+        {...passwordManagerIgnoreProps}
         {...input}
         type={type === 'phone' ? 'tel' : undefined}
         id={name}
@@ -347,10 +349,11 @@ const renderBaseInputWithRef = (
     type === 'text' ||
     type === undefined
   ) {
+    const isCredential = type === 'email' || type === 'password';
     return (
       <UI.Input
         type={type}
-        data-lpignore="true"
+        {...(isCredential ? null : passwordManagerIgnoreProps)}
         {...input}
         id={name}
         value={value ?? ''}

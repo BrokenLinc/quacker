@@ -209,6 +209,8 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
             setPhoneInput(typeof value === 'string' ? value : value.target.value)
           }
           required
+          allowPasswordManager
+          autoComplete="tel"
           data-testid="sign-in-phone"
         />
         <UI.FormHelperText>

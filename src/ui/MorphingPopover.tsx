@@ -15,11 +15,28 @@ import { createPortal } from 'react-dom';
 import { IconButton } from './IconButton';
 import {
   placeAndClamp,
+  readSafeAreaInsets,
   readVisualViewport,
   type MorphingPopoverAnchor,
 } from './morphingPopoverPosition';
 
 export type { MorphingPopoverAnchor } from './morphingPopoverPosition';
+
+/** Base clamp margin; inflated per-edge with safe-area insets. */
+function viewportClampMargin(): {
+  top: number;
+  right: number;
+  bottom: number;
+  left: number;
+} {
+  const safe = readSafeAreaInsets();
+  return {
+    top: Math.max(VIEWPORT_MARGIN, safe.top),
+    right: Math.max(VIEWPORT_MARGIN, safe.right),
+    bottom: Math.max(VIEWPORT_MARGIN, safe.bottom),
+    left: Math.max(VIEWPORT_MARGIN, safe.left),
+  };
+}
 
 /** Chakra + framer-motion: use StyleProps (not BoxProps) — BoxProps HTML `onDrag` clashes with Motion. */
 const chakraMotionForwardProp = (prop: string): boolean =>
@@ -233,11 +250,16 @@ export type MorphingPopoverContentProps = {
   children: React.ReactNode;
   /** Accessible / header title for the dialog. */
   title?: React.ReactNode;
+  /** Show an explicit Close control. Default false — Esc / outside still dismiss. */
+  showClose?: boolean;
+  'aria-label'?: string;
 } & Chakra.StyleProps;
 
 export const MorphingPopoverContent: React.FC<MorphingPopoverContentProps> = ({
   children,
   title,
+  showClose = false,
+  'aria-label': ariaLabel,
   ...styleProps
 }) => {
   const { isOpen, close, uniqueId, variants, anchor, rootRef } =
@@ -245,6 +267,9 @@ export const MorphingPopoverContent: React.FC<MorphingPopoverContentProps> = ({
   const ref = React.useRef<HTMLDivElement>(null);
   const [coords, setCoords] = React.useState<PanelCoords | null>(null);
   const [portalReady, setPortalReady] = React.useState(false);
+  const showHeader = !!title || showClose;
+  const dialogLabel =
+    typeof title === 'string' ? title : ariaLabel;
 
   React.useEffect(() => {
     setPortalReady(true);
@@ -281,7 +306,7 @@ export const MorphingPopoverContent: React.FC<MorphingPopoverContentProps> = ({
       panelSize,
       anchor,
       viewport: readVisualViewport(),
-      margin: VIEWPORT_MARGIN,
+      margin: viewportClampMargin(),
     });
     setCoords((prev) => (coordsEqual(prev, next) ? prev : next));
   }, [anchor, rootRef]);
@@ -332,7 +357,7 @@ export const MorphingPopoverContent: React.FC<MorphingPopoverContentProps> = ({
           id={`popover-content-${uniqueId}`}
           role="dialog"
           aria-modal="true"
-          aria-label={typeof title === 'string' ? title : undefined}
+          aria-label={dialogLabel}
           initial="initial"
           animate="animate"
           exit="exit"
@@ -361,30 +386,36 @@ export const MorphingPopoverContent: React.FC<MorphingPopoverContentProps> = ({
           maxW={`${PANEL_MAX_WIDTH}px`}
           {...styleProps}
         >
-          <Chakra.HStack
-            px={3}
-            pt={2}
-            pb={1}
-            spacing={2}
-            align="center"
-            borderBottomWidth="1px"
-            borderColor="border.subtle"
-          >
-            <Chakra.Box flex={1} minW={0}>
-              {title ? (
-                <Chakra.Text fontSize="sm" fontWeight="bold" noOfLines={1}>
-                  {title}
-                </Chakra.Text>
+          {showHeader ? (
+            <Chakra.HStack
+              px={3}
+              pt={2}
+              pb={1}
+              spacing={2}
+              align="center"
+              borderBottomWidth="1px"
+              borderColor="border.subtle"
+            >
+              <Chakra.Box flex={1} minW={0}>
+                {title ? (
+                  <Chakra.Text fontSize="sm" fontWeight="bold" noOfLines={1}>
+                    {title}
+                  </Chakra.Text>
+                ) : null}
+              </Chakra.Box>
+              {showClose ? (
+                <IconButton
+                  aria-label="Close"
+                  icon={faXmark}
+                  size="sm"
+                  variant="ghost"
+                  onClick={close}
+                  _focus={{ boxShadow: 'none' }}
+                  _focusVisible={{ boxShadow: 'outline' }}
+                />
               ) : null}
-            </Chakra.Box>
-            <IconButton
-              aria-label="Close"
-              icon={faXmark}
-              size="sm"
-              variant="ghost"
-              onClick={close}
-            />
-          </Chakra.HStack>
+            </Chakra.HStack>
+          ) : null}
           {children}
         </MotionDiv>
       ) : null}

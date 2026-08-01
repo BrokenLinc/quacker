@@ -17,6 +17,7 @@ This repo is operated entirely by the agent. The user sets vision; the agent exe
 6. Self-fix CI failures; never ask the user to triage logs
 7. Propagate secrets from `.env.local` via CLI — user does not configure GitHub/Vercel manually
 8. If MCP `serverStatus` is `needsAuth`, call `mcp_auth` and retry before asking the user
+9. **UI copy / a11y / dialog title changes → update `tests/e2e` (and Maestro) in the same change** — see [`.cursor/rules/playwright-chrome.mdc`](playwright-chrome.mdc). Do not wait for CI to discover broken `getByRole` names.
 
 ## User gates (only these)
 

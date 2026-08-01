@@ -1,5 +1,5 @@
 import * as UI from '@@ui';
-import { faPlus } from '@fortawesome/free-solid-svg-icons';
+import { faCheck, faPlus } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -16,9 +16,14 @@ export const NewGroupModal: React.FC<{
   onClose: () => void;
 }> = ({ isOpen, onClose }) => {
   return (
-    <UI.QuickModal isOpen={isOpen} onClose={onClose} headerContent="New room">
+    <UI.QuickModal
+      isOpen={isOpen}
+      onClose={onClose}
+      headerContent="New room"
+      size="sm"
+    >
       <UI.ModalBody pb={6}>
-        <NewGroupForm onCreated={onClose} />
+        <NewGroupForm isOpen={isOpen} onCreated={onClose} />
       </UI.ModalBody>
     </UI.QuickModal>
   );
@@ -65,25 +70,33 @@ export const NewGroupIconButton: React.FC<
   );
 };
 
-const NewGroupForm: React.FC<{ onCreated: () => void }> = ({ onCreated }) => {
+const NewGroupForm: React.FC<{
+  isOpen: boolean;
+  onCreated: () => void;
+}> = ({ isOpen, onCreated }) => {
   const [user] = useAuthState();
   const [name, setName] = React.useState('');
   const [submitting, setSubmitting] = React.useState(false);
   const toast = UI.useToast();
   const navigate = useNavigate();
 
+  React.useEffect(() => {
+    if (isOpen) setName('');
+  }, [isOpen]);
+
   if (!user) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name.trim() || submitting) return;
+    const trimmed = name.trim();
+    if (!trimmed || submitting) return;
     setSubmitting(true);
     try {
       const { id } = await addGroup({
         uid: user.uid,
         authorName: user.displayName,
         authorPhotoURL: resolveAppUserPhotoURL(user),
-        name: name.trim(),
+        name: trimmed,
         phoneLast4: phoneLast4FromPhone(user.phone),
       });
       onCreated();
@@ -100,26 +113,34 @@ const NewGroupForm: React.FC<{ onCreated: () => void }> = ({ onCreated }) => {
     }
   };
 
+  const canSubmit = !!name.trim() && !submitting;
+
   return (
-    <UI.VStack as="form" onSubmit={handleSubmit} align="stretch" spacing={3}>
+    <UI.Box as="form" onSubmit={handleSubmit}>
       <UI.FormControl>
         <UI.FormLabel>Room name</UI.FormLabel>
-        <UI.Input
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-          placeholder="The Den"
-          autoFocus
-        />
+        <UI.InputGroup>
+          <UI.Input
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+            placeholder="The Den"
+            autoFocus
+            autoComplete="off"
+            pe={12}
+          />
+          <UI.InputRightElement h="100%" width="2.75rem">
+            <UI.IconButton
+              type="submit"
+              aria-label="Create room"
+              icon={faCheck}
+              size="sm"
+              colorScheme="action"
+              isDisabled={!canSubmit}
+              isLoading={submitting}
+            />
+          </UI.InputRightElement>
+        </UI.InputGroup>
       </UI.FormControl>
-      <UI.Button
-        type="submit"
-        preset="primary"
-        isDisabled={!name.trim()}
-        isLoading={submitting}
-        loadingText="Creating…"
-      >
-        Create room
-      </UI.Button>
-    </UI.VStack>
+    </UI.Box>
   );
 };

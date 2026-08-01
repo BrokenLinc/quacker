@@ -18,6 +18,7 @@ export type NotifyLevelControlProps = {
   onChange: (level: NotifyLevel) => void;
   /** Compact label above the radios */
   label?: string;
+  isDisabled?: boolean;
 };
 
 /** Per-group notification level — All / Announcements only / None. */
@@ -25,13 +26,15 @@ export const NotifyLevelControl: React.FC<NotifyLevelControlProps> = ({
   value,
   onChange,
   label = 'Notifications for this room',
+  isDisabled = false,
 }) => {
   return (
-    <UI.FormControl>
+    <UI.FormControl isDisabled={isDisabled}>
       <UI.FormLabel fontSize="sm">{label}</UI.FormLabel>
       <UI.RadioGroup
         value={value}
         onChange={(v) => onChange(v as NotifyLevel)}
+        isDisabled={isDisabled}
         data-testid="notify-level"
       >
         <UI.VStack align="stretch" spacing={2}>
@@ -39,7 +42,8 @@ export const NotifyLevelControl: React.FC<NotifyLevelControlProps> = ({
             <UI.Box
               key={opt.value}
               as="label"
-              cursor="pointer"
+              cursor={isDisabled ? 'not-allowed' : 'pointer'}
+              opacity={isDisabled ? 0.6 : 1}
               borderWidth="1px"
               borderColor={value === opt.value ? 'action.500' : 'border.subtle'}
               bg={value === opt.value ? 'surface.raised' : 'transparent'}

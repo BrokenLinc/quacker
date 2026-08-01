@@ -15,7 +15,7 @@ const VIEWPORTS = [
 
 async function expectTitleLeftAligned(page: Page, viewportWidth: number) {
   const title = page.getByTestId('group-title');
-  const invite = page.getByRole('button', { name: 'Invite or Share' });
+  const invite = page.getByRole('button', { name: 'Invite someone' });
 
   await expect(title).toBeVisible();
   await expect(invite).toBeVisible();

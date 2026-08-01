@@ -93,11 +93,14 @@ Make invalid input hard to type, not just hard to submit. Prefer:
 | Filtered / typed | Allowed character set is small (names) | Strip on change + `maxLength` |
 | Length limit | Short-form content (chat) | TipTap `CharacterCount` + visible `n/max` when typing |
 | Purpose-built control | Structure or a11y beats a single text box | OTP → Chakra `PinInput`; closed sets → combobox/select; money/date → form subtypes |
+| Inset Save + narrow modal | Single-field rename/prompt (name, room) | `QuickModal` `size="sm"`; Save as `IconButton` in `InputRightElement` |
+| Password-manager ignore | Non-credential text fields | Default on `@@ui` `Input` / `MaskedInput` via `passwordManagerIgnoreProps`; opt in with `allowPasswordManager` only for real login (e.g. sign-in phone). Pair with semantic `autoComplete` (`nickname`, `tel`, `one-time-code`). Never ignore on OTP/`PinInput`. |
 
 Custom controls (OTP pin fields, comboboxes, masked phones) are preferred when
 they reduce mistakes and map better to assistive tech — do not default to a
 plain text field “because validation will catch it.” Reuse `src/forms/` and
-`@@ui` primitives before adding another masking library.
+`@@ui` primitives before adding another masking library. Prefer `@@ui` `Input`
+(not raw `@chakra-ui/react` Input) so password-manager ignore stays consistent.
 
 ## State handling
 
@@ -205,27 +208,37 @@ the frame while auth/group data loads — never withhold the frame until ready
 
 ### Overlays
 
-- Every overlay has an obvious dismiss (X and/or Cancel). Outside click and Esc
-  remain available unless a flow intentionally requires an explicit choice —
-  still keep Cancel.
+- QuickModal always has an obvious dismiss (X). MorphingPopover dismisses via
+  Esc / outside click; an explicit Close control is optional (`showClose`,
+  default off). Confirmations that need an explicit choice still keep Cancel.
+- Overlay focus rings use `_focusVisible` so programmatic focus on open does
+  not show a glow; keyboard Tab still rings.
 - **Small dialogs** (menus, popovers, short action lists) → `MorphingPopover`
   (`src/ui/MorphingPopover.tsx`): shared `layoutId` morph from trigger → panel.
   Account menu is the reference consumer. Uses a 9-point overlapping `anchor`
   (default `center`) so trigger and panel share a point, then clamps into the
-  visual viewport.
+  visual viewport with safe-area insets.
 - **Larger dialogs** (forms, listings, multi-field / multi-step content) →
-  `QuickModal` (modal ≥ md, tray/drawer on mobile). Confirmations use the
-  **same** mobile drawer shell — not a centered desktop modal on phones.
+  `QuickModal` (centered by default with ≥16px edge gap; tray/drawer on mobile
+  when enabled). Confirmations use the **same** mobile drawer shell — not a
+  centered desktop modal on phones.
 - **Trigger-aligned placement (trays):** QuickModal mobile trays open from the
   same edge as the trigger (header / top chrome → top tray; sidebar footer /
   bottom chrome → bottom tray).
 - Morphing spring counts toward the intentional micro-motion budget
   (~≤400ms). Honor `prefers-reduced-motion` (near-instant open/close).
 
+### Copy
+
+- **Sentence case** for UI labels, titles, and buttons. Brand **Yowl** stays
+  capitalized as a proper noun.
+
 ### Menus
 
 - Prefer `MorphingPopover` for short action lists on **all** viewports
   (Account, room title options, message-author profile).
+- Icon rows use `PopoverMenuRow` (fixed-width icon column + FontAwesome
+  `fixedWidth`) so labels align across glyphs.
 - Longer navigational lists (e.g. rooms) may use a floating drawer.
 - Legacy `ActionSheet` / Chakra `Menu` remain only until remaining call
   sites migrate — new small menus should not add more of those.

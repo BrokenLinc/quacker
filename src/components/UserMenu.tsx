@@ -68,15 +68,10 @@ export const UserMenu: React.FC<UserMenuProps> = ({ showColorMode }) => {
             size="sm"
           />
         </UI.MorphingPopoverTrigger>
-        <UI.MorphingPopoverContent title="Account">
-          <UI.Box px={4} pt={2} pb={1}>
-            <UI.Text fontSize="sm" fontWeight="bold" noOfLines={1}>
-              {identityLabel}
-            </UI.Text>
-          </UI.Box>
+        <UI.MorphingPopoverContent title={identityLabel}>
           <UI.VStack align="stretch" spacing={0} py={1}>
             {showColorMode ? (
-              <AccountMenuRow
+              <UI.PopoverMenuRow
                 icon={colorMode === 'light' ? faMoon : faSun}
                 label={colorMode === 'light' ? 'Dark mode' : 'Light mode'}
                 onClick={() => {
@@ -85,12 +80,12 @@ export const UserMenu: React.FC<UserMenuProps> = ({ showColorMode }) => {
                 }}
               />
             ) : null}
-            <AccountMenuRow
+            <UI.PopoverMenuRow
               icon={faBell}
               label={pushEnabled ? 'Notifications (on)' : 'Notifications'}
               onClick={openNotifications}
             />
-            <AccountMenuRow
+            <UI.PopoverMenuRow
               icon={faPenToSquare}
               label="Change name"
               onClick={openEditName}
@@ -100,7 +95,7 @@ export const UserMenu: React.FC<UserMenuProps> = ({ showColorMode }) => {
               borderColor="border.subtle"
               my={1}
             />
-            <AccountMenuRow
+            <UI.PopoverMenuRow
               icon={faRightFromBracket}
               label="Log out"
               onClick={() => void handleSignOut()}
@@ -132,27 +127,6 @@ export const UserMenu: React.FC<UserMenuProps> = ({ showColorMode }) => {
     </React.Fragment>
   );
 };
-
-const AccountMenuRow: React.FC<{
-  icon: typeof faBell;
-  label: string;
-  onClick: () => void;
-}> = ({ icon, label, onClick }) => (
-  <UI.Button
-    variant="ghost"
-    justifyContent="flex-start"
-    borderRadius={0}
-    h="auto"
-    py={2.5}
-    px={4}
-    fontWeight="normal"
-    fontSize="sm"
-    leftIcon={<UI.Icon icon={icon} />}
-    onClick={onClick}
-  >
-    {label}
-  </UI.Button>
-);
 
 const NotificationsPrefsBody: React.FC<{ userId: string }> = ({ userId }) => {
   const [enabled, loading, , syncLocal] = usePushEnabled(userId);
