@@ -20,8 +20,9 @@ test.describe('notification prefs', () => {
     await expect.poll(async () => getPushPermissionRequestCount(page)).toBe(0);
 
     await page.getByTestId('user-menu-button').click();
+    // Title is the user's name/email — not a fixed "Account" label.
     await page
-      .getByRole('dialog', { name: 'Account' })
+      .getByRole('dialog')
       .getByRole('button', { name: /Notifications/i })
       .click();
 
@@ -126,9 +127,17 @@ test.describe('notification prefs', () => {
 
     await page.getByRole('button', { name: `${group.name} options` }).click();
     await page
-      .getByRole('dialog', { name: group.name })
+      .getByRole('dialog', { name: 'Room options' })
       .getByRole('button', { name: /Notifications/i })
       .click();
+
+    // Room radios stay disabled until global push is on.
+    const globalToggle = page.getByTestId('notifications-switch');
+    await expect(globalToggle).toBeVisible();
+    if (!(await globalToggle.isChecked())) {
+      await globalToggle.click();
+      await expect(globalToggle).toBeChecked({ timeout: 10_000 });
+    }
 
     await expect(page.getByTestId('notify-level')).toBeVisible();
     await page.getByTestId('notify-level-none').click();
