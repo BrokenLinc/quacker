@@ -141,6 +141,17 @@ export const testOtpCode = () =>
 export const isTestPhone = (phone: string) =>
   /^\+1\d{3}555(01\d{2})$/.test(phone);
 
+/**
+ * Reserved for FTUE / onboarding checks. When test OTP is enabled, any
+ * existing auth user for this phone is deleted before issuing a session so
+ * every login is a fresh “needs display name” signup.
+ * Display: (202) 555-0199 — do not use for shared Maestro login (0100).
+ */
+export const FTUE_RESET_TEST_PHONE = '+12025550199';
+
+export const isFtueResetTestPhone = (phone: string) =>
+  phone === FTUE_RESET_TEST_PHONE;
+
 /** Synthetic Twilio-shaped verification sid for the client contract. */
 export const syntheticVerificationSid = () =>
   `VE${crypto.randomUUID().replace(/-/g, '')}`;

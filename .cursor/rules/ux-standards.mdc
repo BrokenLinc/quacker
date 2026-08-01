@@ -110,8 +110,9 @@ when `MaskedInput` / form subtypes already cover the case.
 - Room lists are **membership-scoped** (`useGroups({ userId })`) — never list
   all rooms
 - Joining is **explicit consent** (join prompt), never a silent side effect
-- Ask for a display name right after first sign-in; `···1234` is a fallback,
-  not an identity
+- Ask for a display name right after first sign-in (**What's your name?**);
+  `···1234` is a fallback, not an identity. Organic FTUE then offers create-room
+  (Skip allowed); invite links skip create and go to the room
 - Destructive actions (leave/delete/ban) go through `useConfirmation` with
   `isDestructive: true`; never confirm create/send
 

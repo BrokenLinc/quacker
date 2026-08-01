@@ -13,7 +13,7 @@ appId: ${APP_ID}
     commands:
       - tapOn: "Dismiss install prompt"
 - extendedWaitUntil:
-    visible: ".*Sign in to Yowl|Your rooms.*"
+    visible: ".*All you need is a phone number:|Your rooms.*"
     timeout: 20000
 - runFlow:
     when:
@@ -22,7 +22,7 @@ appId: ${APP_ID}
       - tapOn: "Account menu"
       - tapOn: "Log out"
       - extendedWaitUntil:
-          visible: "Sign in to Yowl"
+          visible: "All you need is a phone number:"
           timeout: 15000
 - runFlow:
     file: login-steps.yaml

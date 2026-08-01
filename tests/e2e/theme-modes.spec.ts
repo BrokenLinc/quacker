@@ -1,6 +1,6 @@
 import { expect, test } from '@playwright/test';
 
-import { seedTestSession } from './fixtures/supabase';
+import { seedAuthenticatedSession } from './fixtures/supabase';
 import { expectColorMode, seedColorMode } from './fixtures/theme';
 
 /**
@@ -11,7 +11,7 @@ test('color mode toggle switches raised document and theme-color', async ({
   page,
 }) => {
   await seedColorMode(page, 'light');
-  await seedTestSession(page);
+  await seedAuthenticatedSession(page);
   await expect(
     page.getByRole('button', { name: 'Switch to dark mode' })
   ).toBeVisible();

@@ -3,14 +3,14 @@ import { expect, test } from '@playwright/test';
 import {
   gotoGroupPage,
   seedTestGroup,
-  seedTestSession,
+  seedAuthenticatedSession,
 } from './fixtures/supabase';
 
 test.describe('group messaging', () => {
   test.describe.configure({ mode: 'serial' });
 
   test('member can post and see message in feed', async ({ page }) => {
-    const { admin, userId } = await seedTestSession(page);
+    const { admin, userId } = await seedAuthenticatedSession(page);
 
     const group = await seedTestGroup(admin, userId, {
       slug: `msg${Date.now().toString(36).slice(-5)}`,
@@ -32,7 +32,7 @@ test.describe('group messaging', () => {
   });
 
   test('realtime updates when message inserted via admin', async ({ page }) => {
-    const { admin, userId } = await seedTestSession(page);
+    const { admin, userId } = await seedAuthenticatedSession(page);
 
     const group = await seedTestGroup(admin, userId, {
       slug: `rt${Date.now().toString(36).slice(-5)}`,

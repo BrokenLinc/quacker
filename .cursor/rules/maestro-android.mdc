@@ -16,7 +16,7 @@ alwaysApply: false
 - Open helpers: `android-chrome-open.yaml` (clearState + FRE); `android-chrome-open-soft.yaml` (no clear); `android-chrome-dismiss-fre.yaml`
 - Do **not** put `androidWebViewHierarchy: devtools` on FRE/open steps — it can hide native Chrome welcome UI
 - Android keyboard shots: `android-keyboard-shots.yaml` (dismiss via `pressKey: back`). Dismiss install banner first — it covers the composer and steals taps
-- Android WebView often omits input placeholders — tap labels (`Phone number`, `Room name`) not `(555)…` / `WWDC…`
+- Android WebView often omits input placeholders — tap labels (`All you need is a phone number:`, `Room name`) not `(555)…` / `WWDC…`
 - Dismiss Account menu (`MorphingPopover`): prefer `Close`; else tap outside
   the panel (e.g. `point: "50%, 12%"`) — never Android `back` (leaves the room)
 - Overrides: `APP_URL=http://…` or `MAESTRO_PORT=4173`
@@ -25,5 +25,6 @@ alwaysApply: false
 - Keep the emulator process in a long-lived shell (`wait`) — agent shells that exit can reap `qemu` even with `nohup`
 - Screenshots: `takeScreenshot: artifacts/…` lands under `~/.maestro/tests/<run>/<flow>/takeScreenshot/artifacts/` (repo `artifacts/` is gitignored). Always copy from the newest run dir by mtime
 - Test OTP: `555-01XX` + `555555` with `AUTH_ALLOW_TEST_OTP` (local or **quacker-dev** only — never prod)
+- FTUE check: reserved `(202) 555-0199` — Edge Function deletes that user before each session when test OTP is on (always shows name onboarding). Maestro shared login stays on `0100`
 - Agent exploration: Android MCP (`@moallemi/android-mcp-server` in `~/.cursor/mcp.json`) — screenshot / UI tree / tap — parallel to `ios-simulator` MCP
 - Sibling iOS rules: `.cursor/rules/maestro-ios.mdc`

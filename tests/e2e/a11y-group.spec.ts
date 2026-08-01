@@ -4,11 +4,11 @@ import { expect, test } from '@playwright/test';
 import {
   gotoGroupPage,
   seedTestGroup,
-  seedTestSession,
+  seedAuthenticatedSession,
 } from './fixtures/supabase';
 
 test('group page share modal passes a11y', async ({ page }) => {
-  const { admin, userId } = await seedTestSession(page);
+  const { admin, userId } = await seedAuthenticatedSession(page);
 
   const group = await seedTestGroup(admin, userId, {
     slug: `e2e${Date.now().toString(36).slice(-5)}`,

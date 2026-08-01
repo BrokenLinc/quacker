@@ -1,17 +1,25 @@
 import * as UI from '@@ui';
 import React from 'react';
 
-import { useAuthState } from '@@lib/supabase/auth';
+import {
+  appUserHasChosenDisplayName,
+  useAuthState,
+} from '@@lib/supabase/auth';
 
+import { useFtueHold } from './ftueHoldContext';
+import { PostAuthOnboarding } from './PostAuthOnboarding';
 import { SignInScreen } from './SignInScreen';
 
 export const RequireAuth: React.FC<{
   children: React.ReactNode;
+  /** Invite-link sign-in copy (large logo + join heading). */
+  invite?: boolean;
   heading?: string;
   /** When set, shown instead of the default skeleton while session resolves. */
   loadingFallback?: React.ReactNode;
-}> = ({ children, heading, loadingFallback }) => {
+}> = ({ children, invite = false, heading, loadingFallback }) => {
   const [user, loading, error] = useAuthState();
+  const { ftueHold, endFtue } = useFtueHold();
 
   if (loading) {
     if (loadingFallback !== undefined) return <>{loadingFallback}</>;
@@ -35,7 +43,18 @@ export const RequireAuth: React.FC<{
       </UI.Box>
     );
   }
-  if (!user) return <SignInScreen heading={heading} />;
+  if (!user) {
+    return <SignInScreen invite={invite} heading={heading} />;
+  }
+
+  // needsName covers first paint before AppLayout's ftueHold effect; ftueHold
+  // keeps create-room mounted after the display name is saved.
+  const needsName = !appUserHasChosenDisplayName(user);
+  if (needsName || ftueHold) {
+    return (
+      <PostAuthOnboarding invite={invite} onComplete={endFtue} />
+    );
+  }
 
   return <>{children}</>;
 };

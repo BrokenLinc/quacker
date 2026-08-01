@@ -15,17 +15,15 @@ import type { EnablePushResult } from '@@lib/notifications/subscribe';
 import { getNotificationPermissionState } from '@@lib/notifications/permission';
 
 export type DisplayNameFormProps = {
-  /** Called after saving (or skipping, when allowed). */
+  /** Called after saving. */
   onDone?: () => void;
-  allowSkip?: boolean;
   /** Show notifications Switch (onboarding). Default false for rename-only. */
   showNotificationsOptIn?: boolean;
 };
 
-/** "What should people call you?" — real identity beats `···1234`. */
+/** Onboarding / rename — real identity beats `···1234`. */
 export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
   onDone,
-  allowSkip,
   showNotificationsOptIn = false,
 }) => {
   const [user] = useAuthState();
@@ -78,7 +76,11 @@ export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
   return (
     <UI.VStack as="form" onSubmit={handleSubmit} align="stretch" spacing={3}>
       <UI.FormControl>
-        <UI.FormLabel>What should people call you?</UI.FormLabel>
+        <UI.FormLabel>
+          {showNotificationsOptIn
+            ? "What's your name?"
+            : 'What should people call you?'}
+        </UI.FormLabel>
         {showNotificationsOptIn ? (
           <UI.Input
             value={name}
@@ -137,12 +139,7 @@ export const DisplayNameForm: React.FC<DisplayNameFormProps> = ({
           isLoading={saving}
           loadingText="Saving…"
         >
-          Continue
-        </UI.Button>
-      ) : null}
-      {allowSkip ? (
-        <UI.Button variant="ghost" size="sm" onClick={() => onDone?.()}>
-          Skip for now
+          Next
         </UI.Button>
       ) : null}
     </UI.VStack>

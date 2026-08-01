@@ -50,16 +50,24 @@ export const waitForAuthenticated = async (page: Page) => {
 };
 
 /** E2E uses admin-generated session tokens (test-only); prod uses Twilio SMS OTP. */
-export const seedTestSession = async (page: Page) => {
+export const seedTestSession = async (
+  page: Page,
+  options?: {
+    /** Defaults to a real name so FTUE is skipped. Pass a `···1234` fallback to land on onboarding. */
+    displayName?: string;
+  }
+) => {
   const admin = getAdminClient();
   const email = `e2e-${Date.now()}@quacker.test`;
   const appOrigin =
     process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
   const { url, anonKey } = getSupabaseEnv();
+  const displayName = options?.displayName ?? 'E2E Tester';
 
   const { data: userData, error } = await admin.auth.admin.createUser({
     email,
     email_confirm: true,
+    user_metadata: { display_name: displayName },
   });
   if (error || !userData.user) throw error ?? new Error('No user');
 
@@ -96,10 +104,29 @@ export const seedTestSession = async (page: Page) => {
     },
     { tokenHash, supabaseUrl: url, supabaseKey: anonKey }
   );
-  await waitForAuthenticated(page);
 
-  return { admin, userId: userData.user.id, email };
+  return { admin, userId: userData.user.id, email, displayName };
 };
+
+/** Seed a session that skips FTUE (real display name) and wait for chrome. */
+export const seedAuthenticatedSession = async (page: Page) => {
+  const result = await seedTestSession(page);
+  await waitForAuthenticated(page);
+  return result;
+};
+
+/**
+ * Seed a session that must show post-auth onboarding (phone-fallback name).
+ * Mirrors a fresh SMS signup with `···1234` metadata.
+ */
+export const seedFtueSession = async (page: Page) => {
+  const result = await seedTestSession(page, { displayName: '···0199' });
+  await expect(page.getByTestId('post-auth-onboarding')).toBeVisible({
+    timeout: 15_000,
+  });
+  return result;
+};
+
 
 /** Create a group and wait for the creator membership trigger to finish. */
 export const seedTestGroup = async (

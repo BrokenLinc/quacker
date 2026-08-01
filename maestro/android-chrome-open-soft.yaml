@@ -7,7 +7,7 @@ appId: ${APP_ID}
     file: android-chrome-dismiss-fre.yaml
 - openLink: ${APP_URL}
 - extendedWaitUntil:
-    visible: ".*Use without an account|Welcome to Chrome|Sign in to Yowl|Your rooms|Phone number|Install Yowl.*"
+    visible: ".*Use without an account|Welcome to Chrome|All you need is a phone number:|Your rooms|Install Yowl.*"
     timeout: 25000
 - runFlow:
     file: android-chrome-dismiss-fre.yaml

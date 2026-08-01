@@ -5,11 +5,15 @@ import { Outlet, useMatch } from 'react-router-dom';
 
 import { useGroups, useUnreadCounts } from '@@api';
 import { SignInForm } from '@@components/auth/SignInForm';
+import { FtueHoldContext } from '@@components/auth/ftueHoldContext';
 import { useSignInPlacement } from '@@components/auth/useSignInPlacement';
 import { SignInPlacementFromAuth } from '@@components/auth/SignInPlacementFromAuth';
 import { useUnreadAppChrome } from '@@lib/notifications/documentChrome';
 import { InAppPushToastListener } from '@@lib/notifications/inAppPushToast';
-import { useAuthState } from '@@lib/supabase/auth';
+import {
+  appUserHasChosenDisplayName,
+  useAuthState,
+} from '@@lib/supabase/auth';
 import { useVisualViewportHeight } from '@@lib/pwa/useVisualViewportHeight';
 import { routes } from '@@routing/routes';
 
@@ -31,6 +35,8 @@ const UnreadAppChrome: React.FC = () => {
 
 export const AppLayout: React.FC = () => {
   useVisualViewportHeight();
+  const [user] = useAuthState();
+  const [ftueHold, setFtueHold] = React.useState(false);
   const isMobile = UI.useBreakpointValue(
     { base: true, md: false },
     { ssr: false }
@@ -39,32 +45,48 @@ export const AppLayout: React.FC = () => {
   const slugMatch = useMatch('/g/:slug');
   const isGroupRoute = Boolean(groupMatch) && !slugMatch;
 
+  React.useEffect(() => {
+    if (!user) {
+      setFtueHold(false);
+      return;
+    }
+    if (!appUserHasChosenDisplayName(user)) {
+      setFtueHold(true);
+    }
+  }, [user]);
+
+  // Chrome-less for signed-out login and post-auth onboarding (name / create-room).
+  const showChrome = Boolean(user) && !ftueHold;
+  const endFtue = React.useCallback(() => setFtueHold(false), []);
+
   return (
-    <SignInPlacementFromAuth>
-      <UnreadAppChrome />
-      <InAppPushToastListener />
-      <UI.Flex
-        direction="column"
-        position="absolute"
-        inset={0}
-        overflow="hidden"
-        bg="surface.canvas"
-      >
-        {isMobile && !isGroupRoute ? <MobileHeader /> : null}
-        <UI.Flex flex={1} minH={0}>
-          {!isMobile ? <Sidebar /> : null}
-          <UI.Flex
-            as="main"
-            direction="column"
-            flex={1}
-            minW={0}
-            overflow="hidden"
-          >
-            <Outlet />
+    <FtueHoldContext.Provider value={{ ftueHold, endFtue }}>
+      <SignInPlacementFromAuth>
+        <UnreadAppChrome />
+        <InAppPushToastListener />
+        <UI.Flex
+          direction="column"
+          position="absolute"
+          inset={0}
+          overflow="hidden"
+          bg="surface.canvas"
+        >
+          {showChrome && isMobile && !isGroupRoute ? <MobileHeader /> : null}
+          <UI.Flex flex={1} minH={0}>
+            {showChrome && !isMobile ? <Sidebar /> : null}
+            <UI.Flex
+              as="main"
+              direction="column"
+              flex={1}
+              minW={0}
+              overflow="hidden"
+            >
+              <Outlet />
+            </UI.Flex>
           </UI.Flex>
         </UI.Flex>
-      </UI.Flex>
-    </SignInPlacementFromAuth>
+      </SignInPlacementFromAuth>
+    </FtueHoldContext.Provider>
   );
 };
 

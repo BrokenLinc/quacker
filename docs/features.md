@@ -25,10 +25,11 @@ Quacker (code name) is a private, ad-hoc room chat for trips and conferences. It
 ## Auth (MVP)
 
 - **SMS OTP** — enter phone, verify 6-digit code via Twilio Verify
-- **Sign-in UI** — header **Log in** opens a modal; protected pages show the same form inline until authenticated
-- Display name defaults to last 4 digits of phone (`···1234`)
+- **Sign-in UI** — chrome-less FTUE (large Yowl logo + tagline + phone); invite links use join-focused heading
+- Display name defaults to last 4 digits of phone (`···1234`) until the user chooses a real name
 - Tap avatar/name in chat for a profile sheet (`···XXXX`, join date; staff get Silenced / Mod switches)
-- Onboarding asks for display name + optional notifications Switch (OS permission only after enable)
+- Onboarding: **What's your name?** + notifications Switch → organic users get **Start a chat room** (Create / Skip); invitees skip create and continue to the room
+- Creator tip well above the message feed (Invite someone + mods tip) until another member joins
 - Gravatar module retained under `src/lib/avatars/gravatar.ts` for future email auth
 
 ## Deferred

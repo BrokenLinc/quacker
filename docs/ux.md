@@ -27,10 +27,12 @@ pages, no nested routes.
 
 ### Shell
 
-- **Desktop (md+):** persistent left sidebar (brand + plus, room nav,
+- **Signed out / onboarding:** no mobile header / desktop sidebar — full-bleed
+  FTUE (`SignInScreen` or post-auth name / create-room)
+- **Desktop (md+), signed in (past FTUE):** persistent left sidebar (brand + plus, room nav,
   user + appearance in the footer). Chat pane content is capped at ~760px for
   readable line length.
-- **Mobile:** compact top header on home (brand, avatar); room pages have
+- **Mobile, signed in (past FTUE):** compact top header on home (brand, avatar); room pages have
   exactly one bar (back, title, share, overflow, avatar). Never stack two
   headers. "New room" is a plus icon in the page header (and sidebar brand
   row on desktop).
@@ -76,12 +78,13 @@ default).
 
 ## Identity
 
-Phone-only users default to `···1234` — treat that as a bug, not a name. The
-sign-in flow asks "What should people call you?" right after first OTP verify
-(skippable); "Change name" lives in the avatar menu. Names are denormalized
-onto `group_members` for the roster and onto `messages` at send time. Message
-headers show the live display name only — tap avatar or name for a profile
-sheet (`···XXXX`, join date, creator badge when known).
+Phone-only users default to `···1234` — treat that as a bug, not a name. After
+first OTP verify the FTUE asks **What's your name?** (required) plus an optional
+notifications Switch, then (when not arriving via an invite link) **Start a chat
+room** with Create / Skip. "Change name" lives in the avatar menu. Names are
+denormalized onto `group_members` for the roster and onto `messages` at send
+time. Message headers show the live display name only — tap avatar or name for a
+profile sheet (`···XXXX`, join date, creator badge when known).
 
 ## Inputs
 

@@ -9,7 +9,7 @@ import { routes } from '@@routing/routes';
 
 const GroupSlugPage: React.FC = () => {
   return (
-    <RequireAuth heading="Sign in to join this room">
+    <RequireAuth invite heading="Sign in to join this room">
       <GroupSlugRedirect />
     </RequireAuth>
   );

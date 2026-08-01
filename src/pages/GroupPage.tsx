@@ -164,7 +164,11 @@ const GroupPage: React.FC = () => {
   const { groupId } = useParams() as { groupId: string };
 
   return (
-    <RequireAuth loadingFallback={<GroupPageLoadingChrome />}>
+    <RequireAuth
+      invite
+      heading="Sign in to join this room"
+      loadingFallback={<GroupPageLoadingChrome />}
+    >
       {/* key resets chat state when switching groups via the sidebar */}
       <GroupPageContents key={groupId} groupId={groupId} />
     </RequireAuth>
@@ -1038,6 +1042,13 @@ const GroupChat: React.FC<{
   );
   const iAmSilenced = silencedUids.has(user.uid);
   const myMember = members?.find((m) => m.uid === user.uid);
+  const isCreator = group.uid === user.uid;
+  const otherMemberCount = (members ?? []).filter(
+    (m) => m.uid !== user.uid
+  ).length;
+  // Tip well until someone else joins (creator-only; mod promote copy is aspirational).
+  const showCreatorTips = isCreator && otherMemberCount === 0;
+  const shareModal = UI.useDisclosure();
 
   const memberByUid = (() => {
     const map = new Map<string, MemberProfile>();
@@ -1134,6 +1145,8 @@ const GroupChat: React.FC<{
         actorRole={myMember?.role ?? null}
         silencedUids={silencedUids}
         memberByUid={memberByUid}
+        showCreatorTips={showCreatorTips}
+        onInvite={shareModal.onOpen}
       />
       <UI.Box
         flexShrink={0}
@@ -1148,9 +1161,34 @@ const GroupChat: React.FC<{
           <Composer onSend={sendMessage} isSilenced={iAmSilenced} />
         </UI.Box>
       </UI.Box>
+      <ShareGroupModal group={group} {...shareModal} />
     </React.Fragment>
   );
 };
+
+const CreatorTipsWell: React.FC<{ onInvite: () => void }> = ({ onInvite }) => (
+  <UI.Box
+    bg="surface.sunken"
+    borderRadius="lg"
+    px={4}
+    py={4}
+    data-testid="creator-tips-well"
+  >
+    <UI.VStack align="stretch" spacing={3}>
+      <UI.Button
+        preset="primary"
+        size="sm"
+        alignSelf="flex-start"
+        onClick={onInvite}
+      >
+        Invite someone
+      </UI.Button>
+      <UI.Text fontSize="sm" color="text.muted">
+        Once people join you can promote them to mods
+      </UI.Text>
+    </UI.VStack>
+  </UI.Box>
+);
 
 const ChatScrollArea: React.FC<{
   items: ChatItem[];
@@ -1163,6 +1201,8 @@ const ChatScrollArea: React.FC<{
   actorRole: GroupMemberRole | null;
   silencedUids: Set<string>;
   memberByUid: Map<string, MemberProfile>;
+  showCreatorTips: boolean;
+  onInvite: () => void;
 }> = ({
   items,
   loading,
@@ -1174,6 +1214,8 @@ const ChatScrollArea: React.FC<{
   actorRole,
   silencedUids,
   memberByUid,
+  showCreatorTips,
+  onInvite,
 }) => {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const didInitialScroll = React.useRef(false);
@@ -1247,12 +1289,16 @@ const ChatScrollArea: React.FC<{
 
   if (!items.length) {
     return (
-      <UI.Box flex={1} overflowY="auto">
-        <UI.EmptyState
-          icon={faComments}
-          title={`Say hi — this is the start of ${groupName}`}
-          description="Messages show up here for everyone in the room."
-        />
+      <UI.Box flex={1} overflowY="auto" px={4} pt={3} pb={10}>
+        <UI.VStack align="stretch" spacing={4} maxW="760px" mx="auto">
+          {showCreatorTips ? <CreatorTipsWell onInvite={onInvite} /> : null}
+          <UI.EmptyState
+            icon={faComments}
+            title={`Say hi — this is the start of ${groupName}`}
+            description="Messages show up here for everyone in the room."
+            py={showCreatorTips ? 6 : 12}
+          />
+        </UI.VStack>
       </UI.Box>
     );
   }
@@ -1269,6 +1315,11 @@ const ChatScrollArea: React.FC<{
       pb={10}
     >
       <UI.VStack align="stretch" spacing={0} maxW="760px" mx="auto">
+        {showCreatorTips ? (
+          <UI.Box mb={4}>
+            <CreatorTipsWell onInvite={onInvite} />
+          </UI.Box>
+        ) : null}
         {items.map((message, i) => {
           const prev = items[i - 1];
           const showDayDivider =

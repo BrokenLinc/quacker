@@ -2,8 +2,8 @@ appId: ${APP_ID}
 ---
 # Shared sign-in steps (test OTP). Invoked from flows that may already be on the form.
 # Env: APP_ID (com.apple.mobilesafari | com.android.chrome)
-# Prefer label "Phone number" — Android Chrome WebView often omits input placeholders from a11y.
-- tapOn: "Phone number"
+# Prefer label text — Android Chrome WebView often omits input placeholders from a11y.
+- tapOn: "All you need is a phone number:"
 - eraseText
 - inputText: "2025550100"
 - tapOn: "Text me a code"
@@ -30,6 +30,19 @@ appId: ${APP_ID}
       visible: "Verify"
     commands:
       - tapOn: "Verify"
+# FTUE: name step (new users) then optional create-room; Skip lands on home.
+- runFlow:
+    when:
+      visible: "What's your name?"
+    commands:
+      - tapOn: "What's your name?"
+      - inputText: "Maestro"
+      - tapOn: "Next"
+- runFlow:
+    when:
+      visible: "Start a chat room"
+    commands:
+      - tapOn: "Skip"
 - extendedWaitUntil:
     visible: "Your rooms"
     timeout: 20000
