@@ -130,4 +130,6 @@ Respect `prefers-reduced-motion`. No decorative animation, gradients, or gloss.
   "Vite", "dev server")
 - Brand chrome: header logo opens an about popover; accessible name is
   **Yowl** (`getByRole('button', { name: 'Yowl' })`)
+- When changing labels, dialog titles, or `aria-label`s, update Playwright /
+  Maestro selectors **in the same change** (see playwright-chrome rule)
 - Errors are human + actionable ("Check your connection and try again.")

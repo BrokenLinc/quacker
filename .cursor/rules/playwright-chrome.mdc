@@ -14,6 +14,27 @@ Bundled Playwright Chromium often hangs or fails in agent/sandbox environments. 
 
 Do not remove `channel: 'chrome'` from local configs to "fix" agent runs.
 
+## UI changes must update e2e in the same change
+
+CI runs the full Playwright suite. **Do not ship frontend copy / a11y / role changes without updating selectors in the same commit/PR.** This has failed repeatedly when only the app was updated.
+
+When you change any of the following, **grep and update** `tests/e2e/**` (and Maestro `visible`/`tapOn` if applicable) before `yarn verify` / opening a PR:
+
+| UI change | Typical selector breakage |
+| --------- | ------------------------- |
+| Button / link / menu label | `getByRole('button'\|'link', { name: '…' })` |
+| Dialog / MorphingPopover `title` or `aria-label` | `getByRole('dialog', { name: '…' })` |
+| `aria-label` on icon buttons | `getByRole('button', { name: '…' })` |
+| `data-testid` rename/remove | `getByTestId('…')` |
+| Brand / chrome accessible name | Brand **Yowl** button, Account menu, room options |
+
+**Do this in the same turn as the UI edit** — not after CI fails:
+
+1. `rg` the old string under `tests/e2e/` and `maestro/`
+2. Prefer **stable `data-testid`s** for chrome that will keep changing (menus, dynamic titles). Role+name is fine for stable product copy.
+3. If a dialog title becomes **dynamic** (e.g. account menu titled with the user's name), stop asserting a fixed dialog name — scope via `getByTestId` / open trigger, or `getByRole('dialog')` without a fixed name.
+4. Run or reason about which specs touch that surface (`notification-prefs`, `group-header`, `a11y-*`, etc.)
+
 ## When running e2e
 
 ```bash
@@ -34,6 +55,7 @@ PLAYWRIGHT_BASE_URL=https://yowl.us yarn test:e2e --config=playwright.smoke.conf
 | Agent sandbox blocks browser | Request `all` permissions for the test command, not a config change away from Chrome |
 | CI failure | Keep `CI=true` path on bundled Chromium; do not set `channel: 'chrome'` in GitHub Actions |
 | Brand not found (`name: 'yowl'`) | Accessible name is **Yowl** (logo button); use `getByRole('button', { name: 'Yowl' })` — see naming casing in `quacker-core.mdc` |
+| Dialog/button not found after UI polish | You likely changed a label/title without updating e2e — see **UI changes must update e2e** above |
 
 ## Avoid locally
 
@@ -41,3 +63,4 @@ PLAYWRIGHT_BASE_URL=https://yowl.us yarn test:e2e --config=playwright.smoke.conf
 - Overriding config to force headless bundled Chromium when Chrome is available
 - Installing Edge/Firefox projects unless explicitly requested
 - Asserting lowercase `yowl` for the header brand — use `getByRole('button', { name: 'Yowl' })`
+- Merging / opening a PR with UI label or dialog-title changes while leaving `tests/e2e` on the old strings
