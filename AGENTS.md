@@ -102,6 +102,8 @@ Production and **prod** Supabase use Twilio Verify via Edge Functions (`auth-sen
 2. Enter code `555555` (or `AUTH_TEST_OTP_CODE`)
 3. Edge functions skip Twilio and issue a normal magiclink session
 
+**FTUE / onboarding check (always fresh signup):** use reserved `(202) 555-0199`. With test OTP enabled, auth deletes any existing user for that number before issuing a session, so you always get **What's your name?** then **Start a chat room**. Do not use `0199` for Maestro shared login (`0100`).
+
 Fallback if `supabase start` does not load `supabase/functions/.env`:
 
 ```bash

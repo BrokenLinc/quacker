@@ -3,20 +3,36 @@ import React from 'react';
 import { createDefaultMaskGenerator } from 'react-hook-mask';
 
 import {
-  getCurrentAuthUser,
-  hasChosenDisplayName,
   normalizePhoneInput,
   requestSmsOtp,
   verifySmsOtp,
 } from '@@lib/supabase/auth';
-import { DisplayNameForm } from '@@components/DisplayNameForm';
 
 const phoneMask = createDefaultMaskGenerator('(999) 999-9999');
 
-export type SignInFormProps = {
-  onSuccess?: () => void;
+const authFormPanelProps = {
+  as: 'form' as const,
+  align: 'stretch' as const,
+  spacing: 4,
+  w: 'full' as const,
+  maxW: '320px',
+  alignSelf: 'center' as const,
+  mx: 'auto' as const,
+  px: 5,
+  py: 5,
+  borderWidth: '1px',
+  borderColor: 'border.subtle',
+  borderRadius: 'lg',
+  bg: 'surface.raised',
 };
 
+export type SignInFormProps = {
+  onSuccess?: () => void;
+  /** Invite styling is owned by SignInScreen; kept for API compatibility. */
+  invite?: boolean;
+};
+
+/** Phone + OTP only. Name / create-room FTUE lives in PostAuthOnboarding via RequireAuth. */
 export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
   const [phoneInput, setPhoneInput] = React.useState('');
   const [normalizedPhone, setNormalizedPhone] = React.useState<string | null>(
@@ -26,7 +42,7 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
     null
   );
   const [code, setCode] = React.useState('');
-  const [step, setStep] = React.useState<'phone' | 'code' | 'name'>('phone');
+  const [step, setStep] = React.useState<'phone' | 'code'>('phone');
   const [loading, setLoading] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
   const sendInFlight = React.useRef(false);
@@ -72,21 +88,13 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
       otp.trim(),
       verificationSid
     );
+    verifyInFlight.current = false;
+    setLoading(false);
     if (verifyError) {
-      verifyInFlight.current = false;
-      setLoading(false);
       setError(verifyError.message);
       return;
     }
-
-    // First session: ask for a real name before dropping into chat.
-    const authUser = await getCurrentAuthUser();
-    verifyInFlight.current = false;
-    setLoading(false);
-    if (!hasChosenDisplayName(authUser)) {
-      setStep('name');
-      return;
-    }
+    // Session flip mounts PostAuthOnboarding in RequireAuth.
     onSuccess?.();
   };
 
@@ -96,28 +104,9 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
     await verifyCode(code);
   };
 
-  if (step === 'name') {
-    return (
-      <UI.Box w="full" maxW="320px">
-        <DisplayNameForm
-          allowSkip
-          showNotificationsOptIn
-          onDone={() => onSuccess?.()}
-        />
-      </UI.Box>
-    );
-  }
-
   if (step === 'code') {
     return (
-      <UI.VStack
-        as="form"
-        onSubmit={handleCodeSubmit}
-        align="stretch"
-        spacing={4}
-        w="full"
-        maxW="320px"
-      >
+      <UI.VStack {...authFormPanelProps} onSubmit={handleCodeSubmit}>
         <UI.FormControl>
           <UI.FormLabel>Verification code</UI.FormLabel>
           <UI.HStack justify="center" data-testid="sign-in-code">
@@ -190,16 +179,9 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
   }
 
   return (
-    <UI.VStack
-      as="form"
-      onSubmit={handlePhoneSubmit}
-      align="stretch"
-      spacing={4}
-      w="full"
-      maxW="320px"
-    >
+    <UI.VStack {...authFormPanelProps} onSubmit={handlePhoneSubmit}>
       <UI.FormControl>
-        <UI.FormLabel>Phone number</UI.FormLabel>
+        <UI.FormLabel>All you need is a phone number:</UI.FormLabel>
         <UI.MaskedInput
           type="tel"
           placeholder="(555) 555-5555"

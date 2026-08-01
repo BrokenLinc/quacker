@@ -110,8 +110,9 @@ when `MaskedInput` / form subtypes already cover the case.
 - Room lists are **membership-scoped** (`useGroups({ userId })`) — never list
   all rooms
 - Joining is **explicit consent** (join prompt), never a silent side effect
-- Ask for a display name right after first sign-in; `···1234` is a fallback,
-  not an identity
+- Ask for a display name right after first sign-in (**What's your name?**);
+  `···1234` is a fallback, not an identity. Organic FTUE then offers create-room
+  (Skip allowed); invite links skip create and go to the room
 - Destructive actions (leave/delete/ban) go through `useConfirmation` with
   `isDestructive: true`; never confirm create/send
 
@@ -128,8 +129,10 @@ Respect `prefers-reduced-motion`. No decorative animation, gradients, or gloss.
 - User-facing strings say **Yowl** (capital Y), never Quacker and never
   lowercase **yowl** as brand text; no developer copy in error screens (no
   "Vite", "dev server")
-- Brand chrome: header logo opens an about popover; accessible name is
-  **Yowl** (`getByRole('button', { name: 'Yowl' })`)
-- When changing labels, dialog titles, or `aria-label`s, update Playwright /
-  Maestro selectors **in the same change** (see playwright-chrome rule)
+- Brand chrome: signed-in header logo opens an about popover; accessible name is
+  **Yowl** (`getByRole('button', { name: 'Yowl' })`). Logged-out / FTUE: large
+  logo image (`sign-in-logo`), no header brand button
+- When changing labels, dialog titles, `aria-label`s, or adding a second control
+  with the same accessible name, update Playwright / Maestro selectors **in the
+  same change** (see playwright-chrome rule)
 - Errors are human + actionable ("Check your connection and try again.")

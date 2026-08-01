@@ -3,7 +3,7 @@ import { expect, test, type Page } from '@playwright/test';
 import {
   gotoGroupPage,
   seedTestGroup,
-  seedTestSession,
+  seedAuthenticatedSession,
 } from './fixtures/supabase';
 
 /** Chakra `md` is 48em / 768px — cover below, at, and above. */
@@ -15,7 +15,8 @@ const VIEWPORTS = [
 
 async function expectTitleLeftAligned(page: Page, viewportWidth: number) {
   const title = page.getByTestId('group-title');
-  const invite = page.getByRole('button', { name: 'Invite someone' });
+  // Header control — not the creator-tips-well CTA (same accessible name).
+  const invite = page.getByTestId('group-invite');
 
   await expect(title).toBeVisible();
   await expect(invite).toBeVisible();
@@ -42,7 +43,7 @@ test.describe('group header title', () => {
   test('room title is visible and left-aligned on all screen sizes', async ({
     page,
   }) => {
-    const { admin, userId } = await seedTestSession(page);
+    const { admin, userId } = await seedAuthenticatedSession(page);
     const group = await seedTestGroup(admin, userId, {
       slug: `hdr${Date.now().toString(36).slice(-5)}`,
       name: 'Header Title Room',

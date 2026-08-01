@@ -29,12 +29,12 @@ androidWebViewHierarchy: devtools
     commands:
       - tapOn: "Yowl"
       - extendedWaitUntil:
-          visible: ".*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          visible: ".*All you need is a phone number:|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
           timeout: 45000
 # Install if launcher icon missing
 - runFlow:
     when:
-      notVisible: ".*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+      notVisible: ".*All you need is a phone number:|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
     commands:
       - runFlow:
           file: android-chrome-open.yaml
@@ -44,11 +44,11 @@ androidWebViewHierarchy: devtools
           commands:
             - tapOn: "Close"
       - extendedWaitUntil:
-          visible: ".*Sign in to Yowl|Your rooms.*"
+          visible: ".*All you need is a phone number:|Your rooms.*"
           timeout: 20000
       - runFlow:
           when:
-            visible: "Sign in to Yowl"
+            visible: "All you need is a phone number:"
           file: shared/login-steps.yaml
       - extendedWaitUntil:
           visible: "Install Yowl"
@@ -73,7 +73,7 @@ androidWebViewHierarchy: devtools
           timeout: 20000
       - tapOn: "Yowl"
       - extendedWaitUntil:
-          visible: ".*Sign in to Yowl|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
+          visible: ".*All you need is a phone number:|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*"
           timeout: 45000
 # Dismiss leftover Account sheet
 - runFlow:
@@ -106,7 +106,7 @@ androidWebViewHierarchy: devtools
 # --- Reach home signed-in ---
 - runFlow:
     when:
-      visible: "Sign in to Yowl"
+      visible: "All you need is a phone number:"
     file: shared/login-steps.yaml
 - runFlow:
     when:
@@ -120,7 +120,7 @@ androidWebViewHierarchy: devtools
       - tapOn: "Back to home"
 - runFlow:
     when:
-      visible: "Sign in to Yowl"
+      visible: "All you need is a phone number:"
     file: shared/login-steps.yaml
 - extendedWaitUntil:
     visible: "Your rooms"

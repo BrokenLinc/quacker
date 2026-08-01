@@ -18,6 +18,7 @@ alwaysApply: false
 - Screenshots: `takeScreenshot: artifacts/…` lands under `~/.maestro/tests/<run>/<flow>/takeScreenshot/artifacts/` (repo `artifacts/` is gitignored). Always copy from the newest run dir by mtime — do not assume a prior copy is current
 - Local Safari over a LAN IP shows a collapsed address pill (`192.168.x.x`) that can sit in the keyboard band; that is Safari chrome, not app padding. Prefer judging flushness on standalone PWA shots
 - Test OTP: `555-01XX` + `555555` with `AUTH_ALLOW_TEST_OTP` (local `supabase/functions/.env` or **quacker-dev** only — never prod)
+- FTUE check: reserved `(202) 555-0199` — deletes that auth user before each test-OTP session (always fresh onboarding). Maestro login stays on `0100`
 - Viewport contract + anti-patterns: `docs/ux.md`. Wipe webclip Storage after `index.html` changes. Judge PWA bottom gap with pixels (raised fill to y=bottom), not vision captions
 - Account sheet: appearance → Change name → Log out → rooms → New room
 - Android sibling: `.cursor/rules/maestro-android.mdc` (`yarn test:maestro:android*`)

@@ -7,7 +7,7 @@ import {
 import {
   gotoGroupPage,
   seedTestGroup,
-  seedTestSession,
+  seedAuthenticatedSession,
 } from './fixtures/supabase';
 
 test.describe('notification prefs', () => {
@@ -15,7 +15,7 @@ test.describe('notification prefs', () => {
 
   test('Account switch enables push after explicit toggle', async ({ page }) => {
     await installPushMocks(page);
-    const { admin, userId } = await seedTestSession(page);
+    const { admin, userId } = await seedAuthenticatedSession(page);
 
     await expect.poll(async () => getPushPermissionRequestCount(page)).toBe(0);
 
@@ -66,7 +66,7 @@ test.describe('notification prefs', () => {
 
   test('join prompt persists notify level', async ({ page }) => {
     await installPushMocks(page);
-    const { admin, userId: joinerId } = await seedTestSession(page);
+    const { admin, userId: joinerId } = await seedAuthenticatedSession(page);
 
     const { data: creatorData, error: creatorError } =
       await admin.auth.admin.createUser({
@@ -116,7 +116,7 @@ test.describe('notification prefs', () => {
 
   test('group overflow can change notify level', async ({ page }) => {
     await installPushMocks(page);
-    const { admin, userId } = await seedTestSession(page);
+    const { admin, userId } = await seedAuthenticatedSession(page);
 
     const group = await seedTestGroup(admin, userId, {
       slug: `ov${Date.now().toString(36).slice(-5)}`,

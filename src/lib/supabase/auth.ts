@@ -53,9 +53,32 @@ export const resolveAppUserPhotoURL = (
   user: Pick<AppUser, 'photoURL'>
 ): string | null => user.photoURL ?? null;
 
+/** Phone-seeded fallback like `···1234` — not a chosen identity. */
+export const isPhoneFallbackDisplayName = (
+  name: string | null | undefined
+): boolean => Boolean(name && /^···\d{4}$/.test(name));
+
 /** True when the user picked a real name (vs the `···1234` phone fallback). */
-export const hasChosenDisplayName = (user: User | null): boolean =>
-  Boolean(user?.user_metadata?.display_name);
+export const hasChosenDisplayName = (user: User | null): boolean => {
+  const name = user?.user_metadata?.display_name as string | undefined;
+  return Boolean(name) && !isPhoneFallbackDisplayName(name);
+};
+
+/** AppUser variant — uses resolved `displayName` (metadata or phone fallback). */
+export const appUserHasChosenDisplayName = (user: AppUser | null): boolean => {
+  if (!user?.displayName) return false;
+  return !isPhoneFallbackDisplayName(user.displayName);
+};
+
+/**
+ * Reserved fictional number for manual/dev FTUE checks.
+ * Dev Edge Functions delete any existing auth user with this phone before
+ * issuing a session, so every login is a fresh “needs name” signup.
+ * Format: (202) 555-0199 — never use for Maestro shared login (0100).
+ */
+export const FTUE_TEST_PHONE_E164 = '+12025550199';
+export const FTUE_TEST_PHONE_DISPLAY = '(202) 555-0199';
+
 
 export const updateDisplayName = async (displayName: string) => {
   const { error } = await supabase.auth.updateUser({

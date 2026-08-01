@@ -16,11 +16,11 @@ androidWebViewHierarchy: devtools
       - tapOn: "Close"
 # Keep install banner — do not dismiss it.
 - extendedWaitUntil:
-    visible: ".*Sign in to Yowl|Your rooms.*"
+    visible: ".*All you need is a phone number:|Your rooms.*"
     timeout: 20000
 - runFlow:
     when:
-      visible: "Sign in to Yowl"
+      visible: "All you need is a phone number:"
     file: shared/login-steps.yaml
 - extendedWaitUntil:
     visible: "Your rooms"
@@ -74,10 +74,10 @@ androidWebViewHierarchy: devtools
     timeout: 20000
 - tapOn: "Yowl"
 - extendedWaitUntil:
-    visible: ".*Sign in to Yowl|Your rooms.*"
+    visible: ".*All you need is a phone number:|Your rooms.*"
     timeout: 45000
 - runFlow:
     when:
-      visible: "Sign in to Yowl"
+      visible: "All you need is a phone number:"
     file: shared/login-steps.yaml
 - assertVisible: "Your rooms"

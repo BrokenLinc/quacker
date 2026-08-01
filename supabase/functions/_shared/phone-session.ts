@@ -4,11 +4,13 @@ import type { User } from 'https://esm.sh/@supabase/supabase-js@2.110.7';
 import {
   displayNameFromPhone,
   formatError,
+  isFtueResetTestPhone,
   jsonResponse,
   logAuthOtp,
   maskPhone,
   phonesMatch,
   syntheticEmail,
+  testOtpEnabled,
 } from './auth-utils.ts';
 
 export type AdminClient = ReturnType<typeof createAdminClient>;
@@ -50,6 +52,15 @@ export const ensurePhoneUser = async (
   admin: AdminClient,
   phone: string
 ): Promise<User> => {
+  // Fresh FTUE signup every time for the reserved test number (dev/test OTP only).
+  if (testOtpEnabled() && isFtueResetTestPhone(phone)) {
+    const stale = await findPhoneUser(admin, phone);
+    if (stale) {
+      await admin.auth.admin.deleteUser(stale.id);
+      logAuthOtp('ftue_test_user_reset', { phone: maskPhone(phone) });
+    }
+  }
+
   const email = syntheticEmail(phone);
   const existing = await findPhoneUser(admin, phone);
   if (existing) {

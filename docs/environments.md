@@ -64,7 +64,7 @@ Edge Functions: `auth-send-otp`, `auth-verify-otp`. Secrets: `TWILIO_ACCOUNT_SID
 
 **Upgrade + balance ≠ unrestricted SMS.** Twilio returns error **21608** until a **Primary Compliance Profile** is **Twilio Approved** in Trust Hub. See [prerequisites.md — Twilio Verify](./prerequisites.md#twilio-verify-sms-otp).
 
-- **Dev test OTP:** `AUTH_ALLOW_TEST_OTP=true` on **quacker-dev** only; fictional `555-01XX` + `555555` — never prod.
+- **Dev test OTP:** `AUTH_ALLOW_TEST_OTP=true` on **quacker-dev** only; fictional `555-01XX` + `555555` — never prod. Reserved FTUE number `(202) 555-0199` is wiped before each session so onboarding is always re-testable.
 - **Verify** is exempt from A2P 10DLC; do not register a messaging campaign for OTP alone.
 
 ## Workflows
