@@ -75,6 +75,7 @@ Do not ask the user to perform steps 2–6.
 | Missing tool / plugin | `yarn check:requirements`; `GetMcpTools`; `mcp_auth` if needed |
 | No Supabase project | Agent: `create_project` — do not ask user to use dashboard |
 | Migration history mismatch (`Remote migration versions not found…`) | `list_migrations`; repair orphans to match filenames (`migration repair` or `execute_sql` on `schema_migrations`); never leave MCP-stamped versions that differ from git |
+| `unsafe use of new value "…" of enum type` (`55P04`) in CI / `supabase start` | Split: migration N = only `alter type … add value`; migration N+1 = SQL that references the label. Same-file ADD VALUE + use fails inside one transaction |
 | Migration SQL error | Fix SQL, `supabase db reset` (optional), re-run verify |
 | E2e auth fails | Check dev `SUPABASE_SERVICE_ROLE_KEY`; remote Supabase reachable |
 | Magic link redirect 404 | Agent: PATCH auth `uri_allow_list` — see `docs/environments.md` |
