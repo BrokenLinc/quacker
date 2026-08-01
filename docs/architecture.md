@@ -21,8 +21,13 @@ groups
   id, slug, creator_id, name, author_name, author_photo_url, created_at
 
 group_members
-  group_id, user_id, role (creator|member), notify_level (all|announcements|none),
+  group_id, user_id, role (creator|mod|member), notify_level (all|announcements|none),
   display_name, photo_url, phone_last4, last_viewed_at
+  -- role=mod is room staff (rename, silence, mod/unmod); cleared on leave/rejoin
+
+group_silences
+  group_id, user_id, display_name, photo_url, silenced_by, created_at
+  -- persistent mute; survives leave/rejoin; blocks message insert until removed
 
 messages
   id, group_id, author_id, author_name, author_photo_url, text, is_announcement, created_at
