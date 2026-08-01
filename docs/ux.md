@@ -219,9 +219,9 @@ the frame while auth/group data loads — never withhold the frame until ready
   (default `center`) so trigger and panel share a point, then clamps into the
   visual viewport with safe-area insets.
 - **Larger dialogs** (forms, listings, multi-field / multi-step content) →
-  `QuickModal` (centered by default with ≥16px edge gap; tray/drawer on mobile
-  when enabled). Confirmations use the **same** mobile drawer shell — not a
-  centered desktop modal on phones.
+  `QuickModal` (top-aligned by default below `md`, centered from `md` up,
+  ≥16px edge gap; tray/drawer on mobile when enabled). Confirmations use the
+  **same** mobile drawer shell — not a centered desktop modal on phones.
 - **Trigger-aligned placement (trays):** QuickModal mobile trays open from the
   same edge as the trigger (header / top chrome → top tray; sidebar footer /
   bottom chrome → bottom tray).
