@@ -15,7 +15,8 @@ const VIEWPORTS = [
 
 async function expectTitleLeftAligned(page: Page, viewportWidth: number) {
   const title = page.getByTestId('group-title');
-  const invite = page.getByRole('button', { name: 'Invite someone' });
+  // Header control — not the creator-tips-well CTA (same accessible name).
+  const invite = page.getByTestId('group-invite');
 
   await expect(title).toBeVisible();
   await expect(invite).toBeVisible();

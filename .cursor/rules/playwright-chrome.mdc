@@ -26,14 +26,16 @@ When you change any of the following, **grep and update** `tests/e2e/**` (and Ma
 | Dialog / MorphingPopover `title` or `aria-label` | `getByRole('dialog', { name: '…' })` |
 | `aria-label` on icon buttons | `getByRole('button', { name: '…' })` |
 | `data-testid` rename/remove | `getByTestId('…')` |
-| Brand / chrome accessible name | Brand **Yowl** button, Account menu, room options |
+| Brand / chrome accessible name | Signed-in header **Yowl** button; logged-out FTUE is `sign-in-logo` / `img[name=Yowl]` |
+| **Duplicate accessible names** | Adding a second control with the same role+name (e.g. tip-well **Invite someone** next to header invite) → Playwright **strict mode** failures |
 
 **Do this in the same turn as the UI edit** — not after CI fails:
 
 1. `rg` the old string under `tests/e2e/` and `maestro/`
-2. Prefer **stable `data-testid`s** for chrome that will keep changing (menus, dynamic titles). Role+name is fine for stable product copy.
+2. Prefer **stable `data-testid`s** for chrome that will keep changing (menus, dynamic titles, header icon actions). Role+name is fine for stable unique product copy.
 3. If a dialog title becomes **dynamic** (e.g. account menu titled with the user's name), stop asserting a fixed dialog name — scope via `getByTestId` / open trigger, or `getByRole('dialog')` without a fixed name.
-4. Run or reason about which specs touch that surface (`notification-prefs`, `group-header`, `a11y-*`, etc.)
+4. If you add a CTA that **reuses** an existing accessible name, give chrome a `data-testid` and point e2e at that (do not rely on `.first()`).
+5. Run or reason about which specs touch that surface (`notification-prefs`, `group-header`, `a11y-*`, `smoke-production`, etc.). `smoke-production.spec.ts` is in the CI smoke project against the **PR build**, not only live yowl.us.
 
 ## When running e2e
 
@@ -54,7 +56,8 @@ PLAYWRIGHT_BASE_URL=https://yowl.us yarn test:e2e --config=playwright.smoke.conf
 | `channel: 'chrome'` not found | Install [Google Chrome](https://www.google.com/chrome/); on macOS it lives in `/Applications/Google Chrome.app` |
 | Agent sandbox blocks browser | Request `all` permissions for the test command, not a config change away from Chrome |
 | CI failure | Keep `CI=true` path on bundled Chromium; do not set `channel: 'chrome'` in GitHub Actions |
-| Brand not found (`name: 'yowl'`) | Accessible name is **Yowl** (logo button); use `getByRole('button', { name: 'Yowl' })` — see naming casing in `quacker-core.mdc` |
+| Brand not found (`name: 'yowl'`) | Signed-in chrome: `getByRole('button', { name: 'Yowl' })`. Logged-out FTUE: `getByTestId('sign-in-logo')` / `getByRole('img', { name: 'Yowl' })` — no header brand button |
+| Strict mode: resolved to 2 elements | Duplicate accessible names — scope with `data-testid` (e.g. `group-invite` vs creator tip well) |
 | Dialog/button not found after UI polish | You likely changed a label/title without updating e2e — see **UI changes must update e2e** above |
 
 ## Avoid locally
@@ -62,5 +65,6 @@ PLAYWRIGHT_BASE_URL=https://yowl.us yarn test:e2e --config=playwright.smoke.conf
 - `playwright install chromium` as the first fix for hangs
 - Overriding config to force headless bundled Chromium when Chrome is available
 - Installing Edge/Firefox projects unless explicitly requested
-- Asserting lowercase `yowl` for the header brand — use `getByRole('button', { name: 'Yowl' })`
-- Merging / opening a PR with UI label or dialog-title changes while leaving `tests/e2e` on the old strings
+- Asserting lowercase `yowl` for the header brand — use `getByRole('button', { name: 'Yowl' })` when chrome is shown
+- Asserting the header **Yowl** button on logged-out `/` — FTUE is chrome-less (`sign-in-screen`)
+- Merging / opening a PR with UI label, dialog-title, or **duplicate-name CTA** changes while leaving `tests/e2e` on the old strings

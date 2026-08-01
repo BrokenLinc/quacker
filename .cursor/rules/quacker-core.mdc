@@ -29,9 +29,11 @@ Quacker is a private, ad-hoc group chat for trips and conferences — short-live
 | **Quacker** | Internal docs headings / code-name prose only — never UI |
 
 - Do **not** use lowercase **yowl** as visible brand text (old wordmark style).
-  The header logo’s accessible name is **Yowl** (button `aria-label`), not `yowl`.
-- When branding changes, update e2e/Maestro selectors to the **accessible
-  name** users/AT actually see — not a stylized spelling from an old mock.
+  Signed-in header logo accessible name is **Yowl** (button `aria-label`), not
+  `yowl`. Logged-out FTUE uses a logo **img** (`alt="Yowl"` / `sign-in-logo`),
+  not that header button.
+- When branding or chrome visibility changes, update e2e/Maestro selectors to
+  what users/AT actually see — and watch for **duplicate** role+name pairs.
 
 ## Stack
 

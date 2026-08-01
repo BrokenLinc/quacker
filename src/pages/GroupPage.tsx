@@ -315,6 +315,7 @@ const GroupBarContents: React.FC<{
         variant="ghost"
         size="sm"
         onClick={shareModal.onOpen}
+        data-testid="group-invite"
       />
       {isMobile ? <UserMenu showColorMode /> : null}
       <ShareGroupModal group={group} {...shareModal} />
