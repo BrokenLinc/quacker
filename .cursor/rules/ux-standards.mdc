@@ -59,8 +59,8 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
   Esc / outside click; Close is optional (`showClose`). **Small** (menus,
   short action lists, popovers) → `MorphingPopover` (overlapping `anchor` +
   viewport clamp with safe-area). **Large** (forms, listings, multi-field
-  content) → `QuickModal` tray/modal (centered by default, ≥16px from edges);
-  confirmations use the same mobile drawer shell.
+  content) → `QuickModal` tray/modal (top below `md`, centered from `md` up,
+  ≥16px from edges); confirmations use the same mobile drawer shell.
   Tray placement: top chrome → top tray; bottom chrome → bottom tray.
   Morphing spring counts in the micro-motion budget (~≤400ms); honor
   `prefers-reduced-motion`. Overlay focus rings use `_focusVisible` so

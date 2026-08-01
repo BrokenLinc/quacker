@@ -129,10 +129,14 @@ export const QuickModal: React.FC<QuickModalProps> = ({
   floating = true,
   isOpen,
   onClose,
-  isCentered = true,
+  isCentered: isCenteredProp,
   ...props
 }) => {
   const isMobile = UI.useBreakpointValue({ base: true, md: false });
+  /** Top-aligned on small screens (keyboard-friendly); centered from md up. */
+  const defaultIsCentered =
+    UI.useBreakpointValue({ base: false, md: true }) ?? true;
+  const isCentered = isCenteredProp ?? defaultIsCentered;
   const shell: Shell =
     QUICK_MODAL_MOBILE_TRAY && isMobile ? 'drawer' : 'modal';
 
