@@ -11,11 +11,19 @@ alwaysApply: false
 - Apply locally: `supabase db reset` (optional; needs Docker)
 - Apply remote: prefer **`supabase db push`** (CLI) so versions match `supabase/migrations/<version>_*.sql` filenames. MCP `apply_migration` stamps its **own** timestamp and **will break CI `db push`** (“Remote migration versions not found in local migrations directory”).
 - If CLI dies on `~/.supabase/telemetry.json` EPERM (sandbox): `SUPABASE_DISABLE_TELEMETRY=1 supabase db push` with full permissions. Confirm `supabase/.temp/project-ref` matches **dev** (`SUPABASE_PROJECT_ID`) before push — `link` can leave you on prod.
+- If `db push` fails with IPv6 `db.<ref>.supabase.co` timeout or pooler `tenant/user … not found`: apply the committed SQL via MCP `execute_sql` on the correct project ref, then stamp `INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('…', '…')` so later `db push` stays aligned. Do **not** use MCP `apply_migration` for SQL that already has a filename (wrong stamp).
 - If history already diverged: `list_migrations` on the project, then either (a) `supabase migration repair --status reverted <orphan…>` + `--status applied <local version…>` against the correct project (`--linked` + prod password / `--db-url`), or (b) `execute_sql` to delete orphan versions and `INSERT` the committed filenames (SQL already applied). Then push/apply only missing local versions.
 - Never `apply_migration` for SQL that already has a committed filename — use `db push`, or `execute_sql` + `INSERT INTO supabase_migrations.schema_migrations (version, name) VALUES ('…', '…')`.
 - **Enum `ADD VALUE` must be its own migration.** Postgres raises `55P04` (“unsafe use of new value … of enum type”) if a later statement in the **same transaction** references the new label. Each migration file runs in one transaction (`supabase start` / CI), so put only `alter type … add value …` in file N, then use the label in file N+1. Do not combine them even on PG 15+. Remote `db push` can hide this when the label was already committed in a prior session.
 - Pin Supabase CLI in GitHub Actions (`supabase/setup-cli` `version: 2.x.y`) — `latest` often fails with GitHub API rate limit when resolving the release.
 - RLS must enforce auth server-side; client checks are UX only
+- **INSERT `WITH CHECK` must pin server-owned columns.** Checking only
+  `author_id = auth.uid()` is not enough — PostgREST clients can set any
+  insertable column (`vote_count`, `status`, counters, workflow enums).
+  Require safe defaults in the policy (e.g. `status = 'new' and vote_count = 0`)
+  and/or omit those columns from client inserts and maintain them only via
+  triggers / SuperAdmin UPDATE. When reviewing a new table, ask: “Can a
+  malicious insert inflate ranking or skip a workflow state?”
 
 ## Agent-owned Supabase ops (do not defer to user)
 

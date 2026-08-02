@@ -132,6 +132,26 @@ export const normalizePhoneInput = (input: string): string | null => {
   return null;
 };
 
+/** Digits-only phone for comparisons (GoTrue may omit leading `+`). */
+export const phoneDigits = (
+  phone: string | null | undefined
+): string | null => {
+  if (!phone) return null;
+  const digits = phone.replace(/\D/g, '');
+  return digits.length ? digits : null;
+};
+
+/** Hard-coded SuperAdmin phones (digits, with country code). */
+const SUPERADMIN_PHONE_DIGITS = new Set(['13522622098']);
+
+/** True when the phone matches a SuperAdmin (digit-normalized). */
+export const isSuperAdminPhone = (
+  phone: string | null | undefined
+): boolean => {
+  const digits = phoneDigits(phone);
+  return Boolean(digits && SUPERADMIN_PHONE_DIGITS.has(digits));
+};
+
 export const requestSmsOtp = async (phone: string) => {
   const { data, error } = await supabase.functions.invoke('auth-send-otp', {
     body: { phone },

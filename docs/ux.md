@@ -113,10 +113,13 @@ plain text field “because validation will catch it.” Reuse `src/forms/` and
 | Empty | `UI.EmptyState` with an icon + CTA |
 | Error | `UI.ErrorState` with retry, or a toast for action failures |
 | Submitting | Button `isLoading`, disabled double-submit |
+| Toggle / vote | Optimistic local state (or hold loading until parent refetch matches); never re-fire with stale props |
 | Destructive | `useConfirmation({ isDestructive: true })` |
 
 Blank screens are bugs. `return null` on error/empty is banned in page-level
-components.
+components. Toggle controls that depend on list refetch (e.g. suggestion
+upvotes) must not use prop values that lag the mutation — see
+`.cursor/rules/ux-standards.mdc`.
 
 ## Native / PWA
 

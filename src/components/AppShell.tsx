@@ -1,7 +1,7 @@
 import * as UI from '@@ui';
-import { faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
+import { faLightbulb, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
-import { Outlet, useMatch } from 'react-router-dom';
+import { Outlet, useLocation, useMatch } from 'react-router-dom';
 
 import { useGroups, useUnreadCounts } from '@@api';
 import { SignInForm } from '@@components/auth/SignInForm';
@@ -24,8 +24,8 @@ import { UserMenu } from './UserMenu';
  * App frame: fixed-viewport shell with internal scrolling (chat-app pattern).
  * `#root` geometry: `index.html` + `useVisualViewportHeight` (see docs/ux.md).
  * Desktop (md+): persistent left sidebar with group nav.
- * Mobile: compact top header on non-group routes; group pages render their
- * own single bar.
+ * Mobile: compact top header on non-group / non-suggestions routes; group and
+ * suggestions pages render their own top bar.
  */
 const UnreadAppChrome: React.FC = () => {
   const [user] = useAuthState();
@@ -41,9 +41,14 @@ export const AppLayout: React.FC = () => {
     { base: true, md: false },
     { ssr: false }
   );
+  const location = useLocation();
   const groupMatch = useMatch('/:groupId');
   const slugMatch = useMatch('/g/:slug');
-  const isGroupRoute = Boolean(groupMatch) && !slugMatch;
+  const isSuggestionsRoute = location.pathname.startsWith('/suggestions');
+  // `/:groupId` also matches `/suggestions` — exclude known non-room paths.
+  const isGroupRoute =
+    Boolean(groupMatch) && !slugMatch && !isSuggestionsRoute;
+  const hidesMobileShellHeader = isGroupRoute || isSuggestionsRoute;
 
   React.useEffect(() => {
     if (!user) {
@@ -71,7 +76,9 @@ export const AppLayout: React.FC = () => {
           overflow="hidden"
           bg="surface.canvas"
         >
-          {showChrome && isMobile && !isGroupRoute ? <MobileHeader /> : null}
+          {showChrome && isMobile && !hidesMobileShellHeader ? (
+            <MobileHeader />
+          ) : null}
           <UI.Flex flex={1} minH={0}>
             {showChrome && !isMobile ? <Sidebar /> : null}
             <UI.Flex
@@ -123,6 +130,18 @@ export const BrandLink: React.FC<UI.BoxProps> = (props) => {
   );
 };
 
+const SuggestionsNavIconButton: React.FC = () => (
+  <UI.IconButton
+    as={UI.RouteLink}
+    route={routes.suggestions()}
+    aria-label="Suggestions"
+    data-testid="suggestions-nav"
+    icon={faLightbulb}
+    size="sm"
+    variant="ghost"
+  />
+);
+
 const MobileHeader: React.FC = () => {
   const [user] = useAuthState();
 
@@ -137,7 +156,14 @@ const MobileHeader: React.FC = () => {
       bg="surface.raised"
     >
       <BrandLink mr="auto" />
-      {user ? <UserMenu showColorMode /> : <HeaderSignIn />}
+      {user ? (
+        <React.Fragment>
+          <SuggestionsNavIconButton />
+          <UserMenu showColorMode />
+        </React.Fragment>
+      ) : (
+        <HeaderSignIn />
+      )}
     </UI.HStack>
   );
 };
@@ -158,7 +184,14 @@ const Sidebar: React.FC = () => {
     >
       <UI.HStack px={4} py={3} spacing={1}>
         <BrandLink mr="auto" />
-        {user ? <NewGroupIconButton /> : <HeaderSignIn />}
+        {user ? (
+          <React.Fragment>
+            <SuggestionsNavIconButton />
+            <NewGroupIconButton />
+          </React.Fragment>
+        ) : (
+          <HeaderSignIn />
+        )}
       </UI.HStack>
 
       {user ? (
