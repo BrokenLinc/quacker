@@ -84,10 +84,7 @@ export const useUnreadAppChrome = (options: {
   userId: string | undefined;
 }): void => {
   const { userId } = options;
-  const [counts] = useUnreadCounts({
-    userId,
-    channelId: 'app-chrome',
-  });
+  const [counts] = useUnreadCounts({ userId });
 
   useEffect(() => {
     if (!userId) {

@@ -4,10 +4,12 @@ import React from 'react';
 import { Outlet, useLocation, useMatch } from 'react-router-dom';
 
 import { useGroups, useUnreadCounts } from '@@api';
+import { retryGroups } from '@@api/cache';
 import { SignInForm } from '@@components/auth/SignInForm';
 import { FtueHoldContext } from '@@components/auth/ftueHoldContext';
 import { useSignInPlacement } from '@@components/auth/useSignInPlacement';
 import { SignInPlacementFromAuth } from '@@components/auth/SignInPlacementFromAuth';
+import { installAppLifecycle } from '@@lib/lifecycle/appLifecycle';
 import { useUnreadAppChrome } from '@@lib/notifications/documentChrome';
 import { InAppPushToastListener } from '@@lib/notifications/inAppPushToast';
 import {
@@ -35,6 +37,8 @@ const UnreadAppChrome: React.FC = () => {
 
 export const AppLayout: React.FC = () => {
   useVisualViewportHeight();
+  // Resume / reconnect / outbox-flush orchestration for the app's lifetime.
+  React.useEffect(() => installAppLifecycle(), []);
   const [user] = useAuthState();
   const [ftueHold, setFtueHold] = React.useState(false);
   const isMobile = UI.useBreakpointValue(
@@ -230,14 +234,8 @@ const formatUnread = (n: number): string => (n > 99 ? '99+' : String(n));
 
 const SidebarGroupNav: React.FC = () => {
   const [user] = useAuthState();
-  const [groups, loading, error] = useGroups({
-    userId: user?.uid,
-    channelId: 'sidebar',
-  });
-  const [unread] = useUnreadCounts({
-    userId: user?.uid,
-    channelId: 'sidebar',
-  });
+  const [groups, loading, error] = useGroups({ userId: user?.uid });
+  const [unread] = useUnreadCounts({ userId: user?.uid });
 
   if (loading) {
     return (
@@ -250,9 +248,14 @@ const SidebarGroupNav: React.FC = () => {
   }
   if (error) {
     return (
-      <UI.Text fontSize="sm" color="text.muted" px={2} py={1}>
-        Couldn't load rooms.
-      </UI.Text>
+      <UI.VStack align="stretch" spacing={1} px={2} py={1}>
+        <UI.Text fontSize="sm" color="text.muted">
+          Couldn't load rooms.
+        </UI.Text>
+        <UI.Button size="xs" variant="link" onClick={retryGroups}>
+          Try again
+        </UI.Button>
+      </UI.VStack>
     );
   }
   if (!groups?.length) {

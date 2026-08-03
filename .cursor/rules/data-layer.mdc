@@ -1,0 +1,85 @@
+---
+description: TanStack Query cache, realtime topics, outbox, and resume behavior
+globs: "src/api/**,src/lib/query/**,src/lib/realtime/**,src/lib/lifecycle/**,src/lib/outbox/**,src/lib/notifications/**,public/sw.js"
+alwaysApply: false
+---
+
+# Data layer — cache, realtime, resume
+
+Server state lives in TanStack Query v5, persisted to IndexedDB. Continuity
+(instant paint on room re-entry, notification tap, cold launch) depends on the
+rules below. Overview in [`docs/architecture.md`](../../docs/architecture.md).
+
+## Never do this
+
+- **No `useState` + `useEffect` fetching.** Add a `useQuery` hook in `src/api/`
+ with a key from `queryKeys`. Per-mount fetch-and-discard is what made room
+ re-entry feel clunky.
+- **No refetch-on-realtime-event.** Merge `payload.new` into the cache with
+ `setQueryData`. A full 100-row refetch per message is the old bug.
+- **No `window.location.reload()` as a retry handler.** Use the `retry*` helpers
+ in `src/api/cache.ts` — a reload throws away the warm cache.
+- **No `window` custom events for invalidation** (`quacker:*-changed` is gone).
+ Mutations call `invalidate*` from `src/api/cache.ts`.
+- **Do not persist auth or one-shot queries.** Only keys whose root is in
+ `PERSISTED_QUERY_ROOTS` are dehydrated.
+
+## Conventions
+
+| Concern | Where |
+| --- | --- |
+| Query keys | `src/api/queryKeys.ts` — add the root to `PERSISTED_QUERY_ROOTS` only if the data should survive a cold launch |
+| Invalidation / retry | `src/api/cache.ts` |
+| Realtime topic | Declare next to its row mapper in `src/api/*.ts`; subscribe with `useRealtimeTopic` |
+| Message merge math | `src/api/messageSync.ts` — keep it dependency-free (vitest runs `environment: 'node'`) |
+| Sends | `sendOrQueueMessage` from `src/lib/outbox/` — never call `addMessage` from a component |
+
+- `asHookResult` maps `loading` → **`isPending`**, not `isFetching`. If you
+ surface `isFetching` as loading, cached data flashes a skeleton on every
+ revalidate and the whole point is lost.
+- `error` is only surfaced when there is no data, so a failed background
+ refetch shows stale data instead of an `ErrorState`.
+- Realtime topics must be **stable values** (declared per `groupId`), and their
+ handlers must close over the query client, not component state.
+
+## Pitfalls found the hard way
+
+- **`RealtimeTopic` circular imports.** Defining topics in a shared module
+ while API modules import the type creates a cycle. Keep topic objects in the
+ API module that owns the row mapper; keep only the type + hook in
+ `src/lib/realtime/`.
+- **StrictMode channel churn.** Double-invoked effects would remove a channel
+ that is immediately resubscribed. The manager defers teardown by
+ `TEARDOWN_DELAY_MS` and cancels it on resubscribe, and appends a generation
+ counter to channel names so a pending async removal cannot collide.
+- **Merging into an unresolved query is a no-op.** `applyMessageInsert` needs
+ `getQueryData` to return an array; if the messages query is still pending
+ there is nothing to merge into. In e2e, wait for the room to resolve (empty
+ state or a message) before simulating a push.
+- **Offline sends need their own retry.** `flushOutbox` on the `online` event is
+ not enough — a transient failure right after reconnect otherwise strands the
+ bubble in `sending…`. Retryable failures reschedule with backoff; permanent
+ ones (RLS, malformed) mark the entry `failed` and show a Retry button.
+- **Client-supplied message `id`.** The insert policy allows it, and it is what
+ makes retries idempotent — a duplicate-key error on retry means success, not
+ failure (`isDuplicateSendError`).
+- **Sign-out must purge.** Query cache, persisted IndexedDB cache, outbox, and
+ push inbox all get cleared on sign-out or user switch, and a `CACHE_OWNER_KEY`
+ catches the case where a different user restores an old cache.
+
+## Service worker contract
+
+`public/sw.js` and `supabase/functions/notify-new-message` are coupled: the push
+payload carries the **full message row**. If you change the message shape,
+update `PushedMessage` in `src/lib/notifications/pushInbox.ts` and the Edge
+Function in the same change, then redeploy the function.
+
+## Testing
+
+- Pure logic (`messageSync`, `sendErrors`) → vitest, `src/**/*.test.ts`.
+- Continuity behavior → `tests/e2e/offline-continuity.spec.ts` (in the
+ `integration` Playwright project, needs Supabase). It covers cache re-entry
+ with the network blocked, IndexedDB persistence, offline send + flush,
+ missed-message recovery, push merge, in-app notification routing, and
+ sign-out purge. Add `data-testid`s (`connection-status`, `message-pending`)
+ for new chrome rather than role+name.

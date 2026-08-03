@@ -1,4 +1,5 @@
 import { useGroups, useUnreadCounts } from '@@api';
+import { retryGroups } from '@@api/cache';
 import { RequireAuth } from '@@components/auth/RequireAuth';
 import {
   NewGroupButton,
@@ -47,14 +48,8 @@ const formatUnread = (n: number): string => (n > 99 ? '99+' : String(n));
 
 const GroupList: React.FC = () => {
   const [user] = useAuthState();
-  const [groups, loading, error] = useGroups({
-    userId: user?.uid,
-    channelId: 'home',
-  });
-  const [unread] = useUnreadCounts({
-    userId: user?.uid,
-    channelId: 'home',
-  });
+  const [groups, loading, error] = useGroups({ userId: user?.uid });
+  const [unread] = useUnreadCounts({ userId: user?.uid });
 
   if (loading) {
     return (
@@ -68,10 +63,7 @@ const GroupList: React.FC = () => {
 
   if (error) {
     return (
-      <UI.ErrorState
-        title="Couldn't load your rooms"
-        onRetry={() => window.location.reload()}
-      />
+      <UI.ErrorState title="Couldn't load your rooms" onRetry={retryGroups} />
     );
   }
 

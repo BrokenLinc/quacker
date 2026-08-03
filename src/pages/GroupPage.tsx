@@ -5,9 +5,7 @@ import { getShareUrl } from '@@lib/share';
 import {
   Group,
   Message,
-  addMessage,
   deleteGroup,
-  isGroupMember,
   joinGroup,
   leaveGroup,
   markGroupViewed,
@@ -16,9 +14,23 @@ import {
   updateGroup,
   useGroup,
   useGroupMembers,
+  useGroupMembership,
   useGroupMessages,
   useGroupSilences,
 } from '@@api';
+import {
+  retryGroupMembers,
+  retryMessages,
+  retryRoom,
+} from '@@api/cache';
+import { useConnectionState } from '@@lib/lifecycle/useConnectionState';
+import {
+  outboxEntryToMessage,
+  retryOutboxEntry,
+  sendOrQueueMessage,
+} from '@@lib/outbox/outbox';
+import { useOutboxEntries } from '@@lib/outbox/useOutbox';
+import { ConnectionStatus } from '@@components/ConnectionStatus';
 import { RequireAuth } from '@@components/auth/RequireAuth';
 import { NotificationsSwitch } from '@@components/NotificationsSwitch';
 import { NotifyLevelControl } from '@@components/NotifyLevelControl';
@@ -202,7 +214,7 @@ const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
         <UI.Box flex={1} minH={0} overflowY="auto">
           <UI.ErrorState
             title="Couldn't load this room"
-            onRetry={() => window.location.reload()}
+            onRetry={() => retryRoom(groupId)}
           />
         </UI.Box>
       ) : !group || !user ? (
@@ -230,25 +242,11 @@ const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
 /** Group + auth + membership state. Joining is explicit — no silent auto-join. */
 const useGroupState = (groupId: string) => {
   const [user, userLoading, userError] = useAuthState();
-  const [group, groupLoading, groupError] = useGroup(groupId, {
-    channelId: 'page',
-  });
-  const [member, setMember] = React.useState<boolean | null>(null);
+  const [group, groupLoading, groupError] = useGroup(groupId);
+  // Cached, so re-entering a room does not re-run the membership probe behind
+  // a skeleton. `joinGroup` writes the result straight into the cache.
+  const [member, memberLoading] = useGroupMembership(groupId, user?.uid);
   const [joining, setJoining] = React.useState(false);
-
-  React.useEffect(() => {
-    if (!user || !groupId) {
-      setMember(null);
-      return;
-    }
-    let cancelled = false;
-    isGroupMember(groupId, user.uid).then((isMember) => {
-      if (!cancelled) setMember(isMember);
-    });
-    return () => {
-      cancelled = true;
-    };
-  }, [user, groupId]);
 
   const join = async (notifyLevel: NotifyLevel = 'all') => {
     if (!user) return;
@@ -261,7 +259,6 @@ const useGroupState = (groupId: string) => {
         phoneLast4: phoneLast4FromPhone(user.phone),
         notifyLevel,
       });
-      setMember(true);
     } finally {
       setJoining(false);
     }
@@ -270,9 +267,9 @@ const useGroupState = (groupId: string) => {
   return {
     user,
     group,
-    loading: userLoading || groupLoading,
+    loading: userLoading || groupLoading || memberLoading,
     error: userError || groupError,
-    member,
+    member: member ?? null,
     join,
     joining,
   };
@@ -309,6 +306,7 @@ const GroupBarContents: React.FC<{
           </UI.Text>
         </UI.Heading>
       )}
+      <ConnectionStatus />
       <UI.IconButton
         aria-label="Invite someone"
         icon={faUserPlus}
@@ -406,7 +404,7 @@ const GroupOverflowMenu: React.FC<{
   const confirmation = useConfirmation();
   const toast = UI.useToast();
   const navigate = useNavigate();
-  const [members] = useGroupMembers(group.id, { channelId: 'overflow' });
+  const [members] = useGroupMembers(group.id);
   const myMember = members?.find((m) => m.uid === user.uid);
   const isStaff = isStaffRole(myMember?.role ?? null, isCreator);
   const notifyLevel = myMember?.notifyLevel ?? 'all';
@@ -604,12 +602,8 @@ const MembersList: React.FC<{ group: Group; user: AppUser }> = ({
   group,
   user,
 }) => {
-  const [members, loading, error] = useGroupMembers(group.id, {
-    channelId: 'members-list',
-  });
-  const [silences, silencesLoading] = useGroupSilences(group.id, {
-    channelId: 'members-list-silences',
-  });
+  const [members, loading, error] = useGroupMembers(group.id);
+  const [silences, silencesLoading] = useGroupSilences(group.id);
   const isCreator = group.uid === user.uid;
   const myMember = members?.find((m) => m.uid === user.uid);
   const actorIsStaff = isStaffRole(myMember?.role ?? null, isCreator);
@@ -626,7 +620,13 @@ const MembersList: React.FC<{ group: Group; user: AppUser }> = ({
     );
   }
   if (error) {
-    return <UI.ErrorState title="Couldn't load members" py={4} />;
+    return (
+      <UI.ErrorState
+        title="Couldn't load members"
+        py={4}
+        onRetry={() => retryGroupMembers(group.id)}
+      />
+    );
   }
 
   return (
@@ -1017,7 +1017,13 @@ const GroupNotifyLevelModal: React.FC<{
 /** Suppress the author header when the same person posts within 5 minutes. */
 const GROUPING_WINDOW_MS = 5 * 60 * 1000;
 
-type ChatItem = Message & { pending?: boolean };
+type ChatItem = Message & {
+  pending?: boolean;
+  /** Permanently rejected by the server — offer a retry rather than dropping it. */
+  failed?: boolean;
+  /** Replaces the timestamp for messages that have not landed yet. */
+  statusLabel?: string;
+};
 
 type MemberProfile = {
   displayName: string | null;
@@ -1033,9 +1039,10 @@ const GroupChat: React.FC<{
   user: AppUser;
 }> = ({ groupId, group, user }) => {
   const [messages, loading, error] = useGroupMessages(groupId, { limit: 100 });
-  const [members] = useGroupMembers(groupId, { channelId: 'chat' });
-  const [silences] = useGroupSilences(groupId, { channelId: 'chat-silences' });
-  const [pendingMessages, setPendingMessages] = React.useState<ChatItem[]>([]);
+  const [members] = useGroupMembers(groupId);
+  const [silences] = useGroupSilences(groupId);
+  const queued = useOutboxEntries(groupId);
+  const connection = useConnectionState();
 
   const silencedUids = React.useMemo(
     () => new Set((silences ?? []).map((s) => s.uid)),
@@ -1088,50 +1095,36 @@ const GroupChat: React.FC<{
     return () => document.removeEventListener('visibilitychange', mark);
   }, [groupId, user.uid, messages?.length]);
 
-  // Drop pending copies once the server round-trips them back.
-  React.useEffect(() => {
-    if (!messages?.length) return;
-    setPendingMessages((pending) =>
-      pending.filter(
-        (pm) =>
-          !messages.some(
-            (m) =>
-              m.uid === pm.uid &&
-              m.text === pm.text &&
-              m.time >= pm.time - 60_000
-          )
-      )
-    );
-  }, [messages]);
-
   const sendMessage = async (text: string) => {
-    const temp: ChatItem = {
-      id: `pending-${Date.now()}-${Math.random().toString(36).slice(2)}`,
+    await sendOrQueueMessage({
+      groupId,
       uid: user.uid,
       authorName: user.displayName,
       authorPhotoURL: resolveAppUserPhotoURL(user),
-      time: Date.now(),
       text,
-      groupId,
-      isAnnouncement: false,
-      pending: true,
-    };
-    setPendingMessages((p) => [...p, temp]);
-    try {
-      await addMessage({
-        uid: user.uid,
-        authorName: user.displayName,
-        authorPhotoURL: resolveAppUserPhotoURL(user),
-        text,
-        groupId,
-      });
-    } catch (e) {
-      setPendingMessages((p) => p.filter((m) => m.id !== temp.id));
-      throw e;
-    }
+    });
   };
 
-  const items: ChatItem[] = [...(messages ?? []), ...pendingMessages];
+  // Queued sends carry the id they will have on the server, so an entry that has
+  // already landed is dropped by exact match instead of a text/time heuristic.
+  const serverIds = React.useMemo(
+    () => new Set((messages ?? []).map((m) => m.id)),
+    [messages]
+  );
+  const pendingItems: ChatItem[] = queued
+    .filter((entry) => !serverIds.has(entry.id))
+    .map((entry) => ({
+      ...outboxEntryToMessage(entry),
+      pending: true,
+      failed: entry.failed,
+      statusLabel: entry.failed
+        ? 'not sent'
+        : connection === 'online'
+          ? 'sending…'
+          : 'queued',
+    }));
+
+  const items: ChatItem[] = [...(messages ?? []), ...pendingItems];
 
   return (
     <React.Fragment>
@@ -1265,7 +1258,9 @@ const ChatScrollArea: React.FC<{
     };
   }, [hasItems]);
 
-  if (loading) {
+  // Only when there is genuinely nothing to show — cached or queued messages
+  // render immediately and revalidate behind the scenes.
+  if (loading && !items.length) {
     return (
       <UI.Box flex={1} overflowY="auto" p={4} maxW="760px" w="full" mx="auto">
         <UI.VStack align="stretch" spacing={4}>
@@ -1277,12 +1272,12 @@ const ChatScrollArea: React.FC<{
     );
   }
 
-  if (error) {
+  if (error && !items.length) {
     return (
       <UI.Box flex={1} overflowY="auto">
         <UI.ErrorState
           title="Couldn't load messages"
-          onRetry={() => window.location.reload()}
+          onRetry={() => retryMessages(groupId)}
         />
       </UI.Box>
     );
@@ -1325,9 +1320,11 @@ const ChatScrollArea: React.FC<{
           const prev = items[i - 1];
           const showDayDivider =
             !prev || localDayKey(prev.time) !== localDayKey(message.time);
+          // Never group a pending message — its header carries the send status.
           const grouped =
             !!prev &&
             !showDayDivider &&
+            !message.pending &&
             prev.uid === message.uid &&
             message.time - prev.time < GROUPING_WINDOW_MS;
           const member = memberByUid.get(message.uid);
@@ -1434,6 +1431,7 @@ export const MessageRow: React.FC<{
       pb={0.5}
       borderRadius="lg"
       opacity={message.pending ? 0.55 : 1}
+      data-testid={message.pending ? 'message-pending' : undefined}
       sx={{
         animation: 'yowl-message-in 160ms ease-out',
         '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
@@ -1506,8 +1504,20 @@ export const MessageRow: React.FC<{
               </UI.Text>
             </UI.Button>
             <UI.Text fontSize="xs" color="text.muted" flexShrink={0}>
-              {message.pending ? 'sending…' : formatMessageTime(message.time)}
+              {message.statusLabel ?? formatMessageTime(message.time)}
             </UI.Text>
+            {message.failed ? (
+              <UI.Button
+                variant="link"
+                size="xs"
+                colorScheme="action"
+                flexShrink={0}
+                onClick={() => void retryOutboxEntry(message.id)}
+                data-testid="message-retry"
+              >
+                Retry
+              </UI.Button>
+            ) : null}
           </UI.HStack>
         )}
         <UI.RichTextContent content={message.text} />
@@ -1700,9 +1710,11 @@ const Composer: React.FC<{
       await onSend(outgoing);
     } catch {
       setText(outgoing);
+      // Offline sends never land here — they queue silently and go out on
+      // reconnect. This is a real rejection, so ask for a deliberate retry.
       toast({
         title: "Message didn't send",
-        description: 'Check your connection and try again.',
+        description: 'Try sending it again.',
         status: 'error',
       });
     }

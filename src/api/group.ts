@@ -1,5 +1,9 @@
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useQuery } from '@tanstack/react-query';
 
+import { queryClient } from '@@lib/query/client';
+import { asHookResult, type HookResult } from '@@lib/query/hookResult';
+import type { RealtimeTopic } from '@@lib/realtime/manager';
+import { useRealtimeTopic } from '@@lib/realtime/useRealtimeTopic';
 import { supabase } from '@@lib/supabase/client';
 import type { NotifyLevel } from '@@lib/notifications/shouldNotify';
 import type { GroupMemberRole } from '@@lib/moderation/memberPermissions';
@@ -8,8 +12,16 @@ import type {
   GroupMemberRow,
   GroupRow,
   GroupSilenceRow,
+  MessageRow,
 } from '@@lib/supabase/types';
 import { generateSlug } from '@@lib/share';
+
+import {
+  invalidateGroups,
+  invalidateUnreadCounts,
+} from './cache';
+import { applyMessageInsert, rowToMessage } from './message';
+import { queryKeys } from './queryKeys';
 
 type GroupUpdate = Database['public']['Tables']['groups']['Update'];
 
@@ -75,167 +87,45 @@ const rowToGroupSilence = (row: GroupSilenceRow): GroupSilence => ({
   createdAt: new Date(row.created_at).getTime(),
 });
 
-type HookResult<T> = [T | undefined, boolean, Error | undefined];
+/* ------------------------------------------------------------------ */
+/* Realtime topics (module-level so handlers can never capture stale   */
+/* render state — see src/lib/realtime/manager.ts)                     */
+/* ------------------------------------------------------------------ */
 
-/** Broadcast so every mounted useGroups refetches after local mutations. */
-const GROUPS_CHANGED_EVENT = 'quacker:groups-changed';
-
-/** Broadcast so unread badge hooks refetch after mark-viewed / prefs. */
-const UNREAD_CHANGED_EVENT = 'quacker:unread-changed';
-
-/** Broadcast so silence hooks refetch after local mute toggles. */
-const SILENCES_CHANGED_EVENT = 'quacker:silences-changed';
-
-const notifyGroupsChanged = () => {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event(GROUPS_CHANGED_EVENT));
-  }
-};
-
-export const notifyUnreadChanged = () => {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event(UNREAD_CHANGED_EVENT));
-  }
-};
-
-const notifySilencesChanged = () => {
-  if (typeof window !== 'undefined') {
-    window.dispatchEvent(new Event(SILENCES_CHANGED_EVENT));
-  }
-};
-
-export const useGroup = (
-  id: string,
-  options?: { channelId?: string }
-): HookResult<Group> => {
-  const channelId = options?.channelId ?? 'default';
-  const [group, setGroup] = useState<Group | undefined>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | undefined>();
-
-  useEffect(() => {
-    if (!id) {
-      setLoading(false);
-      return;
-    }
-
-    const fetchGroup = async () => {
-      const { data, error: fetchError } = await supabase
-        .from('groups')
-        .select('*')
-        .eq('id', id)
-        .maybeSingle();
-
-      if (fetchError) setError(fetchError);
-      else setGroup(data ? rowToGroup(data) : undefined);
-      setLoading(false);
-    };
-
-    fetchGroup();
-
-    const channel = supabase
-      .channel(`group-doc:${id}:${channelId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'groups',
-          filter: `id=eq.${id}`,
-        },
-        (payload) => {
-          if (payload.eventType === 'DELETE') {
-            setGroup(undefined);
-          } else if (payload.new) {
-            setGroup(rowToGroup(payload.new as GroupRow));
-          }
+const groupTopic = (groupId: string): RealtimeTopic => ({
+  key: `group-doc:${groupId}`,
+  configure: (channel) => {
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'groups',
+        filter: `id=eq.${groupId}`,
+      },
+      (payload) => {
+        const key = queryKeys.group(groupId);
+        if (payload.eventType === 'DELETE') {
+          queryClient.setQueryData(key, null);
+        } else if (payload.new) {
+          queryClient.setQueryData(key, rowToGroup(payload.new as GroupRow));
         }
-      )
-      .subscribe();
+      }
+    );
+  },
+  resync: () => {
+    void queryClient.invalidateQueries({ queryKey: queryKeys.group(groupId) });
+  },
+});
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [channelId, id]);
-
-  return [group, loading, error];
-};
-
-export const useGroupBySlug = (slug: string): HookResult<Group> => {
-  const [group, setGroup] = useState<Group | undefined>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | undefined>();
-
-  useEffect(() => {
-    if (!slug) return;
-
-    const fetchGroup = async () => {
-      const { data, error: fetchError } = await supabase
-        .from('groups')
-        .select('*')
-        .eq('slug', slug)
-        .maybeSingle();
-
-      if (fetchError) setError(fetchError);
-      else setGroup(data ? rowToGroup(data) : undefined);
-      setLoading(false);
-    };
-
-    fetchGroup();
-  }, [slug]);
-
-  return [group, loading, error];
-};
-
-/**
- * Groups the given user belongs to (never the global list — membership is the
- * privacy boundary for a private chat product).
- */
-export const useGroups = (options: {
-  userId: string | undefined;
-  limit?: number;
-  /** Unique Realtime channel suffix — required when multiple hooks subscribe in one view. */
-  channelId?: string;
-}): HookResult<Group[]> => {
-  const { userId } = options;
-  const limit = options.limit ?? 100;
-  const channelId = options.channelId ?? 'default';
-  const [groups, setGroups] = useState<Group[] | undefined>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | undefined>();
-
-  const fetchGroups = useCallback(async () => {
-    if (!userId) return;
-    const { data, error: fetchError } = await supabase
-      .from('groups')
-      .select('*, group_members!inner(user_id)')
-      .eq('group_members.user_id', userId)
-      .order('created_at', { ascending: false })
-      .limit(limit);
-
-    if (fetchError) setError(fetchError);
-    else setGroups(data?.map(rowToGroup) ?? []);
-    setLoading(false);
-  }, [limit, userId]);
-
-  useEffect(() => {
-    if (!userId) {
-      setGroups(undefined);
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    fetchGroups();
-
-    const onLocalChange = () => fetchGroups();
-    window.addEventListener(GROUPS_CHANGED_EVENT, onLocalChange);
-
-    const channel = supabase
-      .channel(`groups-list:${userId}:${channelId}`)
+const groupsListTopic = (userId: string): RealtimeTopic => ({
+  key: `groups-list:${userId}`,
+  configure: (channel) => {
+    channel
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'groups' },
-        () => fetchGroups()
+        () => invalidateGroups()
       )
       .on(
         'postgres_changes',
@@ -245,121 +135,268 @@ export const useGroups = (options: {
           table: 'group_members',
           filter: `user_id=eq.${userId}`,
         },
-        () => fetchGroups()
+        () => invalidateGroups()
+      );
+  },
+  resync: invalidateGroups,
+});
+
+const groupMembersTopic = (groupId: string): RealtimeTopic => ({
+  key: `group-members:${groupId}`,
+  configure: (channel) => {
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'group_members',
+        filter: `group_id=eq.${groupId}`,
+      },
+      () => {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.groupMembers(groupId),
+        });
+      }
+    );
+  },
+  resync: () => {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.groupMembers(groupId),
+    });
+  },
+});
+
+const groupSilencesTopic = (groupId: string): RealtimeTopic => ({
+  key: `group-silences:${groupId}`,
+  configure: (channel) => {
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'group_silences',
+        filter: `group_id=eq.${groupId}`,
+      },
+      () => {
+        void queryClient.invalidateQueries({
+          queryKey: queryKeys.groupSilences(groupId),
+        });
+      }
+    );
+  },
+  resync: () => {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.groupSilences(groupId),
+    });
+  },
+});
+
+/**
+ * App-wide unread topic. Also merges inserts into any room that is already
+ * cached, so opening a room you were notified about is instant.
+ */
+const unreadCountsTopic = (userId: string): RealtimeTopic => ({
+  key: `unread-counts:${userId}`,
+  configure: (channel) => {
+    channel
+      .on(
+        'postgres_changes',
+        { event: 'INSERT', schema: 'public', table: 'messages' },
+        (payload) => {
+          if (payload.new) applyMessageInsert(rowToMessage(payload.new as MessageRow));
+          invalidateUnreadCounts();
+        }
       )
-      .subscribe();
-
-    return () => {
-      window.removeEventListener(GROUPS_CHANGED_EVENT, onLocalChange);
-      supabase.removeChannel(channel);
-    };
-  }, [channelId, fetchGroups, userId]);
-
-  return [groups, loading, error];
-};
-
-export const useGroupMembers = (
-  groupId: string,
-  options?: { channelId?: string }
-): HookResult<GroupMember[]> => {
-  // supabase.channel(name) reuses an existing channel — concurrent mounts with
-  // the same name cannot add .on() after the first .subscribe().
-  const instanceId = useId();
-  const channelId = options?.channelId ?? instanceId;
-  const [members, setMembers] = useState<GroupMember[] | undefined>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | undefined>();
-
-  const fetchMembers = useCallback(async () => {
-    const { data, error: fetchError } = await supabase
-      .from('group_members')
-      .select('*')
-      .eq('group_id', groupId)
-      .order('joined_at', { ascending: true });
-
-    if (fetchError) setError(fetchError);
-    else setMembers(data?.map(rowToGroupMember) ?? []);
-    setLoading(false);
-  }, [groupId]);
-
-  useEffect(() => {
-    if (!groupId) return;
-    fetchMembers();
-
-    const channel = supabase
-      .channel(`group-members:${groupId}:${channelId}`)
       .on(
         'postgres_changes',
         {
           event: '*',
           schema: 'public',
           table: 'group_members',
-          filter: `group_id=eq.${groupId}`,
+          filter: `user_id=eq.${userId}`,
         },
-        () => fetchMembers()
-      )
-      .subscribe();
+        () => invalidateUnreadCounts()
+      );
+  },
+  resync: invalidateUnreadCounts,
+});
 
-    return () => {
-      supabase.removeChannel(channel);
-    };
-  }, [channelId, fetchMembers, groupId]);
+/* ------------------------------------------------------------------ */
+/* Hooks                                                               */
+/* ------------------------------------------------------------------ */
 
-  return [members, loading, error];
+export const useGroup = (id: string): HookResult<Group> => {
+  const enabled = Boolean(id);
+
+  const query = useQuery({
+    queryKey: queryKeys.group(id),
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('groups')
+        .select('*')
+        .eq('id', id)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? rowToGroup(data) : null;
+    },
+  });
+
+  useRealtimeTopic(enabled ? groupTopic(id) : null);
+
+  return asHookResult(query, enabled);
+};
+
+export const useGroupBySlug = (slug: string): HookResult<Group> => {
+  const enabled = Boolean(slug);
+
+  const query = useQuery({
+    queryKey: queryKeys.groupBySlug(slug),
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('groups')
+        .select('*')
+        .eq('slug', slug)
+        .maybeSingle();
+      if (error) throw error;
+      return data ? rowToGroup(data) : null;
+    },
+  });
+
+  return asHookResult(query, enabled);
+};
+
+/**
+ * Groups the given user belongs to (never the global list — membership is the
+ * privacy boundary for a private chat product).
+ */
+export const useGroups = (options: {
+  userId: string | undefined;
+  limit?: number;
+}): HookResult<Group[]> => {
+  const { userId } = options;
+  const limit = options.limit ?? 100;
+  const enabled = Boolean(userId);
+
+  const query = useQuery({
+    queryKey: queryKeys.groups(userId),
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('groups')
+        .select('*, group_members!inner(user_id)')
+        .eq('group_members.user_id', userId as string)
+        .order('created_at', { ascending: false })
+        .limit(limit);
+      if (error) throw error;
+      return (data ?? []).map(rowToGroup);
+    },
+  });
+
+  useRealtimeTopic(userId ? groupsListTopic(userId) : null);
+
+  return asHookResult(query, enabled);
+};
+
+export const useGroupMembers = (groupId: string): HookResult<GroupMember[]> => {
+  const enabled = Boolean(groupId);
+
+  const query = useQuery({
+    queryKey: queryKeys.groupMembers(groupId),
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('group_members')
+        .select('*')
+        .eq('group_id', groupId)
+        .order('joined_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []).map(rowToGroupMember);
+    },
+  });
+
+  useRealtimeTopic(enabled ? groupMembersTopic(groupId) : null);
+
+  return asHookResult(query, enabled);
 };
 
 export const useGroupSilences = (
-  groupId: string,
-  options?: { channelId?: string }
+  groupId: string
 ): HookResult<GroupSilence[]> => {
-  const instanceId = useId();
-  const channelId = options?.channelId ?? instanceId;
-  const [silences, setSilences] = useState<GroupSilence[] | undefined>();
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<Error | undefined>();
+  const enabled = Boolean(groupId);
 
-  const fetchSilences = useCallback(async () => {
-    if (!groupId) return;
-    const { data, error: fetchError } = await supabase
-      .from('group_silences')
-      .select('*')
-      .eq('group_id', groupId)
-      .order('created_at', { ascending: true });
+  const query = useQuery({
+    queryKey: queryKeys.groupSilences(groupId),
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase
+        .from('group_silences')
+        .select('*')
+        .eq('group_id', groupId)
+        .order('created_at', { ascending: true });
+      if (error) throw error;
+      return (data ?? []).map(rowToGroupSilence);
+    },
+  });
 
-    if (fetchError) setError(fetchError);
-    else setSilences(data?.map(rowToGroupSilence) ?? []);
-    setLoading(false);
-  }, [groupId]);
+  useRealtimeTopic(enabled ? groupSilencesTopic(groupId) : null);
 
-  useEffect(() => {
-    if (!groupId) return;
-    fetchSilences();
-
-    const onLocalChange = () => fetchSilences();
-    window.addEventListener(SILENCES_CHANGED_EVENT, onLocalChange);
-
-    const channel = supabase
-      .channel(`group-silences:${groupId}:${channelId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'group_silences',
-          filter: `group_id=eq.${groupId}`,
-        },
-        () => fetchSilences()
-      )
-      .subscribe();
-
-    return () => {
-      window.removeEventListener(SILENCES_CHANGED_EVENT, onLocalChange);
-      supabase.removeChannel(channel);
-    };
-  }, [channelId, fetchSilences, groupId]);
-
-  return [silences, loading, error];
+  return asHookResult(query, enabled);
 };
+
+/**
+ * Whether the user belongs to a room. Cached so returning to a room does not
+ * re-run the membership probe behind a skeleton.
+ */
+export const useGroupMembership = (
+  groupId: string,
+  userId: string | undefined
+): HookResult<boolean> => {
+  const enabled = Boolean(groupId && userId);
+
+  const query = useQuery({
+    queryKey: queryKeys.membership(groupId, userId ?? ''),
+    enabled,
+    queryFn: () => isGroupMember(groupId, userId as string),
+  });
+
+  return asHookResult(query, enabled);
+};
+
+/**
+ * Unread message counts per group for the signed-in user, filtered by that
+ * membership's notify_level (silenced → 0).
+ */
+export const useUnreadCounts = (options: {
+  userId: string | undefined;
+}): [Record<string, number>, boolean] => {
+  const { userId } = options;
+  const enabled = Boolean(userId);
+
+  const query = useQuery({
+    queryKey: queryKeys.unreadCounts(userId),
+    enabled,
+    queryFn: async () => {
+      const { data, error } = await supabase.rpc('unread_message_counts');
+      if (error) throw error;
+      const counts: Record<string, number> = {};
+      for (const row of data ?? []) {
+        const n = Number(row.count);
+        if (n > 0) counts[row.group_id] = n;
+      }
+      return counts;
+    },
+  });
+
+  useRealtimeTopic(userId ? unreadCountsTopic(userId) : null);
+
+  return [query.data ?? {}, enabled ? query.isPending : false];
+};
+
+/* ------------------------------------------------------------------ */
+/* Mutations                                                           */
+/* ------------------------------------------------------------------ */
 
 export const addGroup = async (data: {
   uid: string;
@@ -386,7 +423,7 @@ export const addGroup = async (data: {
 
   // The creator-membership trigger runs in the same transaction, but Realtime
   // can lag a beat — wait until the membership is queryable so the sidebar
-  // join is never empty, then broadcast so every useGroups remounts.
+  // join is never empty, then invalidate so every list refetches.
   for (let i = 0; i < 20; i++) {
     if (await isGroupMember(row.id, data.uid)) break;
     await new Promise((r) => setTimeout(r, 50));
@@ -401,7 +438,8 @@ export const addGroup = async (data: {
       .eq('user_id', data.uid);
   }
 
-  notifyGroupsChanged();
+  queryClient.setQueryData(queryKeys.membership(row.id, data.uid), true);
+  invalidateGroups();
 
   return { id: row.id, slug: row.slug };
 };
@@ -413,12 +451,15 @@ export const updateGroup = async (id: string, data: Partial<Group>) => {
 
   const { error } = await supabase.from('groups').update(patch).eq('id', id);
   if (error) throw error;
+  void queryClient.invalidateQueries({ queryKey: queryKeys.group(id) });
 };
 
 export const deleteGroup = async (id: string) => {
   const { error } = await supabase.from('groups').delete().eq('id', id);
   if (error) throw error;
-  notifyGroupsChanged();
+  queryClient.removeQueries({ queryKey: queryKeys.messages(id) });
+  queryClient.removeQueries({ queryKey: queryKeys.group(id) });
+  invalidateGroups();
 };
 
 export const joinGroup = async (
@@ -442,7 +483,8 @@ export const joinGroup = async (
   });
   // Creator already inserted by trigger; ignore duplicate member rows
   if (error && error.code !== '23505') throw error;
-  notifyGroupsChanged();
+  queryClient.setQueryData(queryKeys.membership(groupId, member.uid), true);
+  invalidateGroups();
 };
 
 export const leaveGroup = async (groupId: string, userId: string) => {
@@ -452,7 +494,9 @@ export const leaveGroup = async (groupId: string, userId: string) => {
     .eq('group_id', groupId)
     .eq('user_id', userId);
   if (error) throw error;
-  notifyGroupsChanged();
+  queryClient.setQueryData(queryKeys.membership(groupId, userId), false);
+  queryClient.removeQueries({ queryKey: queryKeys.messages(groupId) });
+  invalidateGroups();
 };
 
 export const setMemberSilenced = async (
@@ -483,7 +527,9 @@ export const setMemberSilenced = async (
       .eq('user_id', userId);
     if (error) throw error;
   }
-  notifySilencesChanged();
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.groupSilences(groupId),
+  });
 };
 
 export const setMemberMod = async (
@@ -497,6 +543,9 @@ export const setMemberMod = async (
     .eq('group_id', groupId)
     .eq('user_id', userId);
   if (error) throw error;
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.groupMembers(groupId),
+  });
 };
 
 /** Sync denormalized member profile fields across all groups (after rename). */
@@ -524,6 +573,7 @@ export const updateMyMemberProfile = async (
     .update(patch)
     .eq('user_id', userId);
   if (error) throw error;
+  void queryClient.invalidateQueries({ queryKey: queryKeys.groupMembersRoot });
 };
 
 export const isGroupMember = async (
@@ -552,78 +602,5 @@ export const markGroupViewed = async (
     .eq('group_id', groupId)
     .eq('user_id', userId);
   if (error) throw error;
-  notifyUnreadChanged();
-};
-
-/**
- * Unread message counts per group for the signed-in user, filtered by that
- * membership's notify_level (silenced → 0).
- */
-export const useUnreadCounts = (options: {
-  userId: string | undefined;
-  channelId?: string;
-}): [Record<string, number>, boolean] => {
-  const { userId } = options;
-  const channelId = options.channelId ?? 'default';
-  const [counts, setCounts] = useState<Record<string, number>>({});
-  const [loading, setLoading] = useState(true);
-
-  const fetchCounts = useCallback(async () => {
-    if (!userId) return;
-    const { data, error: fetchError } = await supabase.rpc(
-      'unread_message_counts'
-    );
-    if (fetchError) {
-      setCounts({});
-    } else {
-      const next: Record<string, number> = {};
-      for (const row of data ?? []) {
-        const n = Number(row.count);
-        if (n > 0) next[row.group_id] = n;
-      }
-      setCounts(next);
-    }
-    setLoading(false);
-  }, [userId]);
-
-  useEffect(() => {
-    if (!userId) {
-      setCounts({});
-      setLoading(false);
-      return;
-    }
-    setLoading(true);
-    fetchCounts();
-
-    const onLocalChange = () => fetchCounts();
-    window.addEventListener(GROUPS_CHANGED_EVENT, onLocalChange);
-    window.addEventListener(UNREAD_CHANGED_EVENT, onLocalChange);
-
-    const channel = supabase
-      .channel(`unread-counts:${userId}:${channelId}`)
-      .on(
-        'postgres_changes',
-        { event: 'INSERT', schema: 'public', table: 'messages' },
-        () => fetchCounts()
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: '*',
-          schema: 'public',
-          table: 'group_members',
-          filter: `user_id=eq.${userId}`,
-        },
-        () => fetchCounts()
-      )
-      .subscribe();
-
-    return () => {
-      window.removeEventListener(GROUPS_CHANGED_EVENT, onLocalChange);
-      window.removeEventListener(UNREAD_CHANGED_EVENT, onLocalChange);
-      supabase.removeChannel(channel);
-    };
-  }, [channelId, fetchCounts, userId]);
-
-  return [counts, loading];
+  invalidateUnreadCounts();
 };
