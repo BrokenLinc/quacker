@@ -121,6 +121,20 @@ export const theme = extendTheme({
         transitionDuration: 'fast',
       },
     },
+    IconButton: {
+      variants: {
+        solid: {
+          _disabled: {
+            opacity: 1,
+            bg: 'transparent',
+            color: 'text.muted',
+            cursor: 'not-allowed',
+            _hover: { bg: 'transparent' },
+            _active: { transform: 'none' },
+          },
+        },
+      },
+    },
     Input: {
       defaultProps: {
         variant: 'filled',

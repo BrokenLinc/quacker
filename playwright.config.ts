@@ -35,7 +35,7 @@ export default defineConfig({
     {
       name: 'integration',
       testMatch:
-        /(a11y-group|group-header|group-messaging|notification-prefs|offline-continuity)\.spec\.ts/,
+        /(a11y-group|auth-otp|group-header|group-messaging|notification-prefs|offline-continuity)\.spec\.ts/,
       fullyParallel: false,
       workers: 1,
       use: {

@@ -1739,36 +1739,34 @@ const Composer: React.FC<{
   }
 
   return (
-    <UI.Box position="relative">
-      <UI.RichTextEditor
-        value={text}
-        onChange={setText}
-        onSubmit={handleSend}
-        maxLength={MESSAGE_MAX_LENGTH}
-      />
-      {text.length > 0 ? (
-        <UI.Text
-          position="absolute"
-          bottom={3}
-          right={14}
-          fontSize="xs"
-          color={text.length > MESSAGE_MAX_LENGTH ? 'red.500' : 'text.muted'}
-          pointerEvents="none"
-        >
-          {text.length}/{MESSAGE_MAX_LENGTH}
-        </UI.Text>
-      ) : null}
-      <UI.Box position="absolute" bottom={2} right={2}>
-        <UI.IconButton
-          aria-label="Send"
-          icon={faPaperPlane}
-          colorScheme="action"
-          variant="solid"
-          size="sm"
-          onClick={handleSend}
-          isDisabled={!canSend}
-        />
-      </UI.Box>
-    </UI.Box>
+    <UI.RichTextEditor
+      value={text}
+      onChange={setText}
+      onSubmit={handleSend}
+      maxLength={MESSAGE_MAX_LENGTH}
+      trailing={
+        <>
+          {text.length > 0 ? (
+            <UI.Text
+              fontSize="xs"
+              color={
+                text.length > MESSAGE_MAX_LENGTH ? 'red.500' : 'text.muted'
+              }
+            >
+              {text.length}/{MESSAGE_MAX_LENGTH}
+            </UI.Text>
+          ) : null}
+          <UI.IconButton
+            aria-label="Send"
+            icon={faPaperPlane}
+            colorScheme="action"
+            variant="solid"
+            size="sm"
+            onClick={handleSend}
+            isDisabled={!canSend}
+          />
+        </>
+      }
+    />
   );
 };
