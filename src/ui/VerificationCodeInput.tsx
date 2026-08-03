@@ -69,7 +69,6 @@ export const VerificationCodeInput: React.FC<VerificationCodeInputProps> = ({
         otp
         value={value}
         onChange={applyValue}
-        onComplete={onComplete}
         isDisabled={isDisabled}
         autoFocus
         size="md"
