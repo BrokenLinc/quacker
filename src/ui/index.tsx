@@ -76,6 +76,7 @@ export { PopoverMenuRow, type PopoverMenuRowProps } from './PopoverMenuRow';
 export * from './QuickModal';
 export * from './RichTextContent';
 export * from './RichTextEditor';
+export * from './VerificationCodeInput';
 export * from './RouteModal';
 export * from './StateViews';
 export * from './TabCarouselControl';

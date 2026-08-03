@@ -75,6 +75,11 @@ default).
   one header
 - Auto-scroll on open, on own sends, and on new messages when already near the
   bottom (don't yank the scrollback reader)
+- **Mobile composer toolbar:** format buttons sit **above** the input and may
+  hide when the editor blurs; Send and character count stay in a fixed
+  bottom-right overlay on the composer. Any popover opened from the toolbar
+  (e.g. link URL) must **pin the toolbar** while open — see **Focus-gated
+  chrome** under Overlays below and `RichTextEditor.tsx`.
 
 ## Identity
 
@@ -233,6 +238,22 @@ the frame while auth/group data loads — never withhold the frame until ready
   bottom chrome → bottom tray).
 - Morphing spring counts toward the intentional micro-motion budget
   (~≤400ms). Honor `prefers-reduced-motion` (near-instant open/close).
+
+#### Focus-gated chrome
+
+UI that mounts/unmounts based on focus (mobile composer format row, compact
+keyboard toolbars) must account for **nested overlays**:
+
+1. Opening a popover or autofocus input inside the gated region blurs the
+   parent — if visibility is only `focused`, the region unmounts and the
+   overlay vanishes.
+2. **Fix:** OR overlay open state into the visibility condition; OR portal /
+   mount the overlay outside the gated subtree; OR keep only secondary chrome
+   in the collapsible strip and overlay persistent actions (Send).
+3. **Verify on mobile:** open the nested dialog, type and paste into its
+   fields — not just click the trigger.
+
+Reference: link URL `MorphingPopover` in `src/ui/RichTextEditor.tsx`.
 
 ### Copy
 

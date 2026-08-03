@@ -9,6 +9,7 @@ import {
   type SuggestionStatus,
 } from '@@api';
 import { RequireAuth } from '@@components/auth/RequireAuth';
+import { UserMenu } from '@@components/UserMenu';
 import { filterSuggestions } from '@@lib/suggestions/filterSuggestions';
 import { isSuperAdminPhone, useAuthState } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
@@ -17,8 +18,10 @@ import {
   faArrowLeft,
   faLightbulb,
   faPlus,
+  faSearch,
   faThumbsUp,
 } from '@fortawesome/free-solid-svg-icons';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import { faThumbsUp as faThumbsUpRegular } from '@fortawesome/free-regular-svg-icons';
 import React from 'react';
 
@@ -53,6 +56,35 @@ const SuggestionsPageInner: React.FC = () => {
     mineOnly,
     userId: user?.uid,
   });
+  const hasSuggestions = (suggestions ?? []).length > 0;
+  const isMobile = UI.useBreakpointValue({ base: true, md: false }) ?? false;
+
+  const searchAndFilter = (
+    <UI.HStack mb={4} spacing={3} align="center">
+      <UI.InputGroup flex={1}>
+        <UI.InputLeftElement pointerEvents="none">
+          <FontAwesomeIcon icon={faSearch} />
+        </UI.InputLeftElement>
+        <UI.Input
+          placeholder="Search"
+          value={query}
+          onChange={(e) => setQuery(e.target.value)}
+          aria-label="Search"
+          pl={10}
+        />
+      </UI.InputGroup>
+      <UI.FormControl display="flex" alignItems="center" w="auto">
+        <UI.FormLabel htmlFor="mine-only" mb={0} mr={2} fontSize="sm">
+          Mine
+        </UI.FormLabel>
+        <UI.Switch
+          id="mine-only"
+          isChecked={mineOnly}
+          onChange={(e) => setMineOnly(e.target.checked)}
+        />
+      </UI.FormControl>
+    </UI.HStack>
+  );
 
   return (
     <UI.Flex direction="column" flex={1} minH={0} overflow="hidden">
@@ -77,15 +109,7 @@ const SuggestionsPageInner: React.FC = () => {
         <UI.Heading size="md" flex={1} noOfLines={1}>
           Suggestions
         </UI.Heading>
-        <UI.RouteButton
-          route={routes.suggestionsNew()}
-          size="sm"
-          preset="primary"
-          iconBefore={faPlus}
-          data-testid="make-suggestion"
-        >
-          Make a suggestion
-        </UI.RouteButton>
+        {isMobile ? <UserMenu showColorMode /> : null}
       </UI.HStack>
 
       <UI.Box flex={1} minH={0} overflowY="auto" overscrollBehavior="auto">
@@ -96,25 +120,21 @@ const SuggestionsPageInner: React.FC = () => {
           pt={4}
           pb="calc(1rem + env(safe-area-inset-bottom, 0px))"
         >
-          <UI.HStack mb={4} spacing={3} align="center">
-            <UI.Input
-              placeholder="Search suggestions"
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              aria-label="Search suggestions"
-              flex={1}
-            />
-            <UI.FormControl display="flex" alignItems="center" w="auto">
-              <UI.FormLabel htmlFor="mine-only" mb={0} mr={2} fontSize="sm">
-                Mine
-              </UI.FormLabel>
-              <UI.Switch
-                id="mine-only"
-                isChecked={mineOnly}
-                onChange={(e) => setMineOnly(e.target.checked)}
-              />
-            </UI.FormControl>
-          </UI.HStack>
+          {hasSuggestions ? (
+            <UI.Box mb={3}>
+              <UI.RouteButton
+                route={routes.suggestionsNew()}
+                size="sm"
+                preset="primary"
+                iconBefore={faPlus}
+                data-testid="make-suggestion"
+              >
+                Make a suggestion
+              </UI.RouteButton>
+            </UI.Box>
+          ) : null}
+
+          {hasSuggestions ? searchAndFilter : null}
 
           {loading ? (
             <UI.VStack align="stretch" spacing={3}>
@@ -138,7 +158,7 @@ const SuggestionsPageInner: React.FC = () => {
               description={
                 query.trim() || mineOnly
                   ? 'Try a different search or turn off Mine.'
-                  : 'Share an idea — the author upvote is applied automatically.'
+                  : 'Share an idea or upvote others.'
               }
               action={
                 !query.trim() && !mineOnly ? (
@@ -147,6 +167,7 @@ const SuggestionsPageInner: React.FC = () => {
                     size="md"
                     preset="primary"
                     iconBefore={faPlus}
+                    data-testid="make-suggestion"
                   >
                     Make a suggestion
                   </UI.RouteButton>

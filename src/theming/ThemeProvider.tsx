@@ -120,6 +120,18 @@ export const theme = extendTheme({
         transitionProperty: 'common',
         transitionDuration: 'fast',
       },
+      variants: {
+        solid: {
+          _disabled: {
+            opacity: 1,
+            bg: 'transparent',
+            color: 'text.muted',
+            cursor: 'not-allowed',
+            _hover: { bg: 'transparent' },
+            _active: { transform: 'none' },
+          },
+        },
+      },
     },
     Input: {
       defaultProps: {

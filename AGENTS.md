@@ -68,6 +68,17 @@ The agent **creates Supabase projects**, applies migrations, configures auth, fe
 
 Do **not** ask the user to create projects, use dashboards, run `yarn dev`, apply migrations, or verify manually.
 
+## Bug fixes — strengthen the ruleset (same PR)
+
+When you fix a bug, the task is not done until the **bug class** is documented so the next agent avoids it:
+
+1. **Fix** — code (+ e2e when reproducible)
+2. **Classify** — one-line name for the failure mode (transferable, not ticket-specific)
+3. **Prevent** — amend the relevant rule/doc (UX → `ux-standards` / `docs/ux.md`; e2e → `playwright-chrome`; ops → `AGENTS.md` or domain rule). Pattern + detection + symptom→check.
+4. **Verify** — `yarn verify`
+
+Full process: [`.cursor/rules/wrap-up-learning.mdc`](.cursor/rules/wrap-up-learning.mdc). Do not merge code-only bug fixes.
+
 ## Docs
 
 - [`docs/environments.md`](docs/environments.md) — dev vs prod Supabase projects, Vercel Preview/Production
@@ -147,6 +158,6 @@ Notes from live runs: do not use `clearState` on Safari (system app); Chrome `cl
 
 The service worker is built from `src/sw.ts` by `vite-plugin-pwa` (`injectManifest`) to `dist/sw.js`; there is no `public/sw.js`. It precaches the app shell, so **e2e runs against a real offline-capable build** — after changing the SW, rebuild before running `tests/e2e/offline-shell.spec.ts` / `sw-update.spec.ts`. Dev output lands in `dev-dist/` (gitignored).
 
-**Selector sync:** any UI label / dialog title / `aria-label` change must update `tests/e2e` (and Maestro) in the same PR — see [`.cursor/rules/playwright-chrome.mdc`](.cursor/rules/playwright-chrome.mdc). Prefer stable `data-testid`s for chrome that changes often. `IconButton as={RouteLink}` back/nav chrome is role **`link`**, not `button`.
+**Selector sync:** any UI label / dialog title / `aria-label` change must update `tests/e2e` (and Maestro) in the same PR — see [`.cursor/rules/playwright-chrome.mdc`](.cursor/rules/playwright-chrome.mdc). Prefer stable `data-testid`s for chrome that changes often. `IconButton as={RouteLink}` back/nav chrome is role **`link`**, not `button`. **Focus-gated toolbars** (mobile composer): nested popovers must stay mounted while open — test type/paste at mobile viewport when adding overlays inside collapsing chrome ([`docs/ux.md`](docs/ux.md) Focus-gated chrome).
 
 **Color modes (efficiency):** `a11y-home` seeds `chakra-ui-color-mode` and runs axe + canvas/`theme-color` checks for **light and dark** (no auth — included in verify smoke). `theme-modes` covers the authenticated sidebar toggle (needs Supabase, full e2e). Do not duplicate messaging/auth suites per mode. Assert `html[data-theme]`, not `chakra-ui-*` classes.

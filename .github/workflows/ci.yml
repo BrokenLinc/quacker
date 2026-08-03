@@ -51,6 +51,9 @@ jobs:
           # Pin — `latest` hits GitHub API rate limits on setup-cli resolve
           version: 2.111.0
 
+      - name: Configure test OTP for Edge Functions
+        run: cp supabase/functions/.env.example supabase/functions/.env
+
       - name: Start Supabase
         run: supabase start
 

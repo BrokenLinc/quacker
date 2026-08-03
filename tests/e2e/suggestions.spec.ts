@@ -14,8 +14,9 @@ test('suggestions nav opens list and create form', async ({ page }) => {
   await expect(
     page.getByRole('heading', { name: 'Suggestions', exact: true })
   ).toBeVisible();
-  await expect(page.getByLabel('Search suggestions')).toBeVisible();
-  await expect(page.getByLabel('Mine')).toBeVisible();
+  await expect(page.getByLabel('Search')).toBeHidden();
+  await expect(page.getByLabel('Mine')).toBeHidden();
+  await expect(page.getByRole('button', { name: 'Account menu' })).toBeVisible();
 
   await page.getByTestId('make-suggestion').click();
   await expect(

@@ -1,5 +1,5 @@
 ---
-description: Before ending a task, capture learnings into project docs/rules/scripts
+description: Before ending a task, capture learnings into project docs/rules/scripts; bug fixes must strengthen prevention rules in the same change
 alwaysApply: true
 ---
 
@@ -7,7 +7,25 @@ alwaysApply: true
 
 When work on a task is substantially complete — and **before ending the turn** — reflect briefly and leave the project smarter for the next agent.
 
-## Do this last
+## Bug fixes — mandatory rules update (same change)
+
+Every **bug fix** (not refactors, copy tweaks, or greenfield features) ships with a **prevention delta** in the same PR/commit as the code fix. Do not defer rules/docs to a follow-up.
+
+1. **Classify** — Name the bug *class* in one line (e.g. *focus-gated chrome unmounts nested overlay*, *Playwright substring matches room title*). One fix often represents a class that can recur elsewhere.
+2. **Capture** — Add the smallest durable prevention note future agents will hit *before* repeating the mistake:
+   - **Pattern / don't-do** — the correct approach (code or UX)
+   - **Detection** — test, viewport, or command that would have caught it (e2e, `yarn test:e2e:local`, mobile width, etc.)
+   - **Symptom → check** — one troubleshooting line when applicable
+3. **Place** — Amend the **existing** rule or doc for that domain (do not start a new guide per bug):
+   - Interaction / layout / overlays → [`.cursor/rules/ux-standards.mdc`](ux-standards.mdc) and/or [`docs/ux.md`](../docs/ux.md)
+   - E2e / selectors → [`.cursor/rules/playwright-chrome.mdc`](playwright-chrome.mdc)
+   - Auth, Supabase, deploy, env → relevant `.cursor/rules/*.mdc` or [`AGENTS.md`](../AGENTS.md)
+   - Add an e2e (or extend an existing spec) when the bug is reproducible in Playwright — same PR
+4. **Skip only** when the bug was a one-off typo or truly non-transferable — state that briefly in the PR/summary; default is **capture**.
+
+Bug review and code review are one step: if the fix merges without a rules delta, the system did not get stronger.
+
+## Do this last (all tasks)
 
 1. **Reflect** — What was non-obvious, error-prone, slow, or easy to get wrong? What command, path, MCP tool, or convention would have saved time?
 2. **Capture** — Update the lightest durable place that future agents will actually see:
@@ -23,6 +41,7 @@ When work on a task is substantially complete — and **before ending the turn**
 - Footguns discovered (wrong env, wrong project-ref, hanging Playwright, etc.)
 - "If you see error Y, check Z" troubleshooting lines
 - Generated-path / gitignore notes when tooling layout changes
+- **Bug class + prevention pattern + test that guards it** (required for bug fixes)
 
 ## Anti-patterns
 
@@ -30,3 +49,5 @@ When work on a task is substantially complete — and **before ending the turn**
 - Duplicating the same tip across many files
 - Committing secrets or one-off session state
 - Delaying the user's answer while writing essays — a few tight bullets or a script is enough
+- **Fixing a bug in code only** — leaves the next agent to rediscover the same class
+- **Rules-only PR after the fix** — prevention must land with the fix

@@ -37,6 +37,24 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
   `QuickModal` (modal on md+, tray/drawer on mobile). Tray placement follows
   the trigger (top chrome → top tray; bottom chrome → bottom tray)
 
+## Focus-gated chrome and nested overlays
+
+When visibility depends on focus or keyboard state (common on mobile — e.g.
+composer format toolbar only while the editor is focused):
+
+- **Pin chrome while a child overlay is open.** Any `MorphingPopover`,
+  `QuickModal`, or `autoFocus` field inside focus-gated markup blurs the
+  parent on open → the parent unmounts → the popover disappears before the
+  user can type. Include overlay open state in the gate:
+  `showChrome = !isMobile || focused || overlayOpen` (see
+  `RichTextEditor.tsx` link URL popover + `linkOpen`).
+- **Keep persistent actions outside the collapsing strip.** Affordances that
+  must stay visible when the strip hides (Send) → absolutely position over the
+  editor; only the format row collapses.
+- **Pre-ship:** mobile viewport → open nested popover → **type and paste**
+  into its input in the same PR (Playwright or manual). Desktop-only checks
+  miss this class of bug.
+
 ## Native / PWA
 
 - **Viewport:** see `docs/ux.md` (anti-patterns table). Short version: browser

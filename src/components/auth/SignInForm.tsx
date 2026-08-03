@@ -109,29 +109,15 @@ export const SignInForm: React.FC<SignInFormProps> = ({ onSuccess }) => {
       <UI.VStack {...authFormPanelProps} onSubmit={handleCodeSubmit}>
         <UI.FormControl>
           <UI.FormLabel>Verification code</UI.FormLabel>
-          <UI.HStack justify="center" data-testid="sign-in-code">
-            <UI.PinInput
-              otp
-              type="number"
-              value={code}
-              onChange={setCode}
-              onComplete={(value) => {
-                void verifyCode(value);
-              }}
-              isDisabled={loading}
-              autoFocus
-              size="md"
-              manageFocus
-              placeholder=""
-            >
-              <UI.PinInputField autoComplete="one-time-code" />
-              <UI.PinInputField />
-              <UI.PinInputField />
-              <UI.PinInputField />
-              <UI.PinInputField />
-              <UI.PinInputField />
-            </UI.PinInput>
-          </UI.HStack>
+          <UI.VerificationCodeInput
+            value={code}
+            onChange={setCode}
+            onComplete={(value) => {
+              void verifyCode(value);
+            }}
+            isDisabled={loading}
+            data-testid="sign-in-code"
+          />
           <UI.FormHelperText textAlign="center">
             Use the code from your latest text
           </UI.FormHelperText>

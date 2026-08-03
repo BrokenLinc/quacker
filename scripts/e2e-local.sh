@@ -31,6 +31,12 @@ export VITE_SUPABASE_URL="$API_URL"
 export VITE_SUPABASE_ANON_KEY="$ANON_KEY"
 export SUPABASE_SERVICE_ROLE_KEY="$SERVICE_ROLE_KEY"
 
+FUNCTIONS_ENV="$ROOT/supabase/functions/.env"
+if [[ ! -f "$FUNCTIONS_ENV" ]]; then
+  cp "$ROOT/supabase/functions/.env.example" "$FUNCTIONS_ENV"
+  echo "Created $FUNCTIONS_ENV — restart local Supabase if auth OTP e2e fails (supabase stop && supabase start)." >&2
+fi
+
 PREVIEW_PORT="${PREVIEW_PORT:-4173}"
 PREVIEW_PID=""
 cleanup() {
