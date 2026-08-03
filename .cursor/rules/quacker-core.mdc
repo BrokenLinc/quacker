@@ -54,3 +54,6 @@ Quacker is a private, ad-hoc group chat for trips and conferences — short-live
 ## Verification
 
 Run `yarn verify` before marking work complete.
+
+**Bug fixes** also require a prevention delta in `.cursor/rules/` or `docs/` in the
+same change — see [`.cursor/rules/wrap-up-learning.mdc`](wrap-up-learning.mdc).

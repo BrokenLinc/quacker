@@ -68,6 +68,17 @@ The agent **creates Supabase projects**, applies migrations, configures auth, fe
 
 Do **not** ask the user to create projects, use dashboards, run `yarn dev`, apply migrations, or verify manually.
 
+## Bug fixes — strengthen the ruleset (same PR)
+
+When you fix a bug, the task is not done until the **bug class** is documented so the next agent avoids it:
+
+1. **Fix** — code (+ e2e when reproducible)
+2. **Classify** — one-line name for the failure mode (transferable, not ticket-specific)
+3. **Prevent** — amend the relevant rule/doc (UX → `ux-standards` / `docs/ux.md`; e2e → `playwright-chrome`; ops → `AGENTS.md` or domain rule). Pattern + detection + symptom→check.
+4. **Verify** — `yarn verify`
+
+Full process: [`.cursor/rules/wrap-up-learning.mdc`](.cursor/rules/wrap-up-learning.mdc). Do not merge code-only bug fixes.
+
 ## Docs
 
 - [`docs/environments.md`](docs/environments.md) — dev vs prod Supabase projects, Vercel Preview/Production
