@@ -42,7 +42,10 @@ androidWebViewHierarchy: devtools
           when:
             visible: "Close"
           commands:
-            - tapOn: "Close"
+            # Optional: the guard's snapshot can go stale before the tap lands.
+            - tapOn:
+                text: "Close"
+                optional: true
       - extendedWaitUntil:
           visible: ".*All you need is a phone number:|Your rooms.*"
           timeout: 20000
@@ -80,19 +83,22 @@ androidWebViewHierarchy: devtools
     when:
       visible: "Close"
     commands:
-      - tapOn: "Close"
+      # Optional: the guard's hierarchy snapshot can go stale before the tap lands.
+      - tapOn:
+          text: "Close"
+          optional: true
 - runFlow:
     when:
       visible: "Dark mode"
     commands:
       - tapOn:
-          point: "50%, 12%"
+          point: "6%, 20%"
 - runFlow:
     when:
       visible: "Light mode"
     commands:
       - tapOn:
-          point: "50%, 12%"
+          point: "6%, 20%"
 - runFlow:
     when:
       visible: "Dismiss install prompt"

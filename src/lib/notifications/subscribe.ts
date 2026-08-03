@@ -7,10 +7,29 @@ import { supabase } from '@@lib/supabase/client';
 
 import { getNotificationPermissionState } from './permission';
 
+const SW_READY_TIMEOUT_MS = 5_000;
+
+/**
+ * The app registers the service worker at startup (see
+ * `src/lib/pwa/useServiceWorkerUpdate.ts`), so reuse that registration rather
+ * than racing a second `register()` — the dev build is served as a module and
+ * would need different options.
+ */
 export const registerServiceWorker =
   async (): Promise<ServiceWorkerRegistration | null> => {
     if (!('serviceWorker' in navigator)) return null;
-    return navigator.serviceWorker.register('/sw.js');
+
+    const existing = await navigator.serviceWorker.getRegistration();
+    if (existing) return existing;
+
+    // First load: startup registration may still be activating. Bounded wait so
+    // a missing SW surfaces as "unsupported" instead of hanging the switch.
+    return Promise.race([
+      navigator.serviceWorker.ready,
+      new Promise<null>((resolve) =>
+        setTimeout(() => resolve(null), SW_READY_TIMEOUT_MS)
+      ),
+    ]);
   };
 
 export type EnablePushResult =

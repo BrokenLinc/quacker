@@ -28,15 +28,20 @@ do
 done
 export PATH="${PATH:+$PATH:}$HOME/.maestro/bin:/opt/homebrew/bin:/usr/local/bin"
 
-# Android SDK platform-tools (adb) — common macOS locations.
-for sdk_bin in \
-  "${ANDROID_HOME:+$ANDROID_HOME/platform-tools}" \
-  "${ANDROID_SDK_ROOT:+$ANDROID_SDK_ROOT/platform-tools}" \
-  "$HOME/Library/Android/sdk/platform-tools" \
-  "$HOME/Android/Sdk/platform-tools"
+# Android SDK root — Android Studio installs under ~/Library, Homebrew's
+# android-commandlinetools cask under /opt/homebrew/share.
+for sdk_root in \
+  "${ANDROID_HOME:-}" \
+  "${ANDROID_SDK_ROOT:-}" \
+  "$HOME/Library/Android/sdk" \
+  "$HOME/Android/Sdk" \
+  "/opt/homebrew/share/android-commandlinetools" \
+  "/usr/local/share/android-commandlinetools"
 do
-  if [[ -n "$sdk_bin" && -d "$sdk_bin" ]]; then
-    export PATH="$sdk_bin:$PATH"
+  if [[ -n "$sdk_root" && -d "$sdk_root/platform-tools" ]]; then
+    export ANDROID_HOME="$sdk_root"
+    export ANDROID_SDK_ROOT="$sdk_root"
+    export PATH="$sdk_root/platform-tools:${sdk_root}/emulator:$PATH"
     break
   fi
 done

@@ -6,7 +6,10 @@ appId: ${APP_ID}
     when:
       visible: "Close"
     commands:
-      - tapOn: "Close"
+      # Optional: the guard's hierarchy snapshot can go stale before the tap lands.
+      - tapOn:
+          text: "Close"
+          optional: true
 - runFlow:
     when:
       visible: "Dismiss install prompt"

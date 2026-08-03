@@ -2,7 +2,8 @@ appId: ${APP_ID}
 ---
 # Force light via Account menu (mobile color-mode row), then leave menu closed.
 # Env: APP_ID (com.apple.mobilesafari | com.android.chrome)
-# Dismiss: Close if present, else tap overlay above the floating sheet.
+# Dismiss: Close if present, else tap the overlay left of the panel. The panel is
+# anchored to the top-right avatar and can be wide enough to cover 50%,12%.
 - tapOn: "Account menu"
 - extendedWaitUntil:
     visible: ".*Dark mode|Light mode.*"
@@ -21,11 +22,14 @@ appId: ${APP_ID}
     when:
       visible: "Close"
     commands:
-      - tapOn: "Close"
+      # Optional: the guard's hierarchy snapshot can go stale before the tap lands.
+      - tapOn:
+          text: "Close"
+          optional: true
 - runFlow:
     when:
       visible: "Dark mode"
     commands:
       - tapOn:
-          point: "50%, 12%"
+          point: "6%, 20%"
 - waitForAnimationToEnd

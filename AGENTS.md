@@ -25,6 +25,7 @@ This repository is **agent-operated**. The user sets vision; you execute everyth
 | `yarn bootstrap` | Install deps, scaffold `.env.local`, start local Supabase |
 | `yarn dev` | Vite dev server |
 | `yarn verify` | lint + build + unit + smoke e2e locally (~seconds); full e2e in CI or with local Supabase |
+| `yarn test:e2e:local` | full Playwright suite against the local Supabase stack (build + preview + all projects) |
 | `yarn verify:fast` | lint + build + unit only (skip e2e) |
 | `yarn deploy` | Push Supabase migrations + Vercel prod deploy |
 | `yarn generate:pwa-assets` | Regenerate icons, iOS splash (light/dark), favicon.ico, og-image (needs ImageMagick) |
@@ -141,6 +142,10 @@ Notes from live runs: do not use `clearState` on Safari (system app); Chrome `cl
 
 ### Running e2e
 `yarn test:e2e` uses the installed Google **Chrome** (`channel: 'chrome'`), not bundled Chromium. Start a preview server first (`yarn preview --host 127.0.0.1 --port 4173`) and run with `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173`; `yarn verify` wires this up automatically.
+
+**Full suite locally: `yarn test:e2e:local`.** The auth fixture seeds sessions with the admin API and stores them under a key derived from the Supabase URL (`sb-<host>-auth-token`), so the **built app and the fixture must agree on which Supabase they mean**. `.env.local` points at remote **quacker-dev**, so plain `yarn verify` only runs the smoke subset, and a hand-rolled `yarn build` + `yarn test:e2e` silently mixes a remote app with a local fixture — every auth-dependent spec then fails on the sign-in screen with a *valid* token sitting in `localStorage`. `scripts/e2e-local.sh` pins both to the running local stack (`supabase status -o env`), builds, previews, and runs all projects. Symptom to recognize: `waitForAuthenticated` times out yet `seedTestSession` succeeded; check the storage key's host against the bundle. Remote keys are `sb_secret_…`/`sb_publishable_…`, which the fixture cannot use for admin calls (it falls back to local demo JWTs → `Invalid API key`).
+
+The service worker is built from `src/sw.ts` by `vite-plugin-pwa` (`injectManifest`) to `dist/sw.js`; there is no `public/sw.js`. It precaches the app shell, so **e2e runs against a real offline-capable build** — after changing the SW, rebuild before running `tests/e2e/offline-shell.spec.ts` / `sw-update.spec.ts`. Dev output lands in `dev-dist/` (gitignored).
 
 **Selector sync:** any UI label / dialog title / `aria-label` change must update `tests/e2e` (and Maestro) in the same PR — see [`.cursor/rules/playwright-chrome.mdc`](.cursor/rules/playwright-chrome.mdc). Prefer stable `data-testid`s for chrome that changes often. `IconButton as={RouteLink}` back/nav chrome is role **`link`**, not `button`.
 

@@ -13,7 +13,10 @@ androidWebViewHierarchy: devtools
     when:
       visible: "Close"
     commands:
-      - tapOn: "Close"
+      # Optional: the guard's hierarchy snapshot can go stale before the tap lands.
+      - tapOn:
+          text: "Close"
+          optional: true
 # Keep install banner — do not dismiss it.
 - extendedWaitUntil:
     visible: ".*All you need is a phone number:|Your rooms.*"
