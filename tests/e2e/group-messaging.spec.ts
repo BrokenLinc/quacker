@@ -53,4 +53,37 @@ test.describe('group messaging', () => {
       .poll(async () => page.getByText(realtimeText).count(), { timeout: 20_000 })
       .toBeGreaterThan(0);
   });
+
+  test('link popover accepts typed and pasted URLs on mobile', async ({
+    page,
+  }) => {
+    await page.setViewportSize({ width: 390, height: 844 });
+
+    const { admin, userId } = await seedAuthenticatedSession(page);
+    const group = await seedTestGroup(admin, userId, {
+      slug: `lnk${Date.now().toString(36).slice(-5)}`,
+      name: 'Composer URL Test',
+    });
+
+    await gotoGroupPage(page, group);
+
+    const editor = page.getByTestId('message-editor');
+    await expect(editor).toBeVisible({ timeout: 15_000 });
+    await editor.click();
+    await page.keyboard.type('see this');
+
+    await page.getByRole('button', { name: 'Link', exact: true }).click();
+    await expect(page.getByRole('dialog', { name: 'Add link' })).toBeVisible();
+
+    const urlInput = page.getByLabel('Link URL');
+    await urlInput.fill('example.com/path');
+    await expect(urlInput).toHaveValue('example.com/path');
+
+    await page.evaluate(async () => {
+      await navigator.clipboard.writeText('https://yowl.us/docs');
+    });
+    await urlInput.clear();
+    await urlInput.press('ControlOrMeta+v');
+    await expect(urlInput).toHaveValue('https://yowl.us/docs');
+  });
 });

@@ -121,7 +121,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   if (!editor) return null;
 
-  const showToolbar = !isMobile || focused;
+  const showToolbar = !isMobile || focused || linkOpen;
   const keepFocus = (e: React.SyntheticEvent) => {
     e.preventDefault();
   };
