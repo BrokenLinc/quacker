@@ -5,6 +5,8 @@ import {
   appUserHasChosenDisplayName,
   hasChosenDisplayName,
   isPhoneFallbackDisplayName,
+  isSuperAdminPhone,
+  phoneDigits,
 } from './auth';
 
 const userWithName = (display_name: string | undefined): User =>
@@ -36,6 +38,21 @@ describe('hasChosenDisplayName', () => {
 
   it('is true for a real display name', () => {
     expect(hasChosenDisplayName(userWithName('Fox'))).toBe(true);
+  });
+});
+
+describe('phoneDigits / isSuperAdminPhone', () => {
+  it('normalizes phones to digits', () => {
+    expect(phoneDigits('+13522622098')).toBe('13522622098');
+    expect(phoneDigits('3522622098')).toBe('3522622098');
+    expect(phoneDigits(null)).toBe(null);
+  });
+
+  it('matches SuperAdmin with or without plus', () => {
+    expect(isSuperAdminPhone('+13522622098')).toBe(true);
+    expect(isSuperAdminPhone('13522622098')).toBe(true);
+    expect(isSuperAdminPhone('+12025550100')).toBe(false);
+    expect(isSuperAdminPhone(null)).toBe(false);
   });
 });
 

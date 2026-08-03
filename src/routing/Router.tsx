@@ -79,6 +79,16 @@ const router = createBrowserRouter([
         element: withSuspense(Pages.HomePage),
       },
       {
+        id: getRouteIdFromPaths({ path: routes.suggestionsNew().path }),
+        path: routes.suggestionsNew().path,
+        element: withSuspense(Pages.NewSuggestionPage),
+      },
+      {
+        id: getRouteIdFromPaths({ path: routes.suggestions().path }),
+        path: routes.suggestions().path,
+        element: withSuspense(Pages.SuggestionsPage),
+      },
+      {
         id: getRouteIdFromPaths({ path: routes.groupBySlug().path }),
         path: routes.groupBySlug().path,
         element: withSuspense(Pages.GroupSlugPage),

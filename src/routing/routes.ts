@@ -4,6 +4,16 @@ export const routes = {
     path: '/',
     label: 'Home',
   }),
+  suggestions: () => ({
+    path: '/suggestions',
+    label: 'Suggestions',
+    parent: routes.home(),
+  }),
+  suggestionsNew: () => ({
+    path: '/suggestions/new',
+    label: 'Make a suggestion',
+    parent: routes.suggestions(),
+  }),
   group: (groupId = ':groupId') => ({
     path: `/${groupId}`,
     label: 'Room',

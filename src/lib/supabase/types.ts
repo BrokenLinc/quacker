@@ -202,6 +202,71 @@ export type Database = {
           },
         ];
       };
+      suggestion_votes: {
+        Row: {
+          created_at: string;
+          suggestion_id: string;
+          user_id: string;
+        };
+        Insert: {
+          created_at?: string;
+          suggestion_id: string;
+          user_id: string;
+        };
+        Update: {
+          created_at?: string;
+          suggestion_id?: string;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'suggestion_votes_suggestion_id_fkey';
+            columns: ['suggestion_id'];
+            isOneToOne: false;
+            referencedRelation: 'suggestions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
+      suggestions: {
+        Row: {
+          author_display_name: string | null;
+          author_id: string;
+          body: string;
+          category: Database['public']['Enums']['suggestion_category'];
+          created_at: string;
+          id: string;
+          status: Database['public']['Enums']['suggestion_status'];
+          title: string;
+          updated_at: string;
+          vote_count: number;
+        };
+        Insert: {
+          author_display_name?: string | null;
+          author_id: string;
+          body: string;
+          category: Database['public']['Enums']['suggestion_category'];
+          created_at?: string;
+          id?: string;
+          status?: Database['public']['Enums']['suggestion_status'];
+          title: string;
+          updated_at?: string;
+          vote_count?: number;
+        };
+        Update: {
+          author_display_name?: string | null;
+          author_id?: string;
+          body?: string;
+          category?: Database['public']['Enums']['suggestion_category'];
+          created_at?: string;
+          id?: string;
+          status?: Database['public']['Enums']['suggestion_status'];
+          title?: string;
+          updated_at?: string;
+          vote_count?: number;
+        };
+        Relationships: [];
+      };
       user_notification_prefs: {
         Row: {
           push_enabled: boolean;
@@ -225,11 +290,20 @@ export type Database = {
       [_ in never]: never;
     };
     Functions: {
+      check_auth_otp_rate_limit: {
+        Args: {
+          p_identifier: string;
+          p_max_attempts: number;
+          p_window_seconds: number;
+        };
+        Returns: boolean;
+      };
       is_group_staff: { Args: { gid: string }; Returns: boolean };
       is_silenced_in_group: {
         Args: { gid: string; uid: string };
         Returns: boolean;
       };
+      is_superadmin: { Args: Record<PropertyKey, never>; Returns: boolean };
       unread_message_counts: {
         Args: Record<PropertyKey, never>;
         Returns: {
@@ -241,6 +315,8 @@ export type Database = {
     Enums: {
       group_role: 'creator' | 'mod' | 'member';
       notify_level: 'all' | 'announcements' | 'none';
+      suggestion_category: 'feature_request' | 'bug_report' | 'other';
+      suggestion_status: 'new' | 'under_review' | 'in_development' | 'done';
     };
     CompositeTypes: {
       [_ in never]: never;
@@ -373,6 +449,13 @@ export const Constants = {
     Enums: {
       group_role: ['creator', 'mod', 'member'],
       notify_level: ['all', 'announcements', 'none'],
+      suggestion_category: ['feature_request', 'bug_report', 'other'],
+      suggestion_status: [
+        'new',
+        'under_review',
+        'in_development',
+        'done',
+      ],
     },
   },
 } as const;
@@ -383,3 +466,9 @@ export type GroupMemberRow =
   Database['public']['Tables']['group_members']['Row'];
 export type GroupSilenceRow =
   Database['public']['Tables']['group_silences']['Row'];
+export type SuggestionRow = Database['public']['Tables']['suggestions']['Row'];
+export type SuggestionVoteRow =
+  Database['public']['Tables']['suggestion_votes']['Row'];
+export type SuggestionCategory =
+  Database['public']['Enums']['suggestion_category'];
+export type SuggestionStatus = Database['public']['Enums']['suggestion_status'];

@@ -142,6 +142,6 @@ Notes from live runs: do not use `clearState` on Safari (system app); Chrome `cl
 ### Running e2e
 `yarn test:e2e` uses the installed Google **Chrome** (`channel: 'chrome'`), not bundled Chromium. Start a preview server first (`yarn preview --host 127.0.0.1 --port 4173`) and run with `PLAYWRIGHT_BASE_URL=http://127.0.0.1:4173`; `yarn verify` wires this up automatically.
 
-**Selector sync:** any UI label / dialog title / `aria-label` change must update `tests/e2e` (and Maestro) in the same PR — see [`.cursor/rules/playwright-chrome.mdc`](.cursor/rules/playwright-chrome.mdc). Prefer stable `data-testid`s for chrome that changes often.
+**Selector sync:** any UI label / dialog title / `aria-label` change must update `tests/e2e` (and Maestro) in the same PR — see [`.cursor/rules/playwright-chrome.mdc`](.cursor/rules/playwright-chrome.mdc). Prefer stable `data-testid`s for chrome that changes often. `IconButton as={RouteLink}` back/nav chrome is role **`link`**, not `button`.
 
 **Color modes (efficiency):** `a11y-home` seeds `chakra-ui-color-mode` and runs axe + canvas/`theme-color` checks for **light and dark** (no auth — included in verify smoke). `theme-modes` covers the authenticated sidebar toggle (needs Supabase, full e2e). Do not duplicate messaging/auth suites per mode. Assert `html[data-theme]`, not `chakra-ui-*` classes.

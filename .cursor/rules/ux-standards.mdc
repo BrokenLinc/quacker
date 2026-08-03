@@ -77,6 +77,12 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
 - No empty `return null` for lists — use `UI.EmptyState` with a CTA
 - Loading: `Skeleton` matching final layout, not bare full-screen spinners
 - Submits: button `isLoading` + double-submit guard; failed sends restore input
+- **Toggle / vote controls:** do not call the API with prop state that only
+  updates after a list refetch (`votedByMe`, switch checked, etc.). Keep
+  optimistic local state (or keep `isLoading` until the parent value matches
+  the mutation). Otherwise a second tap races the refetch and double-inserts /
+  shows a spurious error. Revert local state on failure. Reference:
+  `SuggestionRow` in `SuggestionsPage.tsx`.
 
 ## Inputs — constrain early, not only on submit
 
