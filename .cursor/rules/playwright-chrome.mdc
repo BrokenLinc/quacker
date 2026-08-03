@@ -30,6 +30,8 @@ When you change any of the following, **grep and update** `tests/e2e/**` (and Ma
 | **Duplicate accessible names** | Adding a second control with the same role+name (e.g. tip-well **Invite someone** next to header invite) → Playwright **strict mode** failures |
 | **Substring role names** | `getByRole('heading', { name: 'Suggestions' })` also matches **No suggestions yet** — Playwright name matching is substring unless `{ exact: true }` |
 | **`IconButton as={RouteLink}`** | Polymorphic back/nav icons render as **`link`**, not `button`. Use `getByRole('link', { name: '…' })` or a `data-testid` — `getByRole('button', …)` times out |
+| **Focus-gated toolbar + nested popover** | Mobile blur unmounts the strip and kills the dialog — test at **mobile viewport**, open popover, **type + paste** into its input (`group-messaging.spec.ts` link test). Pin `overlayOpen` in the visibility gate when adding this pattern |
+| **Short icon labels vs dynamic chrome** | `getByRole('button', { name: 'Link' })` substring-matches **Link Popover Test options** — use `{ exact: true }`, `data-testid`, or neutral fixture names |
 
 **Do this in the same turn as the UI edit** — not after CI fails:
 
@@ -68,6 +70,7 @@ PLAYWRIGHT_BASE_URL=https://yowl.us yarn test:e2e --config=playwright.smoke.conf
 | Strict mode: resolved to 2 elements | Duplicate accessible names — scope with `data-testid` (e.g. `group-invite` vs creator tip well). Or substring match: page title **Suggestions** vs empty **No suggestions yet** → add `{ exact: true }` |
 | Timeout waiting for `getByRole('button', { name: 'Back …' })` | Back chrome is usually `IconButton as={RouteLink}` → role **`link`**. Switch to `getByRole('link', …)` or `data-testid` |
 | Dialog/button not found after UI polish | You likely changed a label/title without updating e2e — see **UI changes must update e2e** above |
+| Popover input won't accept type/paste on mobile | Focus-gated parent unmounted on blur — see **Focus-gated toolbar + nested popover** above; fix app (`overlayOpen` in gate), then add mobile e2e that fills the popover field |
 
 ## Avoid locally
 
