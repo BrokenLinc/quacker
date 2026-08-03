@@ -128,6 +128,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   return (
     <UI.Box
+      position="relative"
       border="1px solid"
       borderColor="border.subtle"
       borderRadius="xl"
@@ -143,6 +144,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       <UI.Box
         px={3}
         py={3}
+        pr={showToolbar ? 3 : 14}
         minH={minH}
         sx={{
           '.ProseMirror': {
@@ -168,91 +170,100 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       >
         <EditorContent editor={editor} />
       </UI.Box>
-      <UI.HStack px={2} pb={2} pt={1} spacing={1} align="center">
-        {showToolbar ? (
-          <>
+      {showToolbar ? (
+        <UI.HStack px={2} pb={2} pt={1} spacing={1} align="center">
+          <IconButton
+            aria-label="Bold"
+            size="xs"
+            variant={editor.isActive('bold') ? 'solid' : 'ghost'}
+            colorScheme={editor.isActive('bold') ? 'action' : undefined}
+            icon={faBold}
+            onMouseDown={keepFocus}
+            onPointerDown={keepFocus}
+            onClick={() => editor.chain().focus().toggleBold().run()}
+          />
+          <IconButton
+            aria-label="Italic"
+            size="xs"
+            variant={editor.isActive('italic') ? 'solid' : 'ghost'}
+            colorScheme={editor.isActive('italic') ? 'action' : undefined}
+            icon={faItalic}
+            onMouseDown={keepFocus}
+            onPointerDown={keepFocus}
+            onClick={() => editor.chain().focus().toggleItalic().run()}
+          />
+          <IconButton
+            aria-label="Code"
+            size="xs"
+            variant={editor.isActive('code') ? 'solid' : 'ghost'}
+            colorScheme={editor.isActive('code') ? 'action' : undefined}
+            icon={faCode}
+            onMouseDown={keepFocus}
+            onPointerDown={keepFocus}
+            onClick={() => editor.chain().focus().toggleCode().run()}
+          />
+          <MorphingPopover open={linkOpen} onOpenChange={setLinkOpen}>
             <IconButton
-              aria-label="Bold"
+              aria-label="Link"
               size="xs"
-              variant={editor.isActive('bold') ? 'solid' : 'ghost'}
-              colorScheme={editor.isActive('bold') ? 'action' : undefined}
-              icon={faBold}
+              variant={editor.isActive('link') ? 'solid' : 'ghost'}
+              colorScheme={editor.isActive('link') ? 'action' : undefined}
+              icon={faLink}
               onMouseDown={keepFocus}
               onPointerDown={keepFocus}
-              onClick={() => editor.chain().focus().toggleBold().run()}
+              onClick={openLinkPopover}
             />
-            <IconButton
-              aria-label="Italic"
-              size="xs"
-              variant={editor.isActive('italic') ? 'solid' : 'ghost'}
-              colorScheme={editor.isActive('italic') ? 'action' : undefined}
-              icon={faItalic}
-              onMouseDown={keepFocus}
-              onPointerDown={keepFocus}
-              onClick={() => editor.chain().focus().toggleItalic().run()}
-            />
-            <IconButton
-              aria-label="Code"
-              size="xs"
-              variant={editor.isActive('code') ? 'solid' : 'ghost'}
-              colorScheme={editor.isActive('code') ? 'action' : undefined}
-              icon={faCode}
-              onMouseDown={keepFocus}
-              onPointerDown={keepFocus}
-              onClick={() => editor.chain().focus().toggleCode().run()}
-            />
-            <MorphingPopover open={linkOpen} onOpenChange={setLinkOpen}>
-              <IconButton
-                aria-label="Link"
-                size="xs"
-                variant={editor.isActive('link') ? 'solid' : 'ghost'}
-                colorScheme={editor.isActive('link') ? 'action' : undefined}
-                icon={faLink}
-                onMouseDown={keepFocus}
-                onPointerDown={keepFocus}
-                onClick={openLinkPopover}
-              />
-              <MorphingPopoverContent title="Add link" aria-label="Add link">
-                <UI.VStack align="stretch" spacing={3} p={1}>
-                  <UI.Input
-                    placeholder="https://example.com"
-                    value={linkUrl}
-                    onChange={(e) => setLinkUrl(e.target.value)}
-                    aria-label="Link URL"
+            <MorphingPopoverContent title="Add link" aria-label="Add link">
+              <UI.VStack align="stretch" spacing={3} p={1}>
+                <UI.Input
+                  placeholder="https://example.com"
+                  value={linkUrl}
+                  onChange={(e) => setLinkUrl(e.target.value)}
+                  aria-label="Link URL"
+                  size="sm"
+                  autoFocus
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      applyLink();
+                    }
+                  }}
+                />
+                <UI.HStack spacing={2} justify="flex-end">
+                  <UI.Button
                     size="sm"
-                    autoFocus
-                    onKeyDown={(e) => {
-                      if (e.key === 'Enter') {
-                        e.preventDefault();
-                        applyLink();
-                      }
-                    }}
-                  />
-                  <UI.HStack spacing={2} justify="flex-end">
-                    <UI.Button
-                      size="sm"
-                      variant="ghost"
-                      onClick={() => setLinkOpen(false)}
-                    >
-                      Cancel
-                    </UI.Button>
-                    <UI.Button
-                      size="sm"
-                      colorScheme="action"
-                      variant="solid"
-                      onClick={applyLink}
-                    >
-                      Apply
-                    </UI.Button>
-                  </UI.HStack>
-                </UI.VStack>
-              </MorphingPopoverContent>
-            </MorphingPopover>
-          </>
-        ) : null}
-        <UI.Spacer flex={1} />
-        {trailing}
-      </UI.HStack>
+                    variant="ghost"
+                    onClick={() => setLinkOpen(false)}
+                  >
+                    Cancel
+                  </UI.Button>
+                  <UI.Button
+                    size="sm"
+                    colorScheme="action"
+                    variant="solid"
+                    onClick={applyLink}
+                  >
+                    Apply
+                  </UI.Button>
+                </UI.HStack>
+              </UI.VStack>
+            </MorphingPopoverContent>
+          </MorphingPopover>
+          <UI.Spacer flex={1} />
+          {trailing}
+        </UI.HStack>
+      ) : trailing ? (
+        <UI.HStack
+          position="absolute"
+          bottom={2}
+          right={2}
+          spacing={2}
+          align="center"
+          pointerEvents="auto"
+        >
+          {trailing}
+        </UI.HStack>
+      ) : null}
     </UI.Box>
   );
 };
