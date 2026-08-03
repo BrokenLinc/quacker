@@ -17,12 +17,25 @@ alwaysApply: false
 - Do **not** put `androidWebViewHierarchy: devtools` on FRE/open steps — it can hide native Chrome welcome UI
 - Android keyboard shots: `android-keyboard-shots.yaml` (dismiss via `pressKey: back`). Dismiss install banner first — it covers the composer and steals taps
 - Android WebView often omits input placeholders — tap labels (`All you need is a phone number:`, `Room name`) not `(555)…` / `WWDC…`
-- Dismiss Account menu (`MorphingPopover`): prefer `Close`; else tap outside
-  the panel (e.g. `point: "50%, 12%"`) — never Android `back` (leaves the room)
+- Dismiss Account menu (`MorphingPopover`): the popover has **no Close button**,
+  so tap outside the panel at `point: "6%, 20%"` — never Android `back` (leaves
+  the room), and never `50%, 12%`, which can land on the panel's own color-mode
+  row and toggle the mode back
 - Overrides: `APP_URL=http://…` or `MAESTRO_PORT=4173`
 - **`clearState` is OK** on Chrome (unlike Safari) — login/PWA flows clear Chrome state at launch
 - Prefer `adb reverse` + `http://localhost:<port>` (secure context). Fallback `http://10.0.2.2:<port>` is not a secure context
 - Keep the emulator process in a long-lived shell (`wait`) — agent shells that exit can reap `qemu` even with `nohup`
+- SDK may be Homebrew's `android-commandlinetools` cask at
+  `/opt/homebrew/share/android-commandlinetools` (no `~/Library/Android/sdk`).
+  `scripts/{test-maestro,android-emulator-ready}.sh` probe it and export
+  `ANDROID_HOME` + `emulator` on PATH — boot with
+  `emulator -avd <name>`, then wait on `getprop sys.boot_completed`
+- **Emulator egress is not guaranteed.** If sign-in dies at
+  **Failed to send a request to the Edge Function** while the page itself loads,
+  the AVD cannot reach remote Supabase (two 10.0.2.x interfaces, `eth0` +
+  `wlan0`, is the usual tell). `ping` proves nothing — QEMU answers ICMP itself.
+  Point the build at **local** Supabase and `adb reverse tcp:54321`, or verify
+  Android against a deployed preview URL. Not a PWA/SW regression
 - Screenshots: `takeScreenshot: artifacts/…` lands under `~/.maestro/tests/<run>/<flow>/takeScreenshot/artifacts/` (repo `artifacts/` is gitignored). Always copy from the newest run dir by mtime
 - Test OTP: `555-01XX` + `555555` with `AUTH_ALLOW_TEST_OTP` (local or **quacker-dev** only — never prod)
 - FTUE check: reserved `(202) 555-0199` — Edge Function deletes that user before each session when test OTP is on (always shows name onboarding). Maestro shared login stays on `0100`

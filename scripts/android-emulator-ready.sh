@@ -4,7 +4,24 @@
 # Exit 0 if adb sees at least one device/emulator in "device" state.
 set -euo pipefail
 
-export PATH="${PATH:+$PATH:}${ANDROID_HOME:+$ANDROID_HOME/platform-tools:}${ANDROID_SDK_ROOT:+$ANDROID_SDK_ROOT/platform-tools:}$HOME/Library/Android/sdk/platform-tools:$HOME/Android/Sdk/platform-tools:/opt/homebrew/bin:/usr/local/bin"
+# Android Studio installs the SDK under ~/Library; Homebrew's
+# android-commandlinetools cask under /opt/homebrew/share.
+for sdk_root in \
+  "${ANDROID_HOME:-}" \
+  "${ANDROID_SDK_ROOT:-}" \
+  "$HOME/Library/Android/sdk" \
+  "$HOME/Android/Sdk" \
+  "/opt/homebrew/share/android-commandlinetools" \
+  "/usr/local/share/android-commandlinetools"
+do
+  if [[ -n "$sdk_root" && -d "$sdk_root/platform-tools" ]]; then
+    export ANDROID_HOME="$sdk_root"
+    export ANDROID_SDK_ROOT="$sdk_root"
+    export PATH="$sdk_root/platform-tools:${sdk_root}/emulator:$PATH"
+    break
+  fi
+done
+export PATH="${PATH:+$PATH:}/opt/homebrew/bin:/usr/local/bin"
 
 ok() { printf '  ✓ %s\n' "$1"; }
 warn() { printf '  ⚠ %s\n' "$1"; }

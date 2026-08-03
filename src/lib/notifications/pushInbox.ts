@@ -6,7 +6,7 @@ import { applyMessageInsert, type Message } from '@@api/message';
 /**
  * Messages captured by the service worker while the app was backgrounded.
  *
- * The SW writes every push into this store (see `public/sw.js`) using the same
+ * The SW writes every push into this store (see `src/sw.ts`) using the same
  * database and object-store names idb-keyval uses, so resuming the app can paint
  * what arrived while it was away without waiting for a network round-trip.
  */

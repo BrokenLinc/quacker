@@ -1,4 +1,64 @@
-/* Yowl service worker — Web Push delivery and push inbox. */
+/// <reference lib="webworker" />
+
+/* Yowl service worker — offline app shell, Web Push delivery, and push inbox. */
+
+import { CacheableResponsePlugin } from 'workbox-cacheable-response';
+import { clientsClaim } from 'workbox-core';
+import { ExpirationPlugin } from 'workbox-expiration';
+import {
+  cleanupOutdatedCaches,
+  createHandlerBoundToURL,
+  precacheAndRoute,
+} from 'workbox-precaching';
+import { NavigationRoute, registerRoute } from 'workbox-routing';
+import { CacheFirst } from 'workbox-strategies';
+
+declare const self: ServiceWorkerGlobalScope & {
+  __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
+};
+
+const SHELL_URL = '/index.html';
+
+precacheAndRoute(self.__WB_MANIFEST);
+cleanupOutdatedCaches();
+
+// Take over the page that installed us so the first visit already benefits from
+// runtime caching. This does not reload anything: an *update* only takes control
+// after the user accepts the prompt and posts SKIP_WAITING below.
+clientsClaim();
+
+// Every route is client-rendered, so any navigation can be answered by the
+// precached shell. Assets and the SW itself must fall through to the network so
+// a stale shell cannot shadow a new build.
+registerRoute(
+  new NavigationRoute(createHandlerBoundToURL(SHELL_URL), {
+    denylist: [/^\/assets\//, /^\/sw\.js$/, /^\/manifest\.webmanifest$/],
+  })
+);
+
+// Remote avatars are content-addressed by an email hash, so they can be served
+// from cache indefinitely; the cap is there to keep the cache bounded.
+registerRoute(
+  ({ url }) => url.hostname.endsWith('gravatar.com'),
+  new CacheFirst({
+    cacheName: 'yowl-avatars',
+    plugins: [
+      new CacheableResponsePlugin({ statuses: [0, 200] }),
+      new ExpirationPlugin({
+        maxEntries: 128,
+        maxAgeSeconds: 30 * 24 * 60 * 60,
+        purgeOnQuotaError: true,
+      }),
+    ],
+  })
+);
+
+self.addEventListener('message', (event: ExtendableMessageEvent) => {
+  // Sent by the in-app update prompt when the user accepts the new version.
+  if ((event.data as { type?: string } | null)?.type === 'SKIP_WAITING') {
+    void self.skipWaiting();
+  }
+});
 
 const INBOX_DB = 'quacker-push-inbox';
 const INBOX_STORE = 'keyval';
@@ -8,7 +68,10 @@ const INBOX_STORE = 'keyval';
  * explicit version, one object store, `put(value, key)`), so the app can read
  * this store with idb-keyval. See src/lib/notifications/pushInbox.ts.
  */
-const withInboxStore = (mode, run) =>
+const withInboxStore = <T>(
+  mode: IDBTransactionMode,
+  run: (store: IDBObjectStore) => T
+): Promise<T | undefined> =>
   new Promise((resolve, reject) => {
     const request = indexedDB.open(INBOX_DB);
     request.onupgradeneeded = () => {
@@ -42,17 +105,26 @@ const withInboxStore = (mode, run) =>
  * Stash a pushed message so the app can paint it the moment it resumes —
  * before any network round-trip, and even if the socket died while suspended.
  */
-const recordInboxMessage = async (message) => {
-  if (!message || typeof message.id !== 'string') return;
+const recordInboxMessage = async (message: unknown): Promise<void> => {
+  const id = (message as { id?: unknown } | null)?.id;
+  if (typeof id !== 'string') return;
   try {
-    await withInboxStore('readwrite', (store) => store.put(message, message.id));
+    await withInboxStore('readwrite', (store) => store.put(message, id));
   } catch {
     // The inbox is an optimization; a failure just means a slower resume.
   }
 };
 
-self.addEventListener('push', (event) => {
-  const data = event.data?.json() ?? {
+type PushData = {
+  title?: string;
+  body?: string;
+  url?: string;
+  groupId?: string | null;
+  message?: unknown;
+};
+
+self.addEventListener('push', (event: PushEvent) => {
+  const data: PushData = event.data?.json() ?? {
     title: 'Yowl',
     body: 'New message',
     url: '/',
@@ -98,8 +170,10 @@ self.addEventListener('push', (event) => {
         badge: '/icons/icon-192.png',
         tag: groupId ? `yowl-group-${groupId}` : 'yowl',
         data: targetUrl,
+        // Re-alert for a second message in the same room instead of silently
+        // replacing the previous notification.
         renotify: true,
-      });
+      } as NotificationOptions);
     })()
   );
 });
@@ -110,10 +184,10 @@ self.addEventListener('push', (event) => {
  * notice when tapping a notification. Falls back to navigation only when no
  * client answers.
  */
-const requestClientNavigation = (client, url) =>
-  new Promise((resolve) => {
+const requestClientNavigation = (client: WindowClient, url: string) =>
+  new Promise<boolean>((resolve) => {
     let settled = false;
-    const finish = (ok) => {
+    const finish = (ok: boolean) => {
       if (settled) return;
       settled = true;
       resolve(ok);
@@ -129,9 +203,9 @@ const requestClientNavigation = (client, url) =>
     }
   });
 
-self.addEventListener('notificationclick', (event) => {
+self.addEventListener('notificationclick', (event: NotificationEvent) => {
   event.notification.close();
-  const url = event.notification.data ?? '/';
+  const url: string = event.notification.data ?? '/';
 
   event.waitUntil(
     (async () => {
@@ -149,7 +223,7 @@ self.addEventListener('notificationclick', (event) => {
 
       // Prefer a client already on the room, then any other client.
       const ordered = [...windowClients].sort((a, b) => {
-        const score = (client) => {
+        const score = (client: WindowClient) => {
           try {
             return new URL(client.url).pathname === targetPath ? 0 : 1;
           } catch {
@@ -166,13 +240,11 @@ self.addEventListener('notificationclick', (event) => {
           // Focus can be refused; still try to hand off the route.
         }
         if (await requestClientNavigation(client, url)) return;
-        if ('navigate' in client) {
-          try {
-            await client.navigate(url);
-            return;
-          } catch {
-            // fall through to the next client
-          }
+        try {
+          await client.navigate(url);
+          return;
+        } catch {
+          // fall through to the next client
         }
       }
 

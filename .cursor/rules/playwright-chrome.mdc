@@ -43,6 +43,9 @@ When you change any of the following, **grep and update** `tests/e2e/**` (and Ma
 ## When running e2e
 
 ```bash
+# Full suite locally — pins app build AND fixture to local Supabase
+yarn test:e2e:local
+
 # Preferred — uses system Chrome via config
 yarn test:e2e
 yarn verify
@@ -55,6 +58,8 @@ PLAYWRIGHT_BASE_URL=https://yowl.us yarn test:e2e --config=playwright.smoke.conf
 
 | Symptom | Action |
 | ---- | --- |
+| **Auth specs fail on the sign-in screen although the seed succeeded** | App build and fixture disagree about Supabase. The session key is `sb-<host>-auth-token`; if that host is not the one compiled into `dist`, the app never sees it. Run `yarn test:e2e:local` instead of hand-rolling `yarn build` + `yarn test:e2e` |
+| `AuthApiError: Invalid API key` in the fixture | Sourcing `.env.local` points the fixture at remote dev, whose keys are `sb_secret_…` — `getSupabaseEnv` then falls back to local demo JWTs. Use the local stack (`yarn test:e2e:local`) |
 | Tests hang at startup | Confirm Google Chrome is installed; do **not** switch to bundled Chromium locally |
 | `channel: 'chrome'` not found | Install [Google Chrome](https://www.google.com/chrome/); on macOS it lives in `/Applications/Google Chrome.app` |
 | Agent sandbox blocks browser | Request `all` permissions for the test command, not a config change away from Chrome |

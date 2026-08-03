@@ -1,6 +1,6 @@
 ---
 description: TanStack Query cache, realtime topics, outbox, and resume behavior
-globs: "src/api/**,src/lib/query/**,src/lib/realtime/**,src/lib/lifecycle/**,src/lib/outbox/**,src/lib/notifications/**,public/sw.js"
+globs: "src/api/**,src/lib/query/**,src/lib/realtime/**,src/lib/lifecycle/**,src/lib/outbox/**,src/lib/notifications/**,src/lib/pwa/**,src/sw.ts"
 alwaysApply: false
 ---
 
@@ -78,10 +78,29 @@ rules below. Overview in [`docs/architecture.md`](../../docs/architecture.md).
 
 ## Service worker contract
 
-`public/sw.js` and `supabase/functions/notify-new-message` are coupled: the push
+The worker source is **`src/sw.ts`** (built to `dist/sw.js` by `vite-plugin-pwa`
+with `injectManifest` — there is no `public/sw.js`). Keep the push,
+`notificationclick`, and inbox handlers intact when touching it; the plugin only
+injects the precache manifest.
+
+`src/sw.ts` and `supabase/functions/notify-new-message` are coupled: the push
 payload carries the **full message row**. If you change the message shape,
 update `PushedMessage` in `src/lib/notifications/pushInbox.ts` and the Edge
-Function in the same change, then redeploy the function.
+Function in the same change (CI deploys it from `deploy.yml`).
+
+Pitfalls:
+
+- **Register at module scope.** `registerSW` returns an updater bound to one
+ Workbox instance. Calling it inside an effect double-registers under
+ StrictMode, so the prompt watches one instance while skip-waiting goes to
+ another — Reload appears to do nothing.
+- **vite-plugin-pwa only reloads on `controlling` when a worker already
+ controlled the page at registration.** A first-visit install plus a deploy in
+ the same session needs our own `controllerchange` reload
+ (`reloadWhenControlled`).
+- **`clientsClaim()` does not cause a reload loop** here: the plugin's reload
+ listener is attached only after a `waiting` worker appears and requires
+ `event.isUpdate`.
 
 ## Testing
 
@@ -92,3 +111,10 @@ Function in the same change, then redeploy the function.
  missed-message recovery, push merge, in-app notification routing, and
  sign-out purge. Add `data-testid`s (`connection-status`, `message-pending`)
  for new chrome rather than role+name.
+- Service worker behavior → `tests/e2e/offline-shell.spec.ts` and
+ `tests/e2e/sw-update.spec.ts` (`smoke` project, no Supabase). Two gotchas:
+ wait for `navigator.serviceWorker.controller`, not just `ready`, or runtime
+ caching has not seen your fetch yet; and CacheFirst writes the response
+ *after* returning it, so poll the cache instead of reading it once.
+ `sw-update` rewrites `dist/sw.js` to stand in for a deploy — Playwright
+ request interception does not cover the worker script.

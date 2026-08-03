@@ -21,4 +21,18 @@ alwaysApply: false
 - FTUE check: reserved `(202) 555-0199` — deletes that auth user before each test-OTP session (always fresh onboarding). Maestro login stays on `0100`
 - Viewport contract + anti-patterns: `docs/ux.md`. Wipe webclip Storage after `index.html` changes. Judge PWA bottom gap with pixels (raised fill to y=bottom), not vision captions
 - Account sheet: appearance → Change name → Log out → rooms → New room
+- **Dismissing the Account popover:** it has **no Close button** — an unguarded
+  `tapOn: "Close"` always fails. Tap the overlay **left of** the panel
+  (`point: "6%, 20%"`). Do **not** use `50%, 12%`: the panel is anchored
+  top-right and that point can land on its **color-mode row**, silently
+  toggling the mode back — symptom is `ensure-light-mode` "COMPLETED" followed
+  by dark screenshots, or `ensure-dark-mode` failing on `"Dark mode" is visible`
+- **Leftover-state guards must be `optional`.** `runFlow { when: visible: "Close" }`
+  evaluates a hierarchy snapshot that can go stale before the tap runs, so the
+  inner tap fails and kills the whole flow. Always write cleanup taps as
+  `tapOn: { text: "Close", optional: true }`
+- Verifying a **prod** service worker (precache, update prompt) needs the built
+  app, not `yarn dev`: `yarn build && yarn preview --host 0.0.0.0 --port 4173`,
+  then `MAESTRO_PORT=4173 yarn test:maestro:pwa`. A LAN-installed webclip keeps
+  its session, so `login-steps` is usually SKIPPED on re-runs
 - Android sibling: `.cursor/rules/maestro-android.mdc` (`yarn test:maestro:android*`)

@@ -2,7 +2,8 @@ appId: ${APP_ID}
 ---
 # Switch to dark via Account menu (assumes currently light). Verify it stuck.
 # Env: APP_ID (com.apple.mobilesafari | com.android.chrome)
-# Dismiss: Close if present, else tap overlay above the floating sheet.
+# Dismiss: Close if present, else tap the overlay left of the panel. Tapping
+# 50%,12% can land on the panel's own color-mode row and toggle it straight back.
 - tapOn: "Account menu"
 - extendedWaitUntil:
     visible: "Dark mode"
@@ -20,11 +21,14 @@ appId: ${APP_ID}
     when:
       visible: "Close"
     commands:
-      - tapOn: "Close"
+      # Optional: the guard's hierarchy snapshot can go stale before the tap lands.
+      - tapOn:
+          text: "Close"
+          optional: true
 - runFlow:
     when:
       visible: "Light mode"
     commands:
       - tapOn:
-          point: "50%, 12%"
+          point: "6%, 20%"
 - waitForAnimationToEnd

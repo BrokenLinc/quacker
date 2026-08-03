@@ -38,7 +38,10 @@ appId: ${APP_ID}
           when:
             visible: 'Close'
           commands:
-            - tapOn: 'Close'
+            # Optional: the guard's snapshot can go stale before the tap lands.
+            - tapOn:
+                text: 'Close'
+                optional: true
       - runFlow:
           when:
             visible: 'Dismiss install prompt'
@@ -86,17 +89,28 @@ appId: ${APP_ID}
       - extendedWaitUntil:
           visible: '.*All you need is a phone number:|Your rooms|Account menu|Say something!|Back to home|Dark mode|Light mode|Close.*'
           timeout: 45000
-# Dismiss leftover Account sheet from a prior interrupted run.
+# Dismiss leftover Account sheet from a prior interrupted run. The popover has no
+# Close control, so fall back to the overlay left of the panel — tapping inside it
+# would flip the color mode.
 - runFlow:
     when:
-      visible: 'Dark mode'
+      visible: '.*Dark mode|Light mode.*'
     commands:
-      - tapOn: 'Close'
-- runFlow:
-    when:
-      visible: 'Light mode'
-    commands:
-      - tapOn: 'Close'
+      - runFlow:
+          when:
+            visible: 'Close'
+          commands:
+            # Optional: the guard's snapshot can go stale before the tap lands.
+            - tapOn:
+                text: 'Close'
+                optional: true
+      - runFlow:
+          when:
+            visible: '.*Dark mode|Light mode.*'
+          commands:
+            - tapOn:
+                point: '6%, 20%'
+      - waitForAnimationToEnd
 # --- Reach home signed-in ---
 - runFlow:
     when:

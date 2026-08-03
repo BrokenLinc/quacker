@@ -108,6 +108,26 @@ event. Topics are declared next to their row mappers in `src/api/*.ts`;
 components subscribe with `useRealtimeTopic`. The manager also exposes socket
 health so the lifecycle module can detect a dead websocket after backgrounding.
 
+## Service worker
+
+`src/sw.ts` is built by `vite-plugin-pwa` with `strategies: 'injectManifest'` —
+the plugin only injects the precache manifest; the push, `notificationclick`,
+and inbox handlers are ours. Output is `dist/sw.js`, served with
+`Cache-Control: must-revalidate` (see [`vercel.json`](../vercel.json)) so a new
+worker is always noticed.
+
+- App shell precached; every navigation falls back to `index.html`, so a cold
+ launch works offline and deep links resolve without the network.
+- Remote Gravatar avatars use CacheFirst with a bounded expiration.
+- `manifest: false` — [`public/manifest.webmanifest`](../public/manifest.webmanifest)
+ and the iOS meta in `index.html` stay hand-tuned.
+- `registerType: 'prompt'`: a new build never activates itself. `UpdatePrompt`
+ toasts and the user accepts, then `SKIP_WAITING` activates and the page
+ reloads once. Registration lives at module scope in
+ `src/lib/pwa/useServiceWorkerUpdate.ts` — see the comment there for why.
+- `devOptions.enabled` keeps `/sw.js` present in dev so the push opt-in switch
+ works locally. Dev output lands in `dev-dist/` (gitignored).
+
 ## App lifecycle
 
 `src/lib/lifecycle/appLifecycle.ts` is mounted once in `AppShell` and owns
