@@ -5,6 +5,7 @@ import {
   seedTestGroup,
   seedAuthenticatedSession,
 } from './fixtures/supabase';
+import { pasteIntoInput } from './fixtures/clipboard';
 
 test.describe('group messaging', () => {
   test.describe.configure({ mode: 'serial' });
@@ -79,11 +80,8 @@ test.describe('group messaging', () => {
     await urlInput.fill('example.com/path');
     await expect(urlInput).toHaveValue('example.com/path');
 
-    await page.evaluate(async () => {
-      await navigator.clipboard.writeText('https://yowl.us/docs');
-    });
     await urlInput.clear();
-    await urlInput.press('ControlOrMeta+v');
+    await pasteIntoInput(urlInput, 'https://yowl.us/docs');
     await expect(urlInput).toHaveValue('https://yowl.us/docs');
   });
 });

@@ -66,6 +66,7 @@ PLAYWRIGHT_BASE_URL=https://yowl.us yarn test:e2e --config=playwright.smoke.conf
 | `channel: 'chrome'` not found | Install [Google Chrome](https://www.google.com/chrome/); on macOS it lives in `/Applications/Google Chrome.app` |
 | Agent sandbox blocks browser | Request `all` permissions for the test command, not a config change away from Chrome |
 | CI failure | Keep `CI=true` path on bundled Chromium; do not set `channel: 'chrome'` in GitHub Actions |
+| **`navigator.clipboard.writeText` denied in CI** | Use `pasteInto` / `pasteIntoInput` from `tests/e2e/fixtures/clipboard.ts` — dispatches `ClipboardEvent` + `InputEvent` without clipboard permissions |
 | Brand not found (`name: 'yowl'`) | Signed-in chrome: `getByRole('button', { name: 'Yowl' })`. Logged-out FTUE: `getByTestId('sign-in-logo')` / `getByRole('img', { name: 'Yowl' })` — no header brand button |
 | Strict mode: resolved to 2 elements | Duplicate accessible names — scope with `data-testid` (e.g. `group-invite` vs creator tip well). Or substring match: page title **Suggestions** vs empty **No suggestions yet** → add `{ exact: true }` |
 | Timeout waiting for `getByRole('button', { name: 'Back …' })` | Back chrome is usually `IconButton as={RouteLink}` → role **`link`**. Switch to `getByRole('link', …)` or `data-testid` |
