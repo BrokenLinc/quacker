@@ -20,7 +20,7 @@ export const UpdatePrompt: React.FC = () => {
       position: 'top',
       duration: null,
       isClosable: true,
-      render: ({ onClose }) => (
+      render: () => (
         <UI.HStack
           maxW="sm"
           px={4}
@@ -40,7 +40,8 @@ export const UpdatePrompt: React.FC = () => {
             size="sm"
             preset="primary"
             onClick={() => {
-              onClose();
+              // Leave the toast up until the document reloads so a failed
+              // SKIP_WAITING still has an in-app retry path.
               update();
             }}
           >

@@ -26,7 +26,7 @@ export default defineConfig({
     {
       name: 'smoke',
       testMatch:
-        /(a11y-home|auth-flow|offline-shell|smoke-production|suggestions|sw-update|theme-modes)\.spec\.ts/,
+        /(a11y-home|auth-flow|offline-shell|smoke-production|suggestions|theme-modes)\.spec\.ts/,
       use: {
         ...devices['Desktop Chrome'],
         ...(browserChannel ? { channel: browserChannel } : {}),
@@ -38,6 +38,19 @@ export default defineConfig({
         /(a11y-group|group-header|group-messaging|notification-prefs|offline-continuity)\.spec\.ts/,
       fullyParallel: false,
       workers: 1,
+      use: {
+        ...devices['Desktop Chrome'],
+        ...(browserChannel ? { channel: browserChannel } : {}),
+      },
+    },
+    {
+      // Rewrites dist/sw.js on disk; run alone after other projects so parallel
+      // specs cannot observe a mid-run worker change on the shared preview.
+      name: 'sw-update',
+      testMatch: /sw-update\.spec\.ts/,
+      fullyParallel: false,
+      workers: 1,
+      dependencies: ['smoke', 'integration'],
       use: {
         ...devices['Desktop Chrome'],
         ...(browserChannel ? { channel: browserChannel } : {}),

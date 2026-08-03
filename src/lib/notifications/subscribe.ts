@@ -3,6 +3,7 @@
  * (user gesture). Never request OS permission automatically.
  */
 
+import { ensureRegistered } from '@@lib/pwa/useServiceWorkerUpdate';
 import { supabase } from '@@lib/supabase/client';
 
 import { getNotificationPermissionState } from './permission';
@@ -22,8 +23,12 @@ export const registerServiceWorker =
     const existing = await navigator.serviceWorker.getRegistration();
     if (existing) return existing;
 
-    // First load: startup registration may still be activating. Bounded wait so
-    // a missing SW surfaces as "unsupported" instead of hanging the switch.
+    // Startup registration may still be in flight, or may have failed earlier
+    // in the session — retry via the shared helper before giving up.
+    ensureRegistered();
+
+    // Bounded wait so a missing SW surfaces as "unsupported" instead of
+    // hanging the switch.
     return Promise.race([
       navigator.serviceWorker.ready,
       new Promise<null>((resolve) =>

@@ -21,7 +21,13 @@ const setNeedRefresh = (value: boolean): void => {
   for (const listener of listeners) listener();
 };
 
-const ensureRegistered = (): void => {
+/**
+ * Idempotent registration used at startup and as a push-opt-in fallback.
+ * The guard stays set while a register attempt is in flight so StrictMode
+ * cannot spawn a second Workbox; it clears on failure so a later call can
+ * retry in the same session.
+ */
+export const ensureRegistered = (): void => {
   if (registered) return;
   if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
     return;
@@ -31,6 +37,9 @@ const ensureRegistered = (): void => {
     onNeedRefresh: () => setNeedRefresh(true),
     onRegisterError: () => {
       // Registration is optional — the app still works online without it.
+      // Clear the guard so push opt-in (or a remount) can try again.
+      registered = false;
+      updateSW = undefined;
     },
   });
 };
@@ -81,9 +90,11 @@ export const useServiceWorkerUpdate = (): {
   );
 
   const update = React.useCallback(() => {
-    setNeedRefresh(false);
     reloadWhenControlled();
-    // Posts SKIP_WAITING; the new worker then takes control.
+    // Posts SKIP_WAITING; the new worker then takes control and reloads.
+    // Keep needRefresh set until that happens — clearing it here would
+    // dismiss the only prompt for this waiting worker if activation is a
+    // no-op (onNeedRefresh does not re-fire for the same worker).
     void updateSW?.();
   }, []);
 
