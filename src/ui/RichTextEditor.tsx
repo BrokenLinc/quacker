@@ -221,7 +221,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
       <UI.Box
         px={3}
         py={3}
-        pr={14}
+        pr="110px"
         minH={minH}
         sx={{
           '.ProseMirror': {

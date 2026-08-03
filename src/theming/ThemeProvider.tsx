@@ -120,8 +120,6 @@ export const theme = extendTheme({
         transitionProperty: 'common',
         transitionDuration: 'fast',
       },
-    },
-    IconButton: {
       variants: {
         solid: {
           _disabled: {

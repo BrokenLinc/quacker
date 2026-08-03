@@ -18,11 +18,7 @@ import {
   useGroupMessages,
   useGroupSilences,
 } from '@@api';
-import {
-  retryGroupMembers,
-  retryMessages,
-  retryRoom,
-} from '@@api/cache';
+import { retryGroupMembers, retryMessages, retryRoom } from '@@api/cache';
 import { useConnectionState } from '@@lib/lifecycle/useConnectionState';
 import {
   outboxEntryToMessage,
@@ -609,7 +605,9 @@ const MembersList: React.FC<{ group: Group; user: AppUser }> = ({
   const actorIsStaff = isStaffRole(myMember?.role ?? null, isCreator);
   const silencedUids = new Set((silences ?? []).map((s) => s.uid));
   const memberUids = new Set((members ?? []).map((m) => m.uid));
-  const silencedLeavers = (silences ?? []).filter((s) => !memberUids.has(s.uid));
+  const silencedLeavers = (silences ?? []).filter(
+    (s) => !memberUids.has(s.uid)
+  );
 
   if (loading || silencesLoading) {
     return (
@@ -1749,8 +1747,8 @@ const Composer: React.FC<{
       {text.length > 0 ? (
         <UI.Text
           position="absolute"
-          bottom={3}
-          right={14}
+          bottom={4}
+          right={12}
           fontSize="xs"
           color={text.length > MESSAGE_MAX_LENGTH ? 'red.500' : 'text.muted'}
           pointerEvents="none"
