@@ -114,7 +114,11 @@ Prefer foolproof entry over free-text + late validation:
   counter when the limit matters (e.g. message `n/140`)
 - **Purpose-built controls** when they improve a11y and reduce errors:
   OTP → `PinInput` (one field per digit); picks from a set → combobox /
-  select, not a free text box; dates/money → existing form subtype inputs
+  select, not a free text box; dates/money → existing form subtype inputs.
+  For wrapped OTP (`VerificationCodeInput`): call `onComplete` from **one**
+  path only — either Chakra `PinInput`’s `onComplete` **or** your
+  `onChange`/`applyValue` when `digits.length === length`, never both
+  (double submit / double verify)
 - **Single-field rename/prompt modals** (change name, rename room): keep the
   dialog narrow (`QuickModal` `size="sm"`) and put an **inset Save icon
   button** in the input (`InputGroup` + `InputRightElement`) — not a
