@@ -24,7 +24,8 @@ test('suggestions nav opens list and create form', async ({ page }) => {
   await expect(page.getByLabel('Title')).toBeVisible();
   await expect(page.getByRole('radio', { name: 'Feature request' })).toBeChecked();
 
-  await page.getByRole('button', { name: 'Back to suggestions' }).click();
+  // IconButton as={RouteLink} exposes role=link, not button
+  await page.getByRole('link', { name: 'Back to suggestions' }).click();
   await expect(
     page.getByRole('heading', { name: 'Suggestions', exact: true })
   ).toBeVisible();
