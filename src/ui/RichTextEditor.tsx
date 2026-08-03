@@ -24,8 +24,6 @@ export type RichTextEditorProps = {
   minH?: UI.BoxProps['minH'];
   /** Soft limit enforced by TipTap CharacterCount. */
   maxLength?: number;
-  /** Right-side actions in the bottom toolbar (e.g. char count + Send). */
-  trailing?: React.ReactNode;
 };
 
 const inlineCodeStyles = {
@@ -44,7 +42,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   placeholder = 'Say something!',
   minH = 10,
   maxLength,
-  trailing,
 }) => {
   const placeholderColor = UI.useColorModeValue('gray.400', 'gray.500');
   const isMobile = UI.useBreakpointValue({ base: true, md: false }) ?? false;
@@ -128,7 +125,6 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 
   return (
     <UI.Box
-      position="relative"
       border="1px solid"
       borderColor="border.subtle"
       borderRadius="xl"
@@ -141,37 +137,8 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         boxShadow: '0 0 0 1px var(--chakra-colors-action-500)',
       }}
     >
-      <UI.Box
-        px={3}
-        py={3}
-        pr={showToolbar ? 3 : 14}
-        minH={minH}
-        sx={{
-          '.ProseMirror': {
-            outline: 'none',
-            minH: '1.5rem',
-            '& p': { margin: 0 },
-            '& p + p': { mt: 2 },
-            '& h1': { fontSize: 'lg', fontWeight: 'bold', lineHeight: 'short' },
-            '& a': {
-              color: 'var(--chakra-colors-action-600)',
-              textDecoration: 'underline',
-            },
-            '& code': inlineCodeStyles,
-          },
-          '.ProseMirror p.is-editor-empty:first-child::before': {
-            color: placeholderColor,
-            content: 'attr(data-placeholder)',
-            float: 'left',
-            height: 0,
-            pointerEvents: 'none',
-          },
-        }}
-      >
-        <EditorContent editor={editor} />
-      </UI.Box>
       {showToolbar ? (
-        <UI.HStack px={2} pb={2} pt={1} spacing={1} align="center">
+        <UI.HStack px={2} pt={2} spacing={1}>
           <IconButton
             aria-label="Bold"
             size="xs"
@@ -249,21 +216,37 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
               </UI.VStack>
             </MorphingPopoverContent>
           </MorphingPopover>
-          <UI.Spacer flex={1} />
-          {trailing}
-        </UI.HStack>
-      ) : trailing ? (
-        <UI.HStack
-          position="absolute"
-          bottom={2}
-          right={2}
-          spacing={2}
-          align="center"
-          pointerEvents="auto"
-        >
-          {trailing}
         </UI.HStack>
       ) : null}
+      <UI.Box
+        px={3}
+        py={3}
+        pr={14}
+        minH={minH}
+        sx={{
+          '.ProseMirror': {
+            outline: 'none',
+            minH: '1.5rem',
+            '& p': { margin: 0 },
+            '& p + p': { mt: 2 },
+            '& h1': { fontSize: 'lg', fontWeight: 'bold', lineHeight: 'short' },
+            '& a': {
+              color: 'var(--chakra-colors-action-600)',
+              textDecoration: 'underline',
+            },
+            '& code': inlineCodeStyles,
+          },
+          '.ProseMirror p.is-editor-empty:first-child::before': {
+            color: placeholderColor,
+            content: 'attr(data-placeholder)',
+            float: 'left',
+            height: 0,
+            pointerEvents: 'none',
+          },
+        }}
+      >
+        <EditorContent editor={editor} />
+      </UI.Box>
     </UI.Box>
   );
 };

@@ -75,8 +75,9 @@ default).
   one header
 - Auto-scroll on open, on own sends, and on new messages when already near the
   bottom (don't yank the scrollback reader)
-- **Mobile composer toolbar:** format buttons may collapse when the editor
-  blurs; Send stays visible (overlay). Any popover opened from the toolbar
+- **Mobile composer toolbar:** format buttons sit **above** the input and may
+  hide when the editor blurs; Send and character count stay in a fixed
+  bottom-right overlay on the composer. Any popover opened from the toolbar
   (e.g. link URL) must **pin the toolbar** while open — see **Focus-gated
   chrome** under Overlays below and `RichTextEditor.tsx`.
 
