@@ -14,7 +14,9 @@ type MessageRecord = {
   group_id: string;
   author_id: string;
   author_name: string | null;
+  author_photo_url?: string | null;
   text: string;
+  created_at?: string;
   is_announcement?: boolean;
 };
 
@@ -133,6 +135,18 @@ Deno.serve(async (req) => {
       body: `${author}: ${preview}`,
       url: `/${record.group_id}`,
       groupId: record.group_id,
+      // Full row so the service worker can stash it and the app can render the
+      // message on resume without a network round-trip.
+      message: {
+        id: record.id,
+        groupId: record.group_id,
+        authorId: record.author_id,
+        authorName: record.author_name ?? null,
+        authorPhotoURL: record.author_photo_url ?? null,
+        text: record.text,
+        createdAt: record.created_at ?? new Date().toISOString(),
+        isAnnouncement: Boolean(record.is_announcement),
+      },
     });
 
     let sent = 0;

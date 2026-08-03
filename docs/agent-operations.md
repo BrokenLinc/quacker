@@ -78,6 +78,7 @@ Do not ask the user to perform steps 2–6.
 | `unsafe use of new value "…" of enum type` (`55P04`) in CI / `supabase start` | Split: migration N = only `alter type … add value`; migration N+1 = SQL that references the label. Same-file ADD VALUE + use fails inside one transaction |
 | `Failed to resolve latest Supabase CLI release: rate limit exceeded` | Pin `supabase/setup-cli` `version` (e.g. `2.111.0`) in `.github/workflows` — do not use `latest` |
 | Migration SQL error | Fix SQL, `supabase db reset` (optional), re-run verify |
+| `supabase start` hangs/fails on `supabase_vector` mounting `/var/run/docker.sock` | Rootless daemons (colima) cannot bind-mount the socket. `[analytics] enabled = false` in `supabase/config.toml` already skips it — nothing here reads local logs |
 | E2e auth fails | Check dev `SUPABASE_SERVICE_ROLE_KEY`; remote Supabase reachable |
 | Magic link redirect 404 | Agent: PATCH auth `uri_allow_list` — see `docs/environments.md` |
 | Realtime not updating | Confirm tables in `supabase_realtime` publication |

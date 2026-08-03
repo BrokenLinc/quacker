@@ -42,3 +42,9 @@ enable_confirmations = false
 
 [realtime]
 enabled = true
+
+# Local log aggregation (Logflare + vector). Vector bind-mounts the Docker
+# socket, which fails on colima/rootless daemons, and nothing in this project
+# reads local logs — see docs/agent-operations.md.
+[analytics]
+enabled = false

@@ -67,13 +67,58 @@ Unread badges: RPC `unread_message_counts()` — messages after `last_viewed_at`
 1. Client opt-in Switch → OS permission → store endpoint in `push_subscriptions`
 2. `messages` INSERT trigger → `pg_net` → Edge `notify-new-message`
 3. Filter by `push_enabled` + per-group `notify_level` + skip author
-4. `web-push` with VAPID; SW: if any window focused → `postMessage` (in-app toast for other groups); else OS notification
+4. `web-push` with VAPID; the payload carries the **full message row**, not just
+ title/body, so clients can merge it without a network round-trip
+5. SW records the message in an IndexedDB inbox, `postMessage`s **all** clients
+ (tagged with whether they were focused), and only shows an OS notification
+ when nothing is focused
+6. `notificationclick` asks the client to route via `postMessage`
+ (`yowl-navigate`) and only falls back to `client.navigate()` / `openWindow()`
+ when no client acknowledges — a document reload would throw away the warm cache
 
 Setup: `scripts/setup-notify-webhook.sh` + `VITE_VAPID_PUBLIC_KEY` / `yarn sync:vercel-env`
 
+## Data layer
+
+TanStack Query v5 owns all server state. Cached rooms, messages, membership, and
+unread counts persist to IndexedDB, so re-entering a room or cold-launching the
+PWA paints from cache instead of a skeleton.
+
+```
+src/lib/query/client.ts       # queryClient defaults + IndexedDB persister
+src/lib/query/QueryProvider.tsx  # PersistQueryClientProvider (mounted in App)
+src/api/queryKeys.ts          # key factory + PERSISTED_QUERY_ROOTS allowlist
+src/api/cache.ts              # invalidate*/retry* helpers for mutations and UI
+src/api/messageSync.ts        # pure merge/dedupe/trim + delta window helpers
+```
+
+- Hooks return the same `[data, loading, error]` tuple as before via
+ `asHookResult`. **`loading` maps to `isPending`** (no data at all), not
+ `isFetching` — that distinction is what removes the room re-entry skeleton.
+- Only the families in `PERSISTED_QUERY_ROOTS` are dehydrated. Auth and
+ one-shot lookups must never be persisted.
+- Messages sync incrementally: cold fetch is the newest `limit` rows; warm
+ fetches ask for `created_at >= lastKnown - overlap` and merge by `id`.
+
 ## Realtime
 
-Supabase `postgres_changes` on `messages` and `groups` tables. Hooks in `src/api/` refetch or patch local state on events.
+`src/lib/realtime/manager.ts` keeps **one reference-counted channel per logical
+topic** and writes `payload.new` straight into the query cache — no refetch per
+event. Topics are declared next to their row mappers in `src/api/*.ts`;
+components subscribe with `useRealtimeTopic`. The manager also exposes socket
+health so the lifecycle module can detect a dead websocket after backgrounding.
+
+## App lifecycle
+
+`src/lib/lifecycle/appLifecycle.ts` is mounted once in `AppShell` and owns
+resume/suspend behavior: reconnect realtime, refresh the auth session, drain the
+service worker push inbox, flush the outbox, and invalidate queries after a long
+absence. It also purges all local data (query cache, IndexedDB, outbox, push
+inbox) on sign-out or user switch so a shared device does not leak rooms.
+
+`src/lib/outbox/` is a durable IndexedDB send queue keyed by a client-generated
+message `id`, which makes retries idempotent. Sends while offline show as
+`queued`, retry with backoff on reconnect, and survive reload.
 
 ## Auth flow
 
@@ -85,11 +130,15 @@ Supabase `postgres_changes` on `messages` and `groups` tables. Hooks in `src/api
 
 ```
 src/
-  api/           # group, message, suggestions hooks
-  components/    # AppShell, etc.
+  api/           # group, message, suggestions hooks; queryKeys, cache, messageSync
+  components/    # AppShell, ConnectionStatus, etc.
   lib/supabase/  # client, auth, types
+  lib/query/     # queryClient, IndexedDB persister, QueryProvider
+  lib/realtime/  # reference-counted channel manager + useRealtimeTopic
+  lib/lifecycle/ # resume/suspend orchestrator, connection state
+  lib/outbox/    # durable send queue + send error classification
   lib/suggestions/  # Fuse filter helpers
-  lib/notifications/  # chirp, push subscribe
+  lib/notifications/  # chirp, push subscribe, push inbox
   pages/         # route pages
   routing/       # react-router setup
   ui/            # Chakra barrel + custom components
