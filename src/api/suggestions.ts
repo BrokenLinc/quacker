@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useId, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { supabase } from '@@lib/supabase/client';
 import type {
@@ -91,14 +91,20 @@ export const useSuggestions = (options?: {
   const [suggestions, setSuggestions] = useState<Suggestion[] | undefined>();
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<Error | undefined>();
+  // Drop out-of-order responses so an older in-flight refetch cannot
+  // overwrite newer vote/status data (Realtime + local notify race).
+  const fetchSeq = useRef(0);
 
   const fetchSuggestions = useCallback(async () => {
+    const seq = ++fetchSeq.current;
     const { data, error: fetchError } = await supabase
       .from('suggestions')
       .select('*')
       .order('vote_count', { ascending: false })
       .order('created_at', { ascending: false })
       .limit(SUGGESTIONS_LIMIT);
+
+    if (seq !== fetchSeq.current) return;
 
     if (fetchError) {
       setError(fetchError);
@@ -112,6 +118,7 @@ export const useSuggestions = (options?: {
         .from('suggestion_votes')
         .select('suggestion_id')
         .eq('user_id', userId);
+      if (seq !== fetchSeq.current) return;
       if (votesError) {
         setError(votesError);
         setLoading(false);
@@ -119,6 +126,8 @@ export const useSuggestions = (options?: {
       }
       votedIds = new Set((votes ?? []).map((v) => v.suggestion_id));
     }
+
+    if (seq !== fetchSeq.current) return;
 
     setError(undefined);
     setSuggestions(

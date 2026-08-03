@@ -10,10 +10,7 @@ import {
 } from '@@api';
 import { RequireAuth } from '@@components/auth/RequireAuth';
 import { filterSuggestions } from '@@lib/suggestions/filterSuggestions';
-import {
-  isSuperAdminPhone,
-  useAuthState,
-} from '@@lib/supabase/auth';
+import { isSuperAdminPhone, useAuthState } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
 import {
@@ -91,12 +88,7 @@ const SuggestionsPageInner: React.FC = () => {
         </UI.RouteButton>
       </UI.HStack>
 
-      <UI.Box
-        flex={1}
-        minH={0}
-        overflowY="auto"
-        overscrollBehavior="auto"
-      >
+      <UI.Box flex={1} minH={0} overflowY="auto" overscrollBehavior="auto">
         <UI.Box
           maxW="640px"
           mx="auto"
@@ -190,22 +182,41 @@ const SuggestionRow: React.FC<{
   // Optimistic vote UI — parent `votedByMe` lags until refetch completes.
   const [votedByMe, setVotedByMe] = React.useState(suggestion.votedByMe);
   const [voteCount, setVoteCount] = React.useState(suggestion.voteCount);
+  // Optimistic status — avoid select snapping back before list refetch.
+  const [status, setStatus] = React.useState(suggestion.status);
+  // Ignore stale parent props until the list reflects our last mutation.
+  const pendingVotedByMe = React.useRef<boolean | null>(null);
+  const pendingStatus = React.useRef<SuggestionStatus | null>(null);
 
   React.useEffect(() => {
+    if (pendingVotedByMe.current !== null) {
+      if (suggestion.votedByMe !== pendingVotedByMe.current) return;
+      pendingVotedByMe.current = null;
+    }
     setVotedByMe(suggestion.votedByMe);
     setVoteCount(suggestion.voteCount);
   }, [suggestion.id, suggestion.votedByMe, suggestion.voteCount]);
+
+  React.useEffect(() => {
+    if (pendingStatus.current !== null) {
+      if (suggestion.status !== pendingStatus.current) return;
+      pendingStatus.current = null;
+    }
+    setStatus(suggestion.status);
+  }, [suggestion.id, suggestion.status]);
 
   const handleVote = async () => {
     if (!userId || voting) return;
     const wasVoted = votedByMe;
     const nextVoted = !wasVoted;
+    pendingVotedByMe.current = nextVoted;
     setVoting(true);
     setVotedByMe(nextVoted);
     setVoteCount((count) => Math.max(0, count + (nextVoted ? 1 : -1)));
     try {
       await toggleSuggestionVote(suggestion.id, userId, wasVoted);
     } catch {
+      pendingVotedByMe.current = null;
       setVotedByMe(wasVoted);
       setVoteCount((count) => Math.max(0, count + (nextVoted ? -1 : 1)));
       toast({
@@ -219,12 +230,17 @@ const SuggestionRow: React.FC<{
     }
   };
 
-  const handleStatusChange = async (status: SuggestionStatus) => {
-    if (status === suggestion.status || statusSaving) return;
+  const handleStatusChange = async (next: SuggestionStatus) => {
+    if (next === status || statusSaving) return;
+    const previous = status;
+    pendingStatus.current = next;
+    setStatus(next);
     setStatusSaving(true);
     try {
-      await updateSuggestionStatus(suggestion.id, status);
+      await updateSuggestionStatus(suggestion.id, next);
     } catch {
+      pendingStatus.current = null;
+      setStatus(previous);
       toast({
         title: "Couldn't update status",
         description: 'Check your connection and try again.',
@@ -254,7 +270,7 @@ const SuggestionRow: React.FC<{
               w={2}
               h={2}
               borderRadius="full"
-              bg={STATUS_DOT_COLOR[suggestion.status]}
+              bg={STATUS_DOT_COLOR[status]}
               flexShrink={0}
               aria-hidden
             />
@@ -262,22 +278,22 @@ const SuggestionRow: React.FC<{
               <UI.Select
                 size="xs"
                 maxW="160px"
-                value={suggestion.status}
+                value={status}
                 isDisabled={statusSaving}
                 aria-label="Suggestion status"
                 onChange={(e) =>
                   handleStatusChange(e.target.value as SuggestionStatus)
                 }
               >
-                {SUGGESTION_STATUSES.map((status) => (
-                  <option key={status} value={status}>
-                    {SUGGESTION_STATUS_LABELS[status]}
+                {SUGGESTION_STATUSES.map((option) => (
+                  <option key={option} value={option}>
+                    {SUGGESTION_STATUS_LABELS[option]}
                   </option>
                 ))}
               </UI.Select>
             ) : (
               <UI.Text fontSize="xs" color="text.muted">
-                {SUGGESTION_STATUS_LABELS[suggestion.status]}
+                {SUGGESTION_STATUS_LABELS[status]}
               </UI.Text>
             )}
             <UI.Text fontSize="xs" color="text.muted">
