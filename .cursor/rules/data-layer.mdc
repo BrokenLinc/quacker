@@ -64,8 +64,17 @@ rules below. Overview in [`docs/architecture.md`](../../docs/architecture.md).
  makes retries idempotent — a duplicate-key error on retry means success, not
  failure (`isDuplicateSendError`).
 - **Sign-out must purge.** Query cache, persisted IndexedDB cache, outbox, and
- push inbox all get cleared on sign-out or user switch, and a `CACHE_OWNER_KEY`
- catches the case where a different user restores an old cache.
+  push inbox all get cleared on sign-out or user switch, and a `CACHE_OWNER_KEY`
+  catches the case where a different user restores an old cache.
+- **Restore must check owner + session.** `createIdbPersister().restoreClient`
+  refuses to hydrate unless `CACHE_OWNER_KEY` matches `supabase.auth.getSession()`
+  user id (missing owner → discard). `syncCacheOwner` purges on any mismatch,
+  including `owner === null` with orphan IndexedDB. Outbox flush waits for
+  `cacheOwnerReady` so a prior queue cannot run first.
+- **Resume vs zombie channels.** OS can kill the Realtime socket while status
+  stays `SUBSCRIBED`. On absence, `markRealtimeClosed()` before `refreshRealtime()`;
+  if the socket is disconnected, `refreshRealtime` marks closed too. Coalesced
+  wake-ups queue a follow-up pass (`pendingAbsenceMs`) instead of dropping.
 
 ## Service worker contract
 

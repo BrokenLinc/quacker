@@ -146,6 +146,9 @@ export const disconnectRealtime = (): void => {
  */
 export const refreshRealtime = (): void => {
   if (!supabase.realtime.isConnected()) {
+    // The socket can die without channel status updating — a stale SUBSCRIBED
+    // flag would make the loop below skip the rebuild those topics need.
+    markRealtimeClosed();
     supabase.realtime.connect();
   }
 

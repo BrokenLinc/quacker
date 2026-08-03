@@ -2,6 +2,8 @@ import { QueryClient } from '@tanstack/react-query';
 import type { PersistedClient, Persister } from '@tanstack/react-query-persist-client';
 import { createStore, del, get, set } from 'idb-keyval';
 
+import { supabase } from '@@lib/supabase/client';
+
 /**
  * Single shared cache. Query state survives unmounts, so leaving a room and
  * coming back paints from memory instead of refetching behind a skeleton.
@@ -24,6 +26,20 @@ export const queryClient = new QueryClient({
 
 const CACHE_STORE_NAME = 'quacker-query-cache';
 const CACHE_KEY = 'client';
+
+/**
+ * Which account the durable caches belong to. Rooms, messages and the send queue
+ * now outlive the session, so they must never hydrate under a different account.
+ */
+export const CACHE_OWNER_KEY = 'quacker:cache-owner';
+
+const readCacheOwner = (): string | null => {
+  try {
+    return localStorage.getItem(CACHE_OWNER_KEY);
+  } catch {
+    return null;
+  }
+};
 
 /** Bump to discard every persisted cache after an incompatible shape change. */
 export const PERSIST_BUSTER = 'v1';
@@ -63,6 +79,15 @@ export const createIdbPersister = (): Persister => {
     },
     restoreClient: async () => {
       try {
+        const owner = readCacheOwner();
+        const { data } = await supabase.auth.getSession();
+        const sessionUserId = data.session?.user.id ?? null;
+        // Refuse to hydrate without a matching owner + session. Otherwise a
+        // prior account's rooms can paint before auth finishes owner sync.
+        if (!owner || !sessionUserId || owner !== sessionUserId) {
+          await del(CACHE_KEY, store);
+          return undefined;
+        }
         return await get<PersistedClient>(CACHE_KEY, store);
       } catch {
         return undefined;

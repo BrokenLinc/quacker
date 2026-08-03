@@ -100,6 +100,9 @@ export const InAppPushToastListener: React.FC = () => {
             onClick={() => {
               onClose();
               navigate(url);
+              // Same recovery as `yowl-navigate` — toast taps can follow a
+              // background stint where the socket is already dead.
+              resumeAppSync();
             }}
             textAlign="left"
             w="100%"

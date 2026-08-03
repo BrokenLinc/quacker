@@ -1,9 +1,13 @@
 import { onlineManager } from '@tanstack/react-query';
 
-import { clearPersistedCache, queryClient } from '@@lib/query/client';
+import { CACHE_OWNER_KEY, clearPersistedCache, queryClient } from '@@lib/query/client';
 import { clearPushInbox, drainPushInbox } from '@@lib/notifications/pushInbox';
 import { clearOutbox, flushOutbox, loadOutbox } from '@@lib/outbox/outbox';
-import { disconnectRealtime, refreshRealtime } from '@@lib/realtime/manager';
+import {
+  disconnectRealtime,
+  markRealtimeClosed,
+  refreshRealtime,
+} from '@@lib/realtime/manager';
 import { supabase } from '@@lib/supabase/client';
 
 /**
@@ -28,6 +32,10 @@ let teardown: (() => void) | null = null;
 let hiddenAt: number | null = null;
 let hiddenTimer: ReturnType<typeof setTimeout> | null = null;
 let resuming: Promise<void> | null = null;
+/** Longest absence observed while a resume pass is in flight. */
+let pendingAbsenceMs: number | null = null;
+/** Set once auth has confirmed the durable caches belong to this session. */
+let cacheOwnerReady = false;
 
 const clearHiddenTimer = (): void => {
   if (hiddenTimer === null) return;
@@ -52,8 +60,9 @@ const runResume = async (absenceMs: number): Promise<void> => {
   clearHiddenTimer();
   if (!onlineManager.isOnline()) return;
 
-  // Both are local-first and must not queue behind the network work below.
-  void flushOutbox();
+  // Local-first — but the outbox waits until ownership is confirmed so a
+  // prior account's queue cannot flush under a new session.
+  if (cacheOwnerReady) void flushOutbox();
   void drainPushInbox();
 
   // A stale JWT would make every resync below 401, so refresh first — but a
@@ -61,7 +70,12 @@ const runResume = async (absenceMs: number): Promise<void> => {
   supabase.auth.startAutoRefresh().catch(() => undefined);
   await withTimeout(supabase.auth.getSession(), SESSION_REFRESH_TIMEOUT_MS);
 
-  // Rebuilds channels that died while suspended and resyncs what they feed.
+  if (absenceMs > 0) {
+    // Status can remain SUBSCRIBED after the OS kills the websocket. Force a
+    // rebuild + topic resync so short absences are not left on a zombie channel
+    // with queries still inside staleTime.
+    markRealtimeClosed();
+  }
   refreshRealtime();
 
   if (absenceMs >= SHORT_ABSENCE_MS) {
@@ -71,14 +85,32 @@ const runResume = async (absenceMs: number): Promise<void> => {
   }
 };
 
-/** Coalesce overlapping wake-up events into a single recovery pass. */
+/**
+ * Coalesce overlapping wake-up events into recovery passes, but never drop a
+ * later signal entirely — re-run with the longest absence seen while busy.
+ */
+const scheduleResume = (absenceMs: number): void => {
+  if (resuming) {
+    pendingAbsenceMs =
+      pendingAbsenceMs === null
+        ? absenceMs
+        : Math.max(pendingAbsenceMs, absenceMs);
+    return;
+  }
+
+  resuming = runResume(absenceMs).finally(() => {
+    resuming = null;
+    if (pendingAbsenceMs === null) return;
+    const next = pendingAbsenceMs;
+    pendingAbsenceMs = null;
+    scheduleResume(next);
+  });
+};
+
 const resume = (): void => {
   const absenceMs = hiddenAt === null ? 0 : Date.now() - hiddenAt;
   hiddenAt = null;
-  if (resuming) return;
-  resuming = runResume(absenceMs).finally(() => {
-    resuming = null;
-  });
+  scheduleResume(absenceMs);
 };
 
 const suspend = (): void => {
@@ -90,13 +122,6 @@ const suspend = (): void => {
     disconnectRealtime();
   }, HIDDEN_DISCONNECT_DELAY_MS);
 };
-
-/**
- * Which account the durable caches belong to. Rooms, messages and the send queue
- * now outlive the session, so they must never survive into a different account on
- * a shared device.
- */
-const CACHE_OWNER_KEY = 'quacker:cache-owner';
 
 const readCacheOwner = (): string | null => {
   try {
@@ -126,9 +151,22 @@ const purgeLocalData = async (): Promise<void> => {
 
 const syncCacheOwner = (userId: string | null): void => {
   const owner = readCacheOwner();
-  if (owner === userId) return;
+  if (owner === userId) {
+    // Same account — durable queues are safe to drain now that ownership is
+    // confirmed (restore may have just hydrated this user's cache).
+    cacheOwnerReady = Boolean(userId);
+    if (userId) void loadOutbox().then(() => flushOutbox());
+    return;
+  }
   writeCacheOwner(userId);
-  if (owner !== null) void purgeLocalData();
+  // Missing owner still means IndexedDB may hold a previous account's rooms
+  // (cleared localStorage, incomplete sign-out). Always purge on mismatch —
+  // and only mark ready after purge so a concurrent resume cannot flush the
+  // prior account's outbox.
+  cacheOwnerReady = false;
+  void purgeLocalData().then(() => {
+    cacheOwnerReady = Boolean(userId);
+  });
 };
 
 const install = (): (() => void) => {
@@ -145,7 +183,7 @@ const install = (): (() => void) => {
   const onOnline = (isOnline: boolean) => {
     if (!isOnline) return;
     // Independent of `resume()` so a coalesced pass in flight cannot swallow it.
-    void flushOutbox();
+    if (cacheOwnerReady) void flushOutbox();
     resume();
   };
 
@@ -160,6 +198,7 @@ const install = (): (() => void) => {
   const { data: authSubscription } = supabase.auth.onAuthStateChange(
     (event, session) => {
       if (event === 'SIGNED_OUT') {
+        cacheOwnerReady = false;
         writeCacheOwner(null);
         void purgeLocalData();
         return;
@@ -170,7 +209,8 @@ const install = (): (() => void) => {
     }
   );
 
-  void loadOutbox().then(() => flushOutbox());
+  // Outbox flush waits for syncCacheOwner so a prior account's queue cannot
+  // run under a new session. Push inbox only merges into already-cached rooms.
   if (document.visibilityState === 'visible') void drainPushInbox();
 
   return () => {

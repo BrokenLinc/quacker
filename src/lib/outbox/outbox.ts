@@ -138,6 +138,10 @@ const attempt = async (
     return 'sent';
   } catch (error) {
     if (isDuplicateSendError(error)) {
+      // Duplicate key means the row already landed — merge it the same way a
+      // fresh insert would, or the pending bubble disappears with no server copy
+      // in the cache until the next refetch.
+      applyMessageInsert(outboxEntryToMessage(entry));
       removeEntry(entry.id);
       return 'sent';
     }
