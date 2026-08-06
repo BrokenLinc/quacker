@@ -30,7 +30,7 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
 - Admin chat posts: `messages.is_admin_message` + SuperAdmin insert RLS (no
   membership). Display as **Yowl Admin**, non-interactive; self-only
   “Posting as system admin” banner.
-- E2E: `seedSuperAdminSession` + `tests/e2e/superadmin.spec.ts`.
+- E2E: `seedSuperAdminSession` + `tests/e2e/superadmin.spec.ts` (incl. suggestion **Create GitHub issue** visibility).
 - **`useAuthState` is per-mount local state** (starts `user: null`,
   `loading: true`). Nested children that remount under `RequireAuth` must not
   call `useAuthState` again and non-null-assert `user!.uid` — back-navigation

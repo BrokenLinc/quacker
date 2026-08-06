@@ -102,4 +102,35 @@ test.describe('super admin', () => {
       .update({ lockdown: false })
       .eq('id', true);
   });
+
+  test('suggestion detail shows create GitHub issue for SuperAdmin only', async ({
+    page,
+  }) => {
+    const { admin, userId } = await seedSuperAdminSession(page);
+    const title = `Admin github issue ${Date.now()}`;
+    const { data: suggestion, error } = await admin
+      .from('suggestions')
+      .insert({
+        author_id: userId,
+        author_display_name: 'E2E SuperAdmin',
+        title,
+        body: 'Manual override button coverage.',
+        category: 'feature_request',
+      })
+      .select('id')
+      .single();
+    expect(error).toBeNull();
+    expect(suggestion?.id).toBeTruthy();
+
+    await page.goto(`/suggestions/${suggestion!.id}`);
+    await expect(page.getByTestId('suggestion-detail')).toBeVisible({
+      timeout: 10_000,
+    });
+    await expect(
+      page.getByTestId('suggestion-create-github-issue')
+    ).toBeVisible();
+    await expect(
+      page.getByRole('button', { name: 'Create GitHub issue' })
+    ).toBeVisible();
+  });
 });

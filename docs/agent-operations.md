@@ -30,6 +30,7 @@ yarn dev                 # Vite dev server (dev Supabase)
 yarn verify              # lint + build + test + e2e
 yarn deploy              # prod Supabase + Vercel production only
 scripts/setup-notify-webhook.sh [dev|prod]  # VAPID + webhook vault for Web Push
+scripts/setup-suggestion-github-webhook.sh [dev|prod]  # GitHub Issues on new suggestions
 supabase db reset        # optional local replay (Docker)
 ```
 
@@ -41,6 +42,40 @@ supabase db reset        # optional local replay (Docker)
 4. `yarn sync:vercel-env` so Preview/Production get `VITE_VAPID_PUBLIC_KEY`
 
 Note: current Supabase CLI may not accept `--token` on `secrets set`; prefer Management API (`/v1/projects/{ref}/secrets`) with `SUPABASE_ACCESS_TOKEN`.
+
+## Suggestion export + GitHub Issues
+
+1. Put `GITHUB_TOKEN` (Issues write on `BrokenLinc/quacker`) in `.env.local`. Optional: `GITHUB_REPO`.
+2. **App URLs for issue footers**
+   - Prod: `PUBLIC_APP_URL` (default `https://yowl.us` / `VITE_APP_URL`).
+   - Dev/preview: `PUBLIC_APP_URL_DEV` **or** a non-prod `PUBLIC_APP_URL` (Vercel **branch alias**, e.g. `https://quacker-git-<branch>-….vercel.app`). Never default to `yowl.us` or `http://127.0.0.1:*`. A preview URL duplicated as both `PUBLIC_APP_URL` and `VITE_APP_URL` is OK.
+3. `SUGGESTION_GITHUB_WEBHOOK_SECRET` — script mints if empty; must **rewrite** blank `KEY=` lines in `.env.local` (do not skip when the key exists empty). Required for DB→Edge; SPA SuperAdmin override uses JWT instead.
+4. `scripts/setup-suggestion-github-webhook.sh dev` then `prod` — Edge secrets + Vault.
+5. Deploy `suggestion-export` and `suggestion-github-issue` with `verify_jwt: false`.
+
+Issue footer uses same-origin `/suggestions/:id` and `/api/suggestion-export?id=` (Vercel Edge proxies to Supabase).
+
+**Export curl** (prefer app origin so Preview/Production pick the right Supabase):
+
+```bash
+# Preview / production app host (injects anon key server-side)
+curl -sS "https://<app-host>/api/suggestion-export?id=<uuid>"
+
+# Or call Supabase directly with the publishable anon key:
+curl -sS "https://<project-ref>.supabase.co/functions/v1/suggestion-export?id=<uuid>" \
+  -H "apikey: $VITE_SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY"
+```
+
+### Webhook setup pitfalls (any Vault → Edge script)
+
+| Bug class | Do |
+| --- | --- |
+| Empty `x-webhook-secret` posted when Vault secret missing | Skip `http_post` if secret (or URL) empty — privileged Edge must fail closed |
+| Soft-skip auth on `verify_jwt: false` + privileged side effect | Require secret (or SuperAdmin JWT); never “if secret then check” |
+| Setup treats `KEY=` as configured | Replace blank assignments when minting; don’t append a second line |
+| Non-prod links inherit `VITE_APP_URL` / yowl.us / localhost | Explicit preview base URL; reject only production host |
+| `anon` can call SuperAdmin probe RPC | Embed checks in security-definer export; grant probe helpers only to authenticated/service_role |
 
 ## Secret propagation (agent runs these)
 

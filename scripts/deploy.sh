@@ -30,11 +30,21 @@ if [[ -n "${TWILIO_ACCOUNT_SID:-}" && -n "${TWILIO_AUTH_TOKEN:-}" && -n "${TWILI
     TWILIO_VERIFY_SERVICE_SID="$TWILIO_VERIFY_SERVICE_SID"
 
   echo "==> Deploying Edge Functions (production)"
-  supabase functions deploy auth-send-otp auth-verify-otp \
+  supabase functions deploy auth-send-otp auth-verify-otp notify-new-message \
+    suggestion-export suggestion-github-issue \
     --project-ref "$SUPABASE_PROJECT_ID_PROD" \
     --no-verify-jwt
 else
-  echo "==> Skipping Edge Functions deploy (TWILIO_* not set in .env.local)"
+  echo "==> Skipping auth Edge Functions deploy (TWILIO_* not set in .env.local)"
+  echo "==> Deploying suggestion + notify Edge Functions (production)"
+  supabase functions deploy notify-new-message suggestion-export suggestion-github-issue \
+    --project-ref "$SUPABASE_PROJECT_ID_PROD" \
+    --no-verify-jwt
+fi
+
+if [[ -n "${GITHUB_TOKEN:-}" ]]; then
+  echo "==> Suggestion GitHub webhook secrets (production)"
+  scripts/setup-suggestion-github-webhook.sh prod
 fi
 
 if [[ -n "${VERCEL_TOKEN:-}" ]]; then

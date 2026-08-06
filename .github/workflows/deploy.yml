@@ -50,11 +50,12 @@ jobs:
           TWILIO_VERIFY_SERVICE_SID: ${{ secrets.TWILIO_VERIFY_SERVICE_SID }}
 
       - name: Deploy Edge Functions (production)
-        # notify-new-message is invoked by pg_net and authenticates with
-        # x-webhook-secret, so it also runs without JWT verification. It ships
-        # here because its push payload shape is coupled to src/sw.ts.
+        # notify-new-message / suggestion-github-issue are invoked by pg_net and
+        # authenticate with x-webhook-secret (verify_jwt false). suggestion-export
+        # is a public read-only JSON endpoint (anon apikey only).
         run: |
           supabase functions deploy auth-send-otp auth-verify-otp notify-new-message \
+            suggestion-export suggestion-github-issue \
             --project-ref ${{ secrets.SUPABASE_PROJECT_ID_PROD }} \
             --no-verify-jwt
         env:

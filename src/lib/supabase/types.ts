@@ -468,6 +468,7 @@ export type Database = {
       is_superadmin: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_superadmin_phone: { Args: { p_phone: string }; Returns: boolean };
       is_user_superadmin: { Args: { uid: string }; Returns: boolean };
+      suggestion_export: { Args: { p_id: string }; Returns: Json };
       unread_message_counts: {
         Args: Record<PropertyKey, never>;
         Returns: {
