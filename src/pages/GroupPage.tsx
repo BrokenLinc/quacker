@@ -1577,6 +1577,112 @@ const MessageDayDivider: React.FC<{ time: number }> = ({ time }) => (
   </UI.Flex>
 );
 
+/** Open message detail unless the click was on a nested control/link. */
+const openMessageDetailFromEvent = (
+  event: React.MouseEvent | React.KeyboardEvent,
+  open: () => void
+): void => {
+  const target = event.target as HTMLElement | null;
+  const current = event.currentTarget as HTMLElement | null;
+  const nested = target?.closest('a, button, [role="button"]');
+  // Ignore the tap target itself when it uses role="button".
+  if (nested && nested !== current) return;
+  open();
+};
+
+const MessageDetailModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  authorName: string;
+  authorColor?: string;
+  timeLabel: string;
+  content: string;
+  messageId: string;
+  groupId: string;
+  currentUid: string;
+  reactions: MessageReaction[];
+}> = ({
+  isOpen,
+  onClose,
+  authorName,
+  authorColor,
+  timeLabel,
+  content,
+  messageId,
+  groupId,
+  currentUid,
+  reactions,
+}) => (
+  <UI.QuickModal
+    size="sm"
+    isOpen={isOpen}
+    onClose={onClose}
+    headerContent="Message"
+  >
+    <UI.ModalBody px={6} pb={6}>
+      <UI.VStack align="stretch" spacing={3}>
+        <UI.HStack spacing={2} align="baseline">
+          <UI.Text
+            fontSize="sm"
+            fontWeight="bold"
+            color={authorColor}
+            noOfLines={1}
+          >
+            {authorName}
+          </UI.Text>
+          <UI.Text fontSize="xs" color="text.muted" flexShrink={0}>
+            {timeLabel}
+          </UI.Text>
+        </UI.HStack>
+        <UI.RichTextContent content={content} />
+        <MessageReactionsBar
+          messageId={messageId}
+          groupId={groupId}
+          currentUid={currentUid}
+          reactions={reactions}
+          alwaysShowAdd
+        />
+      </UI.VStack>
+    </UI.ModalBody>
+  </UI.QuickModal>
+);
+
+const MessageBodyTapTarget: React.FC<{
+  content: string;
+  canOpenDetail: boolean;
+  onOpenDetail: () => void;
+}> = ({ content, canOpenDetail, onOpenDetail }) => (
+  <UI.Box
+    data-testid="message-body"
+    borderRadius="md"
+    mx={-1}
+    px={1}
+    cursor={canOpenDetail ? 'pointer' : undefined}
+    transition="background-color 120ms ease"
+    _hover={
+      canOpenDetail
+        ? { bg: 'blackAlpha.50', _dark: { bg: 'whiteAlpha.100' } }
+        : undefined
+    }
+    onClick={(event) =>
+      canOpenDetail
+        ? openMessageDetailFromEvent(event, onOpenDetail)
+        : undefined
+    }
+    onKeyDown={(event) => {
+      if (!canOpenDetail) return;
+      if (event.key !== 'Enter' && event.key !== ' ') return;
+      event.preventDefault();
+      openMessageDetailFromEvent(event, onOpenDetail);
+    }}
+    tabIndex={canOpenDetail ? 0 : undefined}
+    role={canOpenDetail ? 'button' : undefined}
+    aria-label={canOpenDetail ? 'Open message' : undefined}
+  >
+    <UI.RichTextContent content={content} />
+  </UI.Box>
+);
+
 export const MessageRow: React.FC<{
   message: ChatItem;
   grouped: boolean;
@@ -1613,6 +1719,7 @@ export const MessageRow: React.FC<{
   reactions = [],
 }) => {
   const [profileOpen, setProfileOpen] = React.useState(false);
+  const [detailOpen, setDetailOpen] = React.useState(false);
   const isAdminMsg = Boolean(message.isAdminMessage);
   const displayName = isAdminMsg
     ? 'Yowl Admin'
@@ -1620,6 +1727,10 @@ export const MessageRow: React.FC<{
   const photoURL = isAdminMsg ? null : livePhotoURL ?? message.authorPhotoURL;
   const name = formatAuthorLabel(displayName);
   const profileLabel = `View ${name}'s profile`;
+  const canOpenDetail = Boolean(
+    groupId && currentUid && !message.pending && !message.failed
+  );
+  const timeLabel = message.statusLabel ?? formatMessageTime(message.time);
 
   const perms =
     !isAdminMsg && groupId && groupCreatorId && currentUid
@@ -1634,8 +1745,98 @@ export const MessageRow: React.FC<{
         })
       : { canSilence: false, canToggleMod: false, canSelfUnmod: false };
 
+  const detailModal =
+    canOpenDetail && groupId && currentUid ? (
+      <MessageDetailModal
+        isOpen={detailOpen}
+        onClose={() => setDetailOpen(false)}
+        authorName={isAdminMsg ? 'Yowl Admin' : `${name}${isOwn ? ' (you)' : ''}`}
+        authorColor={isAdminMsg ? 'brand.600' : undefined}
+        timeLabel={formatMessageTime(message.time)}
+        content={message.text}
+        messageId={message.id}
+        groupId={groupId}
+        currentUid={currentUid}
+        reactions={reactions}
+      />
+    ) : null;
+
   if (isAdminMsg) {
     return (
+      <>
+        <UI.HStack
+          align="flex-start"
+          spacing={3}
+          px={3}
+          pt={grouped ? 0.5 : 3}
+          pb={0.5}
+          borderRadius="lg"
+          opacity={message.pending ? 0.55 : 1}
+          data-testid={
+            message.pending ? 'message-pending' : 'admin-message-row'
+          }
+          bg="surface.sunken"
+          sx={{
+            animation: 'yowl-message-in 160ms ease-out',
+            '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+            '@keyframes yowl-message-in': {
+              from: { opacity: 0, transform: 'translateY(4px)' },
+              to: { opacity: message.pending ? 0.55 : 1, transform: 'none' },
+            },
+          }}
+        >
+          {grouped ? (
+            <UI.Box w={8} flexShrink={0} />
+          ) : (
+            <UI.Flex
+              w={8}
+              h={8}
+              flexShrink={0}
+              mt={1}
+              borderRadius="full"
+              bg="brand.100"
+              _dark={{ bg: 'brand.800' }}
+              align="center"
+              justify="center"
+              aria-hidden
+            >
+              <UI.Icon icon={faShieldHalved} boxSize={3.5} color="brand.600" />
+            </UI.Flex>
+          )}
+          <UI.Box minW={0} flex={1}>
+            {grouped ? null : (
+              <UI.HStack spacing={2} align="baseline" mb={0.5}>
+                <UI.Text fontSize="sm" fontWeight="bold" color="brand.600">
+                  Yowl Admin
+                </UI.Text>
+                <UI.Text fontSize="xs" color="text.muted">
+                  {formatMessageTime(message.time)}
+                </UI.Text>
+              </UI.HStack>
+            )}
+            <MessageBodyTapTarget
+              content={message.text}
+              canOpenDetail={canOpenDetail}
+              onOpenDetail={() => setDetailOpen(true)}
+            />
+            {groupId && currentUid ? (
+              <MessageReactionsBar
+                messageId={message.id}
+                groupId={groupId}
+                currentUid={currentUid}
+                reactions={reactions}
+                disabled={Boolean(message.pending || message.failed)}
+              />
+            ) : null}
+          </UI.Box>
+        </UI.HStack>
+        {detailModal}
+      </>
+    );
+  }
+
+  return (
+    <>
       <UI.HStack
         align="flex-start"
         spacing={3}
@@ -1644,10 +1845,7 @@ export const MessageRow: React.FC<{
         pb={0.5}
         borderRadius="lg"
         opacity={message.pending ? 0.55 : 1}
-        data-testid={
-          message.pending ? 'message-pending' : 'admin-message-row'
-        }
-        bg="surface.sunken"
+        data-testid={message.pending ? 'message-pending' : undefined}
         sx={{
           animation: 'yowl-message-in 160ms ease-out',
           '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
@@ -1660,33 +1858,88 @@ export const MessageRow: React.FC<{
         {grouped ? (
           <UI.Box w={8} flexShrink={0} />
         ) : (
-          <UI.Flex
-            w={8}
-            h={8}
+          <UI.MorphingPopover
+            open={profileOpen}
+            onOpenChange={setProfileOpen}
+            anchor="top left"
             flexShrink={0}
             mt={1}
-            borderRadius="full"
-            bg="brand.100"
-            _dark={{ bg: 'brand.800' }}
-            align="center"
-            justify="center"
-            aria-hidden
           >
-            <UI.Icon icon={faShieldHalved} boxSize={3.5} color="brand.600" />
-          </UI.Flex>
+            <UI.MorphingPopoverTrigger
+              aria-label={profileLabel}
+              borderRadius="full"
+            >
+              <UserAvatar
+                name={name}
+                seed={message.uid}
+                photoURL={photoURL}
+                size="sm"
+                cursor="pointer"
+              />
+            </UI.MorphingPopoverTrigger>
+            <UI.MorphingPopoverContent aria-label={profileLabel}>
+              <MemberProfileBody
+                groupId={groupId}
+                name={name}
+                uid={message.uid}
+                photoURL={photoURL ?? null}
+                phoneLast4={phoneLast4 ?? null}
+                joinedAt={joinedAt ?? null}
+                role={role ?? null}
+                isOwn={isOwn}
+                isSilenced={isSilenced}
+                targetIsMember={targetIsMember}
+                canSilence={perms.canSilence}
+                canToggleMod={perms.canToggleMod}
+                viewerIsSuperAdmin={viewerIsSuperAdmin}
+              />
+            </UI.MorphingPopoverContent>
+          </UI.MorphingPopover>
         )}
         <UI.Box minW={0} flex={1}>
           {grouped ? null : (
             <UI.HStack spacing={2} align="baseline" mb={0.5}>
-              <UI.Text fontSize="sm" fontWeight="bold" color="brand.600">
-                Yowl Admin
+              <UI.Button
+                variant="link"
+                color="inherit"
+                fontSize="sm"
+                fontWeight="bold"
+                h="auto"
+                minW={0}
+                maxW="100%"
+                p={0}
+                textDecoration="none"
+                _hover={{ textDecoration: 'underline' }}
+                onClick={() => setProfileOpen(true)}
+                aria-label={profileLabel}
+              >
+                <UI.Text as="span" noOfLines={1}>
+                  {name}
+                  {isOwn ? ' (you)' : ''}
+                </UI.Text>
+              </UI.Button>
+              <UI.Text fontSize="xs" color="text.muted" flexShrink={0}>
+                {timeLabel}
               </UI.Text>
-              <UI.Text fontSize="xs" color="text.muted">
-                {formatMessageTime(message.time)}
-              </UI.Text>
+              {message.failed ? (
+                <UI.Button
+                  variant="link"
+                  size="xs"
+                  colorScheme="action"
+                  flexShrink={0}
+                  onClick={() => void retryOutboxEntry(message.id)}
+                  data-testid="message-retry"
+                >
+                  Retry
+                </UI.Button>
+              ) : null}
             </UI.HStack>
           )}
-          <UI.RichTextContent content={message.text} />
+          <MessageBodyTapTarget
+            content={message.text}
+            canOpenDetail={canOpenDetail}
+            onOpenDetail={() => setDetailOpen(true)}
+          />
           {groupId && currentUid ? (
             <MessageReactionsBar
               messageId={message.id}
@@ -1698,120 +1951,8 @@ export const MessageRow: React.FC<{
           ) : null}
         </UI.Box>
       </UI.HStack>
-    );
-  }
-
-  return (
-    <UI.HStack
-      align="flex-start"
-      spacing={3}
-      px={3}
-      pt={grouped ? 0.5 : 3}
-      pb={0.5}
-      borderRadius="lg"
-      opacity={message.pending ? 0.55 : 1}
-      data-testid={message.pending ? 'message-pending' : undefined}
-      sx={{
-        animation: 'yowl-message-in 160ms ease-out',
-        '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
-        '@keyframes yowl-message-in': {
-          from: { opacity: 0, transform: 'translateY(4px)' },
-          to: { opacity: message.pending ? 0.55 : 1, transform: 'none' },
-        },
-      }}
-    >
-      {grouped ? (
-        <UI.Box w={8} flexShrink={0} />
-      ) : (
-        <UI.MorphingPopover
-          open={profileOpen}
-          onOpenChange={setProfileOpen}
-          anchor="top left"
-          flexShrink={0}
-          mt={1}
-        >
-          <UI.MorphingPopoverTrigger
-            aria-label={profileLabel}
-            borderRadius="full"
-          >
-            <UserAvatar
-              name={name}
-              seed={message.uid}
-              photoURL={photoURL}
-              size="sm"
-              cursor="pointer"
-            />
-          </UI.MorphingPopoverTrigger>
-          <UI.MorphingPopoverContent aria-label={profileLabel}>
-            <MemberProfileBody
-              groupId={groupId}
-              name={name}
-              uid={message.uid}
-              photoURL={photoURL ?? null}
-              phoneLast4={phoneLast4 ?? null}
-              joinedAt={joinedAt ?? null}
-              role={role ?? null}
-              isOwn={isOwn}
-              isSilenced={isSilenced}
-              targetIsMember={targetIsMember}
-              canSilence={perms.canSilence}
-              canToggleMod={perms.canToggleMod}
-              viewerIsSuperAdmin={viewerIsSuperAdmin}
-            />
-          </UI.MorphingPopoverContent>
-        </UI.MorphingPopover>
-      )}
-      <UI.Box minW={0} flex={1}>
-        {grouped ? null : (
-          <UI.HStack spacing={2} align="baseline" mb={0.5}>
-            <UI.Button
-              variant="link"
-              color="inherit"
-              fontSize="sm"
-              fontWeight="bold"
-              h="auto"
-              minW={0}
-              maxW="100%"
-              p={0}
-              textDecoration="none"
-              _hover={{ textDecoration: 'underline' }}
-              onClick={() => setProfileOpen(true)}
-              aria-label={profileLabel}
-            >
-              <UI.Text as="span" noOfLines={1}>
-                {name}
-                {isOwn ? ' (you)' : ''}
-              </UI.Text>
-            </UI.Button>
-            <UI.Text fontSize="xs" color="text.muted" flexShrink={0}>
-              {message.statusLabel ?? formatMessageTime(message.time)}
-            </UI.Text>
-            {message.failed ? (
-              <UI.Button
-                variant="link"
-                size="xs"
-                colorScheme="action"
-                flexShrink={0}
-                onClick={() => void retryOutboxEntry(message.id)}
-                data-testid="message-retry"
-              >
-                Retry
-              </UI.Button>
-            ) : null}
-          </UI.HStack>
-        )}
-        <UI.RichTextContent content={message.text} />
-        {groupId && currentUid ? (
-          <MessageReactionsBar
-            messageId={message.id}
-            groupId={groupId}
-            currentUid={currentUid}
-            reactions={reactions}
-            disabled={Boolean(message.pending || message.failed)}
-          />
-        ) : null}
-      </UI.Box>
-    </UI.HStack>
+      {detailModal}
+    </>
   );
 };
 

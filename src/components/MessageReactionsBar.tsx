@@ -20,6 +20,11 @@ type MessageReactionsBarProps = {
   reactions: MessageReaction[];
   /** Pending / failed outbox rows cannot be reacted to yet. */
   disabled?: boolean;
+  /**
+   * Always show the add-reaction control (message detail modal).
+   * In the chat list, the control only appears after at least one reaction exists.
+   */
+  alwaysShowAdd?: boolean;
 };
 
 /**
@@ -32,6 +37,7 @@ export const MessageReactionsBar: React.FC<MessageReactionsBarProps> = ({
   currentUid,
   reactions,
   disabled = false,
+  alwaysShowAdd = false,
 }) => {
   const toast = UI.useToast();
   const [pickerOpen, setPickerOpen] = React.useState(false);
@@ -41,6 +47,7 @@ export const MessageReactionsBar: React.FC<MessageReactionsBarProps> = ({
     messageId,
     currentUid
   );
+  const showAdd = alwaysShowAdd || summaries.length > 0;
 
   const toggle = async (emoji: ReactionEmoji, currentlyReacted: boolean) => {
     if (disabled || busyEmoji) return;
@@ -89,6 +96,7 @@ export const MessageReactionsBar: React.FC<MessageReactionsBarProps> = ({
   };
 
   if (disabled) return null;
+  if (!showAdd) return null;
 
   return (
     <UI.HStack
@@ -150,8 +158,8 @@ export const MessageReactionsBar: React.FC<MessageReactionsBarProps> = ({
             <UI.Icon icon={faFaceSmile} boxSize={3.5} />
           </UI.Box>
         </UI.MorphingPopoverTrigger>
-        <UI.MorphingPopoverContent title="Add reaction" maxW="280px">
-          <UI.SimpleGrid columns={6} spacing={1} px={1} pb={1}>
+        <UI.MorphingPopoverContent aria-label="Add reaction" maxW="280px">
+          <UI.SimpleGrid columns={6} spacing={1} px={1} py={1}>
             {REACTION_EMOJIS.map((emoji) => {
               const reacted = summaries.some(
                 (s) => s.emoji === emoji && s.reactedByMe

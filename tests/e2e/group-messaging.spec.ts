@@ -106,7 +106,13 @@ test.describe('group messaging', () => {
       .poll(async () => page.getByText(messageText).count(), { timeout: 15_000 })
       .toBeGreaterThan(0);
 
-    const addReaction = page.getByTestId('message-add-reaction').last();
+    // List hides Add reaction until a chip exists — open the message detail.
+    await expect(page.getByTestId('message-add-reaction')).toHaveCount(0);
+    await page.getByTestId('message-body').last().click();
+
+    const detail = page.getByRole('dialog', { name: 'Message' });
+    await expect(detail).toBeVisible();
+    const addReaction = detail.getByTestId('message-add-reaction');
     await expect(addReaction).toBeVisible();
     await addReaction.click();
 
@@ -115,12 +121,20 @@ test.describe('group messaging', () => {
     ).toBeVisible();
     await page.getByRole('button', { name: 'React with 👍' }).click();
 
-    const chip = page.getByTestId('message-reaction-chip-👍');
+    const chip = page.getByTestId('message-reaction-chip-👍').first();
     await expect(chip).toBeVisible({ timeout: 10_000 });
     await expect(chip).toHaveAttribute('aria-pressed', 'true');
     await expect(chip).toContainText('1');
 
-    await chip.click();
-    await expect(chip).toBeHidden({ timeout: 10_000 });
+    // Close detail — list now shows chip + trailing Add reaction.
+    await page.keyboard.press('Escape');
+    await expect(detail).toBeHidden();
+    await expect(page.getByTestId('message-add-reaction')).toBeVisible();
+
+    await page.getByTestId('message-reaction-chip-👍').click();
+    await expect(
+      page.getByTestId('message-reaction-chip-👍')
+    ).toBeHidden({ timeout: 10_000 });
+    await expect(page.getByTestId('message-add-reaction')).toHaveCount(0);
   });
 });

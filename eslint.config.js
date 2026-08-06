@@ -22,6 +22,8 @@ export default tseslint.config(
       'src/ui/ValueDisplay.tsx',
       'src/navigation/**',
       'supabase/functions/**',
+      // CLI / Docker local stack scratch (also gitignored)
+      'supabase/.temp/**',
     ],
   },
   js.configs.recommended,
