@@ -112,11 +112,23 @@ async function authorizeRequest(req: Request): Promise<Response | null> {
     error: userError,
   } = await admin.auth.getUser(jwt);
   if (userError || !user) {
-    console.error('suggestion-github-issue getUser', userError?.message);
-    return new Response(JSON.stringify({ error: 'unauthorized' }), {
-      status: 401,
-      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
-    });
+    console.error(
+      'suggestion-github-issue getUser',
+      userError?.message ?? 'no-user',
+      `jwt_len=${jwt.length}`
+    );
+    return new Response(
+      JSON.stringify({
+        error: 'unauthorized',
+        reason: userError?.message?.includes('expired')
+          ? 'jwt_expired'
+          : 'invalid_jwt',
+      }),
+      {
+        status: 401,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    );
   }
 
   const { data: isAdmin, error: adminError } = await admin.rpc(

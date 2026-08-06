@@ -230,10 +230,14 @@ const SuggestionDetailCard: React.FC<{
         status: 'success',
         duration: 5000,
       });
-    } catch {
+    } catch (err) {
+      const message =
+        err instanceof Error && err.message.trim()
+          ? err.message
+          : 'Check your connection and try again.';
       toast({
         title: "Couldn't create GitHub issue",
-        description: 'Check your connection and try again.',
+        description: message,
         status: 'error',
         duration: 4000,
       });
