@@ -36,7 +36,12 @@ begin
       hook_secret := null;
   end;
 
+  -- Fail closed: Edge requires a non-empty secret (unlike notify's optional auth).
+  -- Skip the post when URL or secret is missing — do not send an empty header.
   if hook_url is null or length(hook_url) = 0 then
+    return NEW;
+  end if;
+  if hook_secret is null or length(hook_secret) = 0 then
     return NEW;
   end if;
 
@@ -44,7 +49,7 @@ begin
     url := hook_url,
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
-      'x-webhook-secret', coalesce(hook_secret, '')
+      'x-webhook-secret', hook_secret
     ),
     body := jsonb_build_object('record', row_to_json(NEW)::jsonb)
   );
