@@ -29,6 +29,7 @@ export type OutboxEntry = {
   attempts: number;
   /** Permanently rejected — kept visible so the user can retry or discard. */
   failed: boolean;
+  isAdminMessage?: boolean;
 };
 
 export type NewOutboxEntry = Omit<
@@ -110,12 +111,13 @@ export const discardOutboxEntry = (id: string): void => removeEntry(id);
 export const outboxEntryToMessage = (entry: OutboxEntry): Message => ({
   id: entry.id,
   uid: entry.uid,
-  authorName: entry.authorName,
-  authorPhotoURL: entry.authorPhotoURL,
+  authorName: entry.isAdminMessage ? 'Yowl Admin' : entry.authorName,
+  authorPhotoURL: entry.isAdminMessage ? null : entry.authorPhotoURL,
   time: entry.createdAt,
   text: entry.text,
   groupId: entry.groupId,
   isAnnouncement: false,
+  isAdminMessage: Boolean(entry.isAdminMessage),
 });
 
 const attempt = async (
@@ -130,6 +132,7 @@ const attempt = async (
       authorPhotoURL: entry.authorPhotoURL,
       text: entry.text,
       groupId: entry.groupId,
+      isAdminMessage: entry.isAdminMessage,
     });
     // Show it as a real message right away rather than waiting for the
     // Realtime echo to come back around.

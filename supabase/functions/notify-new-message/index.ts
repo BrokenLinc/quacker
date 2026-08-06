@@ -18,6 +18,7 @@ type MessageRecord = {
   text: string;
   created_at?: string;
   is_announcement?: boolean;
+  is_admin_message?: boolean;
 };
 
 Deno.serve(async (req) => {
@@ -85,12 +86,20 @@ Deno.serve(async (req) => {
       (prefs ?? []).map((p) => [p.user_id, p.push_enabled] as const)
     );
 
+    const { data: bannedRows } = await supabase
+      .from('user_moderation')
+      .select('user_id')
+      .in('user_id', userIds)
+      .not('super_banned_at', 'is', null);
+    const banned = new Set((bannedRows ?? []).map((r) => r.user_id));
+
     const message = {
       authorId: record.author_id,
       isAnnouncement: Boolean(record.is_announcement),
     };
 
     const eligibleIds = members
+      .filter((m) => !banned.has(m.user_id))
       .filter((m) =>
         shouldNotifyMember(
           {
@@ -127,7 +136,9 @@ Deno.serve(async (req) => {
     );
 
     const groupName = group?.name ?? 'Yowl';
-    const author = record.author_name?.trim() || 'Someone';
+    const author = record.is_admin_message
+      ? 'Yowl Admin'
+      : record.author_name?.trim() || 'Someone';
     const preview =
       record.text.length > 120 ? `${record.text.slice(0, 117)}…` : record.text;
     const payload = JSON.stringify({
@@ -141,11 +152,16 @@ Deno.serve(async (req) => {
         id: record.id,
         groupId: record.group_id,
         authorId: record.author_id,
-        authorName: record.author_name ?? null,
-        authorPhotoURL: record.author_photo_url ?? null,
+        authorName: record.is_admin_message
+          ? 'Yowl Admin'
+          : record.author_name ?? null,
+        authorPhotoURL: record.is_admin_message
+          ? null
+          : record.author_photo_url ?? null,
         text: record.text,
         createdAt: record.created_at ?? new Date().toISOString(),
         isAnnouncement: Boolean(record.is_announcement),
+        isAdminMessage: Boolean(record.is_admin_message),
       },
     });
 

@@ -1,9 +1,23 @@
 import * as UI from '@@ui';
-import { faLightbulb, faMoon, faSun } from '@fortawesome/free-solid-svg-icons';
+import {
+  faLightbulb,
+  faMoon,
+  faShieldHalved,
+  faSun,
+  faUsers,
+  faComments,
+  faCloudMoon,
+} from '@fortawesome/free-solid-svg-icons';
 import React from 'react';
-import { Outlet, useLocation, useMatch } from 'react-router-dom';
+import { Outlet, useLocation, useMatch, useNavigate } from 'react-router-dom';
 
-import { useGroups, useUnreadCounts } from '@@api';
+import {
+  useGroups,
+  useMySuperBan,
+  useSetSiteLockdown,
+  useSiteSettings,
+  useUnreadCounts,
+} from '@@api';
 import { retryGroups } from '@@api/cache';
 import { SignInForm } from '@@components/auth/SignInForm';
 import { FtueHoldContext } from '@@components/auth/ftueHoldContext';
@@ -14,6 +28,7 @@ import { useUnreadAppChrome } from '@@lib/notifications/documentChrome';
 import { InAppPushToastListener } from '@@lib/notifications/inAppPushToast';
 import {
   appUserHasChosenDisplayName,
+  isSuperAdminPhone,
   useAuthState,
 } from '@@lib/supabase/auth';
 import { useVisualViewportHeight } from '@@lib/pwa/useVisualViewportHeight';
@@ -35,11 +50,34 @@ const UnreadAppChrome: React.FC = () => {
   return null;
 };
 
+const SiteOfflineScreen: React.FC = () => (
+  <UI.Box
+    flex={1}
+    overflowY="auto"
+    data-testid="site-offline"
+  >
+    <UI.EmptyState
+      icon={faCloudMoon}
+      title="Yowl is temporarily offline"
+      description="We're working on it!"
+    />
+  </UI.Box>
+);
+
+const AccountDeactivatedScreen: React.FC = () => (
+  <UI.Box flex={1} overflowY="auto" data-testid="account-deactivated">
+    <UI.EmptyState
+      icon={faShieldHalved}
+      title="Account deactivated"
+      description="This account has been deactivated and can't use Yowl."
+    />
+  </UI.Box>
+);
+
 export const AppLayout: React.FC = () => {
   useVisualViewportHeight();
-  // Resume / reconnect / outbox-flush orchestration for the app's lifetime.
   React.useEffect(() => installAppLifecycle(), []);
-  const [user] = useAuthState();
+  const [user, authLoading] = useAuthState();
   const [ftueHold, setFtueHold] = React.useState(false);
   const isMobile = UI.useBreakpointValue(
     { base: true, md: false },
@@ -49,10 +87,25 @@ export const AppLayout: React.FC = () => {
   const groupMatch = useMatch('/:groupId');
   const slugMatch = useMatch('/g/:slug');
   const isSuggestionsRoute = location.pathname.startsWith('/suggestions');
-  // `/:groupId` also matches `/suggestions` — exclude known non-room paths.
+  const isAdminRoute = location.pathname.startsWith('/admin');
+  const isSuperadminSignIn = location.pathname === routes.superadminSignIn().path;
   const isGroupRoute =
-    Boolean(groupMatch) && !slugMatch && !isSuggestionsRoute;
-  const hidesMobileShellHeader = isGroupRoute || isSuggestionsRoute;
+    Boolean(groupMatch) &&
+    !slugMatch &&
+    !isSuggestionsRoute &&
+    !isAdminRoute &&
+    !isSuperadminSignIn;
+  const hidesMobileShellHeader =
+    isGroupRoute || isSuggestionsRoute || isAdminRoute || isSuperadminSignIn;
+
+  const isSuperAdmin = isSuperAdminPhone(user?.phone);
+  const [settings, , settingsError] = useSiteSettings();
+  const [moderation, moderationLoading] = useMySuperBan(user?.uid);
+  // Apply lockdown only when we successfully read settings. Unreachable
+  // Supabase (offline PWA shell) must not hold the gate forever — Edge still
+  // enforces lockdown on OTP.
+  const lockdown = !settingsError && Boolean(settings?.lockdown);
+  const superBanned = Boolean(moderation?.superBannedAt);
 
   React.useEffect(() => {
     if (!user) {
@@ -64,9 +117,30 @@ export const AppLayout: React.FC = () => {
     }
   }, [user]);
 
-  // Chrome-less for signed-out login and post-auth onboarding (name / create-room).
   const showChrome = Boolean(user) && !ftueHold;
   const endFtue = React.useCallback(() => setFtueHold(false), []);
+
+  // Hold for auth (+ moderation when signed in) so SuperAdmins are never
+  // treated as offline and super-banned users never see chrome first.
+  // Do NOT wait on site settings — that query hangs offline and would leave
+  // the precached shell on a skeleton instead of sign-in.
+  const gateLoading =
+    authLoading || (Boolean(user) && moderationLoading && !isSuperAdmin);
+
+  let gated: React.ReactNode = null;
+  if (gateLoading) {
+    gated = (
+      <UI.Box flex={1} overflowY="auto" p={4} data-testid="site-gate-loading">
+        <UI.Skeleton h={8} borderRadius="md" maxW="480px" mx="auto" />
+      </UI.Box>
+    );
+  } else if (lockdown && !isSuperAdmin) {
+    if (!isSuperadminSignIn) {
+      gated = <SiteOfflineScreen />;
+    }
+  } else if (user && superBanned && !isSuperAdmin) {
+    gated = <AccountDeactivatedScreen />;
+  }
 
   return (
     <FtueHoldContext.Provider value={{ ftueHold, endFtue }}>
@@ -80,21 +154,27 @@ export const AppLayout: React.FC = () => {
           overflow="hidden"
           bg="surface.canvas"
         >
-          {showChrome && isMobile && !hidesMobileShellHeader ? (
-            <MobileHeader />
-          ) : null}
-          <UI.Flex flex={1} minH={0}>
-            {showChrome && !isMobile ? <Sidebar /> : null}
-            <UI.Flex
-              as="main"
-              direction="column"
-              flex={1}
-              minW={0}
-              overflow="hidden"
-            >
-              <Outlet />
-            </UI.Flex>
-          </UI.Flex>
+          {gated ? (
+            gated
+          ) : (
+            <React.Fragment>
+              {showChrome && isMobile && !hidesMobileShellHeader ? (
+                <MobileHeader />
+              ) : null}
+              <UI.Flex flex={1} minH={0}>
+                {showChrome && !isMobile ? <Sidebar /> : null}
+                <UI.Flex
+                  as="main"
+                  direction="column"
+                  flex={1}
+                  minW={0}
+                  overflow="hidden"
+                >
+                  <Outlet />
+                </UI.Flex>
+              </UI.Flex>
+            </React.Fragment>
+          )}
         </UI.Flex>
       </SignInPlacementFromAuth>
     </FtueHoldContext.Provider>
@@ -146,6 +226,79 @@ const SuggestionsNavIconButton: React.FC = () => (
   />
 );
 
+const SuperAdminNavButton: React.FC = () => {
+  const [user] = useAuthState();
+  const [open, setOpen] = React.useState(false);
+  const [settings] = useSiteSettings();
+  const setLockdown = useSetSiteLockdown();
+  const toast = UI.useToast();
+  const navigate = useNavigate();
+  const lockdown = Boolean(settings?.lockdown);
+
+  if (!isSuperAdminPhone(user?.phone)) return null;
+
+  const onLockdownChange = async (next: boolean) => {
+    try {
+      await setLockdown.mutateAsync(next);
+    } catch {
+      toast({ title: "Couldn't update lockdown", status: 'error' });
+    }
+  };
+
+  return (
+    <UI.MorphingPopover open={open} onOpenChange={setOpen} anchor="top right">
+      <UI.MorphingPopoverTrigger
+        aria-label="SuperAdmin"
+        data-testid="superadmin-nav"
+        p={2}
+        borderRadius="md"
+      >
+        <UI.Icon icon={faShieldHalved} />
+      </UI.MorphingPopoverTrigger>
+      <UI.MorphingPopoverContent aria-label="SuperAdmin" title="SuperAdmin">
+        <UI.VStack align="stretch" spacing={0} py={1} minW="240px">
+          <UI.FormControl
+            display="flex"
+            alignItems="center"
+            justifyContent="space-between"
+            px={4}
+            py={2.5}
+          >
+            <UI.FormLabel mb={0} fontSize="sm" fontWeight="normal">
+              Site lockdown
+            </UI.FormLabel>
+            <UI.Switch
+              colorScheme="teal"
+              size="md"
+              isChecked={lockdown}
+              isDisabled={setLockdown.isPending}
+              onChange={(e) => void onLockdownChange(e.target.checked)}
+              aria-label="Site lockdown"
+              data-testid="site-lockdown-switch"
+            />
+          </UI.FormControl>
+          <UI.PopoverMenuRow
+            icon={faComments}
+            label="All groups"
+            onClick={() => {
+              setOpen(false);
+              navigate(routes.adminGroups().path);
+            }}
+          />
+          <UI.PopoverMenuRow
+            icon={faUsers}
+            label="All users"
+            onClick={() => {
+              setOpen(false);
+              navigate(routes.adminUsers().path);
+            }}
+          />
+        </UI.VStack>
+      </UI.MorphingPopoverContent>
+    </UI.MorphingPopover>
+  );
+};
+
 const MobileHeader: React.FC = () => {
   const [user] = useAuthState();
 
@@ -163,6 +316,7 @@ const MobileHeader: React.FC = () => {
       {user ? (
         <React.Fragment>
           <SuggestionsNavIconButton />
+          <SuperAdminNavButton />
           <UserMenu showColorMode />
         </React.Fragment>
       ) : (
@@ -191,6 +345,7 @@ const Sidebar: React.FC = () => {
         {user ? (
           <React.Fragment>
             <SuggestionsNavIconButton />
+            <SuperAdminNavButton />
             <NewGroupIconButton />
           </React.Fragment>
         ) : (
@@ -328,8 +483,10 @@ const ColorModeIconButton: React.FC = () => {
 const HeaderSignIn: React.FC = () => {
   const placement = useSignInPlacement();
   const signInModal = UI.useDisclosure();
+  const [settings] = useSiteSettings();
 
   if (placement === 'inline') return null;
+  if (settings?.lockdown) return null;
 
   return (
     <React.Fragment>

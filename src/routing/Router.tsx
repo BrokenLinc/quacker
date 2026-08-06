@@ -79,6 +79,21 @@ const router = createBrowserRouter([
         element: withSuspense(Pages.HomePage),
       },
       {
+        id: getRouteIdFromPaths({ path: routes.superadminSignIn().path }),
+        path: routes.superadminSignIn().path,
+        element: withSuspense(Pages.SuperAdminSignInPage),
+      },
+      {
+        id: getRouteIdFromPaths({ path: routes.adminGroups().path }),
+        path: routes.adminGroups().path,
+        element: withSuspense(Pages.AdminGroupsPage),
+      },
+      {
+        id: getRouteIdFromPaths({ path: routes.adminUsers().path }),
+        path: routes.adminUsers().path,
+        element: withSuspense(Pages.AdminUsersPage),
+      },
+      {
         id: getRouteIdFromPaths({ path: routes.suggestionsNew().path }),
         path: routes.suggestionsNew().path,
         element: withSuspense(Pages.NewSuggestionPage),

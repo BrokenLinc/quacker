@@ -16,6 +16,11 @@ test('suggestions nav opens list and create form', async ({ page }) => {
   ).toBeVisible();
   await expect(page.getByLabel('Search')).toBeHidden();
   await expect(page.getByLabel('Mine')).toBeHidden();
+
+  // Suggestions page mounts Account menu only on mobile (shell header is
+  // hidden on this route). Desktop smoke would otherwise match the sidebar
+  // UserMenu and miss a missing page-header control.
+  await page.setViewportSize({ width: 390, height: 844 });
   await expect(page.getByRole('button', { name: 'Account menu' })).toBeVisible();
 
   await page.getByTestId('make-suggestion').click();

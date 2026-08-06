@@ -8,6 +8,11 @@ export const NewSuggestionPage = React.lazy(
 export const SuggestionDetailPage = React.lazy(
   () => import('./SuggestionDetailPage')
 );
+export const SuperAdminSignInPage = React.lazy(
+  () => import('./SuperAdminSignInPage')
+);
+export const AdminGroupsPage = React.lazy(() => import('./AdminGroupsPage'));
+export const AdminUsersPage = React.lazy(() => import('./AdminUsersPage'));
 export const GroupPage = React.lazy(() => import('./GroupPage'));
 export const GroupSlugPage = React.lazy(() => import('./GroupSlugPage'));
 export const NotFoundPage = React.lazy(() => import('./NotFoundPage'));
