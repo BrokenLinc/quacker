@@ -472,6 +472,7 @@ export const deleteGroup = async (id: string, actorId: string) => {
     .eq('id', id);
   if (error) throw error;
   queryClient.removeQueries({ queryKey: queryKeys.messages(id) });
+  queryClient.removeQueries({ queryKey: queryKeys.messageReactions(id) });
   void queryClient.invalidateQueries({ queryKey: queryKeys.group(id) });
   invalidateGroups();
   void queryClient.invalidateQueries({ queryKey: queryKeys.adminGroupsRoot });
@@ -522,6 +523,7 @@ export const leaveGroup = async (groupId: string, userId: string) => {
   if (error) throw error;
   queryClient.setQueryData(queryKeys.membership(groupId, userId), false);
   queryClient.removeQueries({ queryKey: queryKeys.messages(groupId) });
+  queryClient.removeQueries({ queryKey: queryKeys.messageReactions(groupId) });
   invalidateGroups();
 };
 

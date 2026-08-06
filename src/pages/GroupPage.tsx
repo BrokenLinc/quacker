@@ -18,8 +18,10 @@ import {
   useGroup,
   useGroupMembers,
   useGroupMembership,
+  useGroupMessageReactions,
   useGroupMessages,
   useGroupSilences,
+  type MessageReaction,
 } from '@@api';
 import { retryGroupMembers, retryMessages, retryRoom } from '@@api/cache';
 import { useConnectionState } from '@@lib/lifecycle/useConnectionState';
@@ -31,6 +33,7 @@ import {
 import { useOutboxEntries } from '@@lib/outbox/useOutbox';
 import { ConnectionStatus } from '@@components/ConnectionStatus';
 import { RequireAuth } from '@@components/auth/RequireAuth';
+import { MessageReactionsBar } from '@@components/MessageReactionsBar';
 import { NotificationsSwitch } from '@@components/NotificationsSwitch';
 import { NotifyLevelControl } from '@@components/NotifyLevelControl';
 import { notifyLevelLabel } from '@@lib/notifications/notifyLevel';
@@ -1402,6 +1405,7 @@ const ChatScrollArea: React.FC<{
   const didInitialScroll = React.useRef(false);
   const distanceFromBottomRef = React.useRef(0);
   const lastItem = items[items.length - 1];
+  const [reactions] = useGroupMessageReactions(groupId);
 
   React.useLayoutEffect(() => {
     const el = scrollRef.current;
@@ -1548,6 +1552,7 @@ const ChatScrollArea: React.FC<{
                 joinedAt={message.isAdminMessage ? null : member?.joinedAt ?? null}
                 role={message.isAdminMessage ? null : member?.role ?? null}
                 viewerIsSuperAdmin={viewerIsSuperAdmin}
+                reactions={reactions ?? []}
               />
             </React.Fragment>
           );
@@ -1588,6 +1593,7 @@ export const MessageRow: React.FC<{
   joinedAt?: number | null;
   role?: GroupMemberRole | null;
   viewerIsSuperAdmin?: boolean;
+  reactions?: MessageReaction[];
 }> = ({
   message,
   grouped,
@@ -1604,6 +1610,7 @@ export const MessageRow: React.FC<{
   joinedAt,
   role,
   viewerIsSuperAdmin = false,
+  reactions = [],
 }) => {
   const [profileOpen, setProfileOpen] = React.useState(false);
   const isAdminMsg = Boolean(message.isAdminMessage);
@@ -1680,6 +1687,15 @@ export const MessageRow: React.FC<{
             </UI.HStack>
           )}
           <UI.RichTextContent content={message.text} />
+          {groupId && currentUid ? (
+            <MessageReactionsBar
+              messageId={message.id}
+              groupId={groupId}
+              currentUid={currentUid}
+              reactions={reactions}
+              disabled={Boolean(message.pending || message.failed)}
+            />
+          ) : null}
         </UI.Box>
       </UI.HStack>
     );
@@ -1785,6 +1801,15 @@ export const MessageRow: React.FC<{
           </UI.HStack>
         )}
         <UI.RichTextContent content={message.text} />
+        {groupId && currentUid ? (
+          <MessageReactionsBar
+            messageId={message.id}
+            groupId={groupId}
+            currentUid={currentUid}
+            reactions={reactions}
+            disabled={Boolean(message.pending || message.failed)}
+          />
+        ) : null}
       </UI.Box>
     </UI.HStack>
   );

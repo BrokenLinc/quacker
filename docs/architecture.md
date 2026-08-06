@@ -40,6 +40,11 @@ messages
   -- author_name/photo stamped at send (notifications + left-member fallback);
   -- chat UI prefers live group_members.display_name; phone_last4 on member profile sheet
 
+message_reactions
+  message_id, group_id, user_id, emoji, created_at
+  -- PK (message_id, user_id, emoji); fixed emoji allow-list via CHECK + TS REACTION_EMOJIS
+  -- toggle by insert/delete; Realtime filtered by group_id; smile-plus MorphingPopover picker
+
 suggestions
   id, author_id, author_display_name, title, body,
   category (feature_request|bug_report|other),

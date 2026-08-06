@@ -84,4 +84,43 @@ test.describe('group messaging', () => {
     await pasteIntoInput(urlInput, 'https://yowl.us/docs');
     await expect(urlInput).toHaveValue('https://yowl.us/docs');
   });
+
+  test('member can add and toggle an emoji reaction', async ({ page }) => {
+    const { admin, userId } = await seedAuthenticatedSession(page);
+
+    const group = await seedTestGroup(admin, userId, {
+      slug: `rxn${Date.now().toString(36).slice(-5)}`,
+      name: 'Reactions Test',
+    });
+
+    await gotoGroupPage(page, group);
+
+    const messageText = `React to me ${Date.now()}`;
+    const editor = page.getByTestId('message-editor');
+    await expect(editor).toBeVisible({ timeout: 15_000 });
+    await editor.click();
+    await page.keyboard.type(messageText);
+    await page.getByRole('button', { name: 'Send' }).click();
+
+    await expect
+      .poll(async () => page.getByText(messageText).count(), { timeout: 15_000 })
+      .toBeGreaterThan(0);
+
+    const addReaction = page.getByTestId('message-add-reaction').last();
+    await expect(addReaction).toBeVisible();
+    await addReaction.click();
+
+    await expect(
+      page.getByRole('dialog', { name: 'Add reaction' })
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'React with 👍' }).click();
+
+    const chip = page.getByTestId('message-reaction-chip-👍');
+    await expect(chip).toBeVisible({ timeout: 10_000 });
+    await expect(chip).toHaveAttribute('aria-pressed', 'true');
+    await expect(chip).toContainText('1');
+
+    await chip.click();
+    await expect(chip).toBeHidden({ timeout: 10_000 });
+  });
 });

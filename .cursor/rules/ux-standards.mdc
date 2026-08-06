@@ -131,9 +131,17 @@ composer format toolbar only while the editor is focused):
   optimistic local state (or keep `isLoading` until the parent value matches
   the mutation). Otherwise a second tap races the refetch and double-inserts /
   shows a spurious error. Revert local state on failure. Reference:
-  `SuggestionRow` in `SuggestionsPage.tsx`.
+  `SuggestionRow` in `SuggestionsPage.tsx`. Message reactions use the same
+  pattern via cache `applyReactionInsert` / `applyReactionDelete` before the
+  network call (`MessageReactionsBar`).
 
-## Inputs — constrain early, not only on submit
+## Message reactions
+
+- Fixed allow-list only (`REACTION_EMOJIS` in `src/lib/chat/reactionEmojis.ts`).
+  Keep the Postgres `message_reactions_emoji_allowed` CHECK in sync when the
+  set changes — do not invent a free-text emoji column.
+- UI: smile (`faFaceSmile`) MorphingPopover picker + tappable count chips under
+  each message; pending/failed outbox rows hide the bar.
 
 Prefer foolproof entry over free-text + late validation:
 
