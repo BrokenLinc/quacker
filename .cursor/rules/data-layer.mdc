@@ -111,7 +111,10 @@ Pitfalls:
   `subscribe.ts`). iOS Home Screen PWAs often activate the worker without
   controlling the first document; subscribe then fails with no REST traffic.
   Detection: enable-notifications toast with no `push_subscriptions` upsert in
-  Supabase API logs.
+  Supabase API logs. Do not reuse `getSubscription()` without comparing
+  `options.applicationServerKey` to the current VAPID key. Call
+  `requestPermission` before long SW waits (user-activation). Ready timeout →
+  `unsupported`; missing `active`/`controller` → `sw-not-ready`.
 
 ## Testing
 

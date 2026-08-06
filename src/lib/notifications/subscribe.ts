@@ -32,15 +32,16 @@ export const registerServiceWorker =
         setTimeout(() => resolve(null), SW_READY_TIMEOUT_MS)
       ),
     ]);
+    // Ready timeout / missing SW → null (caller maps to `unsupported`).
     if (!ready) return null;
 
     if (!navigator.serviceWorker.controller) {
       // Prompt-mode updates leave a waiting worker; claim so push can subscribe.
       ready.waiting?.postMessage({ type: 'SKIP_WAITING' });
-      const controlling = await waitForServiceWorkerController(
-        SW_CONTROLLER_TIMEOUT_MS
-      );
-      if (!controlling) return null;
+      await waitForServiceWorkerController(SW_CONTROLLER_TIMEOUT_MS);
+      // Still return the registration when control never arrives so the caller
+      // can map `!controller` → `sw-not-ready` (Home Screen reopen) instead of
+      // collapsing every failure into that copy.
     }
 
     return ready;
@@ -90,6 +91,25 @@ export type EnablePushResult =
         | 'sw-not-ready';
     };
 
+/**
+ * Whether an existing push subscription was created with the given VAPID key.
+ * `null` means the browser did not expose `options.applicationServerKey`
+ * (cannot verify locally).
+ */
+export const subscriptionMatchesVapid = (
+  sub: PushSubscription,
+  vapidKey: Uint8Array
+): boolean | null => {
+  const key = sub.options?.applicationServerKey;
+  if (key == null) return null;
+  const bytes = new Uint8Array(key);
+  if (bytes.byteLength !== vapidKey.byteLength) return false;
+  for (let i = 0; i < bytes.byteLength; i++) {
+    if (bytes[i] !== vapidKey[i]) return false;
+  }
+  return true;
+};
+
 /** Request OS permission + store endpoint. Call only from Switch-on handlers. */
 export const enablePushSubscription = async (
   userId: string
@@ -108,20 +128,41 @@ export const enablePushSubscription = async (
   }
   if (state === 'denied') return { ok: false, reason: 'denied' };
 
-  const reg = await registerServiceWorker();
-  if (!reg?.active) return { ok: false, reason: 'sw-not-ready' };
-
+  // Request permission while the Switch click's user activation is still
+  // alive — awaiting the SW ready/controller wait first can expire the
+  // gesture and make the OS prompt resolve as denied without showing UI.
   const permission =
     state === 'granted' ? 'granted' : await Notification.requestPermission();
   if (permission !== 'granted') return { ok: false, reason: 'denied' };
 
-  let sub: PushSubscription | null = null;
+  const reg = await registerServiceWorker();
+  // Ready timeout / no SW support → environment issue, not Home Screen copy.
+  if (!reg) return { ok: false, reason: 'unsupported' };
+  // Registration exists but is not yet active/controlling (common on first
+  // iOS PWA launch) → reopen guidance.
+  if (!reg.active || !navigator.serviceWorker.controller) {
+    return { ok: false, reason: 'sw-not-ready' };
+  }
+
+  const applicationServerKey = urlBase64ToUint8Array(vapidKey);
+  let sub: PushSubscription;
   try {
-    sub = await reg.pushManager.getSubscription();
-    if (!sub) {
+    const existing = await reg.pushManager.getSubscription();
+    const match = existing
+      ? subscriptionMatchesVapid(existing, applicationServerKey)
+      : false;
+    if (existing && match === true) {
+      sub = existing;
+    } else {
+      // Stale VAPID binding: getSubscription() succeeds without throwing, so
+      // unsubscribe before subscribe. When match is null, call subscribe() —
+      // same key returns the existing sub; mismatch throws into the retry.
+      if (existing && match === false) {
+        await existing.unsubscribe();
+      }
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        applicationServerKey,
       });
     }
   } catch (err) {
@@ -132,15 +173,13 @@ export const enablePushSubscription = async (
       await stale?.unsubscribe();
       sub = await reg.pushManager.subscribe({
         userVisibleOnly: true,
-        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+        applicationServerKey,
       });
     } catch (retryErr) {
       console.error('pushManager.subscribe retry failed', retryErr);
       return { ok: false, reason: 'subscribe-failed' };
     }
   }
-
-  if (!sub) return { ok: false, reason: 'subscribe-failed' };
 
   const json = sub.toJSON();
   if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
