@@ -49,9 +49,28 @@ export const installPushMocks = async (page: Page) => {
       win.Notification = FakeNotification;
 
       const endpoint = `https://push.example.test/e2e/${Math.random().toString(36).slice(2)}`;
+
+      // Decode VAPID so subscription.options.applicationServerKey matches the
+      // app's enablePushSubscription reuse check.
+      const padding = '='.repeat((4 - (vapid.length % 4)) % 4);
+      const b64 = (vapid + padding).replace(/-/g, '+').replace(/_/g, '/');
+      const raw = atob(b64);
+      const vapidBuffer = new ArrayBuffer(raw.length);
+      const vapidBytes = new Uint8Array(vapidBuffer);
+      for (let i = 0; i < raw.length; i++) vapidBytes[i] = raw.charCodeAt(i);
+
+      const fakeWorker = {
+        state: 'activated',
+        postMessage: () => undefined,
+      };
+
       const fakeSubscription = {
         endpoint,
         expirationTime: null,
+        options: {
+          userVisibleOnly: true,
+          applicationServerKey: vapidBuffer,
+        },
         getKey: (name: string) => {
           if (name === 'p256dh') return new Uint8Array(65).buffer;
           if (name === 'auth') return new Uint8Array(16).buffer;
@@ -69,6 +88,8 @@ export const installPushMocks = async (page: Page) => {
       };
 
       const registration = {
+        active: fakeWorker,
+        waiting: null,
         pushManager: {
           subscribe: async () => {
             window.__quackerPushSubscribed = true;
@@ -85,6 +106,8 @@ export const installPushMocks = async (page: Page) => {
           register: async () => registration,
           getRegistration: async () => registration,
           ready: Promise.resolve(registration),
+          // enablePushSubscription awaits a controlling worker before subscribe.
+          controller: fakeWorker,
           addEventListener: () => undefined,
           removeEventListener: () => undefined,
         },
