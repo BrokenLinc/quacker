@@ -67,6 +67,10 @@ push_subscriptions
 
 **RLS habit:** for any table with denormalized counters or workflow columns, INSERT `WITH CHECK` must require the safe defaults — ownership alone (`author_id = auth.uid()`) does not stop a client from writing `vote_count` / `status`.
 
+**Public export:** Edge Function `suggestion-export` (`GET ?id=<uuid>`, `verify_jwt: false`) returns one suggestion as JSON (title, description, votes, comments, `isSuperAdmin` on authors) via RPC `suggestion_export`. Callers send the publishable anon key as `apikey` / `Authorization: Bearer <anon>` (same as the SPA — not a private secret).
+
+**GitHub Issues:** `suggestions` INSERT → Vault `suggestion_github_webhook_*` → Edge `suggestion-github-issue` creates an issue on `BrokenLinc/quacker` (label `user-suggestion`) with the suggestion title/body plus links to `/suggestions/:id` and the export JSON URL. Setup: `scripts/setup-suggestion-github-webhook.sh`.
+
 Unread badges: RPC `unread_message_counts()` — messages after `last_viewed_at` from others, filtered by `notify_level` (`none` → 0). Author column is `messages.author_id` (not `user_id`). Total across groups also drives tab title `(N)` prefix and PWA icon badge via `src/lib/notifications/documentChrome.ts` (`navigator.setAppBadge` when supported).
 
 ## Push delivery

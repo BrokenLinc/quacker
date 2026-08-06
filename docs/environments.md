@@ -27,7 +27,7 @@ No `develop` branch — solo workflow: PR preview → merge to `main` → prod d
 - `SUPABASE_DB_PASSWORD_PROD` (Postgres password; CI secret name `SUPABASE_DB_PASSWORD`)
 - `VITE_APP_URL`
 
-Shared: `SUPABASE_ACCESS_TOKEN`, `VERCEL_*`, `TWILIO_*` (Edge Function secrets only).
+Shared: `SUPABASE_ACCESS_TOKEN`, `VERCEL_*`, `TWILIO_*` (Edge Function secrets only), `GITHUB_TOKEN` (suggestion → GitHub Issues; see `scripts/setup-suggestion-github-webhook.sh`).
 
 See [`.env.example`](../.env.example).
 

@@ -63,6 +63,7 @@ Production sign-in uses **Twilio Verify** via Edge Functions. **Verify does not 
 | Add billing / upgrade from trial | **You** | Console → **Upgrade** (adding balance alone is not enough) |
 | **Primary Compliance Profile** (Trust Hub) | **You** | **Required** to text numbers other than verified testers — Console only (API blocked for direct accounts) |
 | Paste `TWILIO_*` into `.env.local` | **You** | Agent syncs to Supabase Edge Function secrets on deploy |
+| Paste `GITHUB_TOKEN` into `.env.local` | **You** | Fine-grained PAT with Issues write on the quacker repo; agent runs `scripts/setup-suggestion-github-webhook.sh` |
 | `AUTH_ALLOW_TEST_OTP` on **dev only** | **Agent** | Fictional `555-01XX` + code `555555` — never production |
 
 ### Primary Compliance Profile (fixes error 21608)

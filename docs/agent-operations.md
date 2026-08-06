@@ -30,6 +30,7 @@ yarn dev                 # Vite dev server (dev Supabase)
 yarn verify              # lint + build + test + e2e
 yarn deploy              # prod Supabase + Vercel production only
 scripts/setup-notify-webhook.sh [dev|prod]  # VAPID + webhook vault for Web Push
+scripts/setup-suggestion-github-webhook.sh [dev|prod]  # GitHub Issues on new suggestions
 supabase db reset        # optional local replay (Docker)
 ```
 
@@ -41,6 +42,22 @@ supabase db reset        # optional local replay (Docker)
 4. `yarn sync:vercel-env` so Preview/Production get `VITE_VAPID_PUBLIC_KEY`
 
 Note: current Supabase CLI may not accept `--token` on `secrets set`; prefer Management API (`/v1/projects/{ref}/secrets`) with `SUPABASE_ACCESS_TOKEN`.
+
+## Suggestion export + GitHub Issues
+
+1. Put `GITHUB_TOKEN` (Issues write on `BrokenLinc/quacker`) in `.env.local`. Optional: `GITHUB_REPO`. Prod links: `PUBLIC_APP_URL` (default `https://yowl.us`). **Dev links:** set `PUBLIC_APP_URL_DEV` (setup refuses to reuse `VITE_APP_URL` / yowl.us). `SUGGESTION_GITHUB_WEBHOOK_SECRET` is minted if missing — required at runtime (function 503s if unset).
+2. `scripts/setup-suggestion-github-webhook.sh dev` then `prod` — Edge secrets + Vault for `notify_suggestion_insert`.
+3. Deploy `suggestion-export` and `suggestion-github-issue` with `verify_jwt: false` (wired in `deploy.yml` / `deploy.sh`).
+
+**Export curl** (anon key is the SPA publishable key):
+
+```bash
+curl -sS "https://<project-ref>.supabase.co/functions/v1/suggestion-export?id=<uuid>" \
+  -H "apikey: $VITE_SUPABASE_ANON_KEY" \
+  -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY"
+```
+
+Issue body footer includes the in-app suggestion URL and that export URL for automation.
 
 ## Secret propagation (agent runs these)
 
