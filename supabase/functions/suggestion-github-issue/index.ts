@@ -87,7 +87,6 @@ Deno.serve(async (req) => {
     const publicAppUrl = (
       Deno.env.get('PUBLIC_APP_URL') || 'https://yowl.us'
     ).replace(/\/$/, '');
-    const supabaseUrl = (Deno.env.get('SUPABASE_URL') || '').replace(/\/$/, '');
 
     const payload = await req.json();
     const record = (payload.record ?? payload) as SuggestionRecord;
@@ -99,9 +98,8 @@ Deno.serve(async (req) => {
 
     await ensureLabel(repo, token);
 
-    const exportUrl = supabaseUrl
-      ? `${supabaseUrl}/functions/v1/suggestion-export?id=${record.id}`
-      : `(suggestion-export?id=${record.id})`;
+    // Same-origin links: detail page + /api/suggestion-export (Vercel proxies to Edge).
+    const exportUrl = `${publicAppUrl}/api/suggestion-export?id=${record.id}`;
 
     const issueBody = [
       record.body?.trim() || '',

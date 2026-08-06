@@ -67,7 +67,7 @@ push_subscriptions
 
 **RLS habit:** for any table with denormalized counters or workflow columns, INSERT `WITH CHECK` must require the safe defaults — ownership alone (`author_id = auth.uid()`) does not stop a client from writing `vote_count` / `status`.
 
-**Public export:** Edge Function `suggestion-export` (`GET ?id=<uuid>`, `verify_jwt: false`) returns one suggestion as JSON (title, description, votes, comments, `isSuperAdmin` on authors) via RPC `suggestion_export`. Callers send the publishable anon key as `apikey` / `Authorization: Bearer <anon>` (same as the SPA — not a private secret).
+**Public export:** Edge Function `suggestion-export` (`GET ?id=<uuid>`, `verify_jwt: false`) returns one suggestion as JSON via RPC `suggestion_export`. App-facing links use `/api/suggestion-export` on the Vercel host (Preview or `yowl.us`), which proxies to the env’s Supabase and injects the publishable anon key.
 
 **GitHub Issues:** `suggestions` INSERT → Vault `suggestion_github_webhook_*` → Edge `suggestion-github-issue` creates an issue on `BrokenLinc/quacker` (label `user-suggestion`) with the suggestion title/body plus links to `/suggestions/:id` and the export JSON URL. Setup: `scripts/setup-suggestion-github-webhook.sh`.
 

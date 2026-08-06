@@ -45,13 +45,17 @@ Note: current Supabase CLI may not accept `--token` on `secrets set`; prefer Man
 
 ## Suggestion export + GitHub Issues
 
-1. Put `GITHUB_TOKEN` (Issues write on `BrokenLinc/quacker`) in `.env.local`. Optional: `GITHUB_REPO`. Prod links: `PUBLIC_APP_URL` (default `https://yowl.us`). **Dev links:** set `PUBLIC_APP_URL_DEV` (setup refuses to reuse `VITE_APP_URL` / yowl.us). `SUGGESTION_GITHUB_WEBHOOK_SECRET` is minted if missing — required at runtime (function 503s if unset).
+1. Put `GITHUB_TOKEN` (Issues write on `BrokenLinc/quacker`) in `.env.local`. Optional: `GITHUB_REPO`. Prod links: `PUBLIC_APP_URL` (default `https://yowl.us`). **Dev/preview links:** set `PUBLIC_APP_URL_DEV` to the Vercel **branch alias** (e.g. `https://quacker-git-<branch>-….vercel.app`) — setup refuses `VITE_APP_URL` / yowl.us. Issue footer uses same-origin `/suggestions/:id` and `/api/suggestion-export?id=` (Vercel Edge proxies to Supabase). `SUGGESTION_GITHUB_WEBHOOK_SECRET` is minted if missing — required at runtime (function 503s if unset).
 2. `scripts/setup-suggestion-github-webhook.sh dev` then `prod` — Edge secrets + Vault for `notify_suggestion_insert`.
 3. Deploy `suggestion-export` and `suggestion-github-issue` with `verify_jwt: false` (wired in `deploy.yml` / `deploy.sh`).
 
-**Export curl** (anon key is the SPA publishable key):
+**Export curl** (prefer app origin so Preview/Production pick the right Supabase):
 
 ```bash
+# Preview / production app host (injects anon key server-side)
+curl -sS "https://<app-host>/api/suggestion-export?id=<uuid>"
+
+# Or call Supabase directly with the publishable anon key:
 curl -sS "https://<project-ref>.supabase.co/functions/v1/suggestion-export?id=<uuid>" \
   -H "apikey: $VITE_SUPABASE_ANON_KEY" \
   -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY"
