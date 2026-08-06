@@ -182,6 +182,28 @@ Deno.serve(async (req) => {
       return jsonResponse({ error: 'Invalid phone number' }, 400);
     }
 
+    // Always gate on the Twilio-approved number — sid-only requests skip the
+    // earlier body-phone check and must not issue a session under lockdown.
+    try {
+      await assertNotLockdownBlocked(verifiedPhone);
+    } catch (e) {
+      if (
+        e &&
+        typeof e === 'object' &&
+        'code' in e &&
+        (e as { code: string }).code === 'SITE_LOCKDOWN'
+      ) {
+        return jsonResponse(
+          {
+            error: 'Yowl is temporarily offline. We\'re working on it!',
+            code: 'SITE_LOCKDOWN',
+          },
+          503
+        );
+      }
+      throw e;
+    }
+
     logAuthOtp('verify_ok', {
       phone: maskPhone(String(checkPayload.to ?? phone)),
       verification_sid: checkPayload.sid ?? verificationSid,

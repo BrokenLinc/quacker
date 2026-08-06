@@ -77,7 +77,7 @@ const AccountDeactivatedScreen: React.FC = () => (
 export const AppLayout: React.FC = () => {
   useVisualViewportHeight();
   React.useEffect(() => installAppLifecycle(), []);
-  const [user] = useAuthState();
+  const [user, authLoading] = useAuthState();
   const [ftueHold, setFtueHold] = React.useState(false);
   const isMobile = UI.useBreakpointValue(
     { base: true, md: false },
@@ -117,18 +117,26 @@ export const AppLayout: React.FC = () => {
   const showChrome = Boolean(user) && !ftueHold;
   const endFtue = React.useCallback(() => setFtueHold(false), []);
 
+  // Wait for auth + site settings (+ moderation when signed in) before deciding
+  // lockdown / super-ban — fail closed with a hold, never paint the app first.
   const gateLoading =
-    settingsLoading || (Boolean(user) && moderationLoading && !isSuperAdmin);
+    authLoading ||
+    settingsLoading ||
+    (Boolean(user) && moderationLoading && !isSuperAdmin);
 
   let gated: React.ReactNode = null;
-  if (!gateLoading) {
-    if (lockdown && !isSuperAdmin) {
-      if (!isSuperadminSignIn) {
-        gated = <SiteOfflineScreen />;
-      }
-    } else if (user && superBanned && !isSuperAdmin) {
-      gated = <AccountDeactivatedScreen />;
+  if (gateLoading) {
+    gated = (
+      <UI.Box flex={1} overflowY="auto" p={4} data-testid="site-gate-loading">
+        <UI.Skeleton h={8} borderRadius="md" maxW="480px" mx="auto" />
+      </UI.Box>
+    );
+  } else if (lockdown && !isSuperAdmin) {
+    if (!isSuperadminSignIn) {
+      gated = <SiteOfflineScreen />;
     }
+  } else if (user && superBanned && !isSuperAdmin) {
+    gated = <AccountDeactivatedScreen />;
   }
 
   return (

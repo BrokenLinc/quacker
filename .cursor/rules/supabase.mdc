@@ -29,6 +29,12 @@ alwaysApply: false
   `is_superadmin()` (and auth Edge `get_site_lockdown` /
   `is_superadmin_phone`). Group soft-delete (`deleted_at`) ≠ SuperAdmin
   deactivate (`deactivated_at`).
+- **`auth-verify-otp` lockdown must run on the Twilio-approved phone**
+  (`verifiedPhone` from `checkPayload.to`) immediately before
+  `issuePhoneSession`. Checking only the request body `phone` misses
+  `verification_sid` + code verifies (and any sid/To mismatch). Symptom →
+  check: sid-only verify returns a session while `site_settings.lockdown` is
+  true for a non–SuperAdmin number.
 
 ## Agent-owned Supabase ops (do not defer to user)
 

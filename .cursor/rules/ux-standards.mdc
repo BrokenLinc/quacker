@@ -19,7 +19,11 @@ because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
   hard `DELETE` for rooms from the client.
 - Lockdown: signed-out OTP only via `/superadmin`; Edge rejects non-SuperAdmin
   phones while `site_settings.lockdown` is true. Precedence: lockdown →
-  super-ban → app.
+  super-ban → app. `AppLayout` gates must wait on `useAuthState` **loading**
+  (and moderation when signed in) and **hold** (skeleton) while `gateLoading` —
+  do not treat `user: null` as non-admin or paint `Outlet` fail-open. Symptom →
+  check: SuperAdmin briefly sees site-offline, or super-banned user sees chrome
+  before deactivated.
 - Admin chat posts: `messages.is_admin_message` + SuperAdmin insert RLS (no
   membership). Display as **Yowl Admin**, non-interactive; self-only
   “Posting as system admin” banner.
