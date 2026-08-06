@@ -334,6 +334,7 @@ const SuggestionRow: React.FC<{
             route={routes.suggestion(suggestion.id)}
             fontSize="xs"
             color="text.muted"
+            aria-label={`Open suggestion: ${suggestion.title}`}
           >
             Read more &amp; reply
           </UI.RouteLink>
