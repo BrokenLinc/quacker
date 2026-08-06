@@ -13,12 +13,17 @@ Operational reference for agents working on Quacker.
 | **Configure auth redirects** | **Agent** — Management API |
 | **Fetch API keys → `.env.local`** | **Agent** — MCP / `supabase projects api-keys` |
 | **Sync Vercel Preview/Production env** | **Agent** — `yarn sync:vercel-env` |
-| **GitHub Actions secrets** | **Agent** — `gh secret set` |
+| **GitHub Actions secrets** | **Agent** — `gh secret set` (CLI auth, not `.env.local` `GITHUB_TOKEN`) |
 | Write code, migrations, tests | Agent |
 | `yarn bootstrap`, `yarn verify`, `yarn deploy` | Agent |
 | Fix CI failures | Agent |
 
 Full MCP playbook: [`.cursor/rules/mcp-first-ops.mdc`](../.cursor/rules/mcp-first-ops.mdc).
+
+### Local GitHub auth (`gh` vs `GITHUB_TOKEN`)
+
+- **Push / PR / `gh secret set` / triage:** use `gh` CLI (keyring OAuth with `repo` + `workflow`). Do **not** use `.env.local` `GITHUB_TOKEN` as a git credential.
+- **`.env.local` `GITHUB_TOKEN`:** Issues-write PAT for suggestion → GitHub Issues Edge only. `gh` reads env `GITHUB_TOKEN` first — after `source .env.local`, run `unset GITHUB_TOKEN` before `git push` / `gh pr create` or you get 403. See mcp-first-ops **GitHub — use `gh` CLI for local work**.
 
 ## Commands
 
@@ -45,7 +50,7 @@ Note: current Supabase CLI may not accept `--token` on `secrets set`; prefer Man
 
 ## Suggestion export + GitHub Issues
 
-1. Put `GITHUB_TOKEN` (Issues write on `BrokenLinc/quacker`) in `.env.local`. Optional: `GITHUB_REPO`.
+1. Put `GITHUB_TOKEN` (Issues write on `BrokenLinc/quacker`) in `.env.local` for Edge/setup scripts only — not for `git`/`gh` local ops. Optional: `GITHUB_REPO`.
 2. **App URLs for issue footers**
    - Prod: `PUBLIC_APP_URL` (default `https://yowl.us` / `VITE_APP_URL`).
    - Dev/preview: `PUBLIC_APP_URL_DEV` **or** a non-prod `PUBLIC_APP_URL` (Vercel **branch alias**, e.g. `https://quacker-git-<branch>-….vercel.app`). Never default to `yowl.us` or `http://127.0.0.1:*`. A preview URL duplicated as both `PUBLIC_APP_URL` and `VITE_APP_URL` is OK.

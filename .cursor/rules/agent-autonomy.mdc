@@ -12,7 +12,7 @@ This repo is operated entirely by the agent. The user sets vision; the agent exe
 1. Run `yarn verify` (or `scripts/verify.sh`) before declaring done
 2. Run `yarn check:requirements` when blocked on deploy, secrets, Supabase, Vercel, or e2e
 3. Use **MCP plugins first**, then CLIs (`supabase`, `vercel`, `gh`, `yarn`) — not service dashboards
-4. **Create and configure cloud resources yourself** (Supabase projects, migrations, auth, Vercel env, GitHub secrets) — see [`.cursor/rules/mcp-first-ops.mdc`](mcp-first-ops.mdc)
+4. **Create and configure cloud resources yourself** (Supabase projects, migrations, auth, Vercel env, GitHub secrets) — see [`.cursor/rules/mcp-first-ops.mdc`](mcp-first-ops.mdc). For local GitHub (push/PR/secrets): **`gh` CLI auth only** — never the project `.env.local` `GITHUB_TOKEN` (Issues PAT; poisons `gh` via env).
 5. Pause only at documented user gates in `docs/prerequisites.md` — never for tasks you have tools to perform
 6. Self-fix CI failures; never ask the user to triage logs
 7. Propagate secrets from `.env.local` via CLI — user does not configure GitHub/Vercel manually
