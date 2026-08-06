@@ -522,26 +522,38 @@ export const createSuggestionGithubIssue = async (suggestion: {
   );
   if (error) {
     if (error instanceof FunctionsHttpError) {
+      let body: { error?: unknown; reason?: unknown } | null = null;
       try {
-        const body = (await error.context.json()) as {
+        body = (await error.context.json()) as {
           error?: unknown;
           reason?: unknown;
         };
-        if (body?.error === 'unauthorized' || body?.error === 'forbidden') {
-          throw new Error('Sign in again, then retry.');
-        }
-        if (typeof body?.error === 'string') {
-          throw new Error(body.error);
-        }
-      } catch (parsed) {
-        if (parsed instanceof Error && parsed !== error) throw parsed;
+      } catch {
+        // Preserve the invoke error when the response body is not valid JSON
+        // (gateway HTML / non-JSON 502) — same as getFunctionError in auth.ts.
+      }
+      if (body?.error === 'unauthorized') {
+        throw new Error('Sign in again, then retry.');
+      }
+      if (body?.error === 'forbidden') {
+        throw new Error(
+          "You don't have permission to create GitHub issues."
+        );
+      }
+      if (typeof body?.error === 'string') {
+        throw new Error(body.error);
       }
     }
     throw error;
   }
   if (data?.error) {
-    if (data.error === 'unauthorized' || data.error === 'forbidden') {
+    if (data.error === 'unauthorized') {
       throw new Error('Sign in again, then retry.');
+    }
+    if (data.error === 'forbidden') {
+      throw new Error(
+        "You don't have permission to create GitHub issues."
+      );
     }
     throw new Error(
       typeof data.error === 'string' ? data.error : 'Could not create GitHub issue'
