@@ -27,7 +27,7 @@ No `develop` branch — solo workflow: PR preview → merge to `main` → prod d
 - `SUPABASE_DB_PASSWORD_PROD` (Postgres password; CI secret name `SUPABASE_DB_PASSWORD`)
 - `VITE_APP_URL`
 
-Shared: `SUPABASE_ACCESS_TOKEN`, `VERCEL_*`, `TWILIO_*` (Edge Function secrets only), `GITHUB_TOKEN` (suggestion → GitHub Issues; see `scripts/setup-suggestion-github-webhook.sh`).
+Shared: `SUPABASE_ACCESS_TOKEN`, `VERCEL_*`, `TWILIO_*` (Edge Function secrets only), `GITHUB_TOKEN` (suggestion → GitHub Issues Edge only — not for local `git`/`gh`; see `scripts/setup-suggestion-github-webhook.sh` and mcp-first-ops).
 
 Preview-only link base for GitHub issue footers: `PUBLIC_APP_URL_DEV` (Vercel branch alias). Do not point it at `https://yowl.us` or local Vite — quacker-dev rows are not on production. See [agent-operations](agent-operations.md#suggestion-export--github-issues).
 

@@ -42,6 +42,15 @@ Default: **dev** project for new cloud resources; **prod** only on `main` deploy
 | Production deploy | `yarn deploy` or Vercel MCP / `npx vercel deploy --prod` |
 | GitHub secrets | `gh secret set ...` from `.env.local` |
 
+## GitHub — use `gh` CLI for local work
+
+Local git/`gh` (push, PR, checks, `gh secret set`, issue triage) must use **GitHub CLI auth** (`gh auth login` / keyring OAuth with `repo` + `workflow`), **not** `.env.local`’s `GITHUB_TOKEN`.
+
+- **`.env.local` `GITHUB_TOKEN`** is a fine-grained PAT for **Issues write** only (Edge `suggestion-github-issue` / `setup-suggestion-github-webhook.sh`). It is **not** a git credential.
+- `gh` prefers env `GITHUB_TOKEN` over keyring. After `source .env.local`, **`unset GITHUB_TOKEN`** (or run `gh`/`git` in a clean env) before push/PR — otherwise you get `Permission … denied` / HTTP 403 while `gh auth status` still looks fine.
+- If `gh` is stuck on the Issues PAT: `unset GITHUB_TOKEN && gh auth switch --user <owner> && gh auth setup-git`, then retry.
+- Symptom → check: `git push` 403 / `remote: Permission to … denied` with `BrokenLinc` — check whether shell `GITHUB_TOKEN` is the project Issues PAT.
+
 ## Pause the user only when
 
 1. **Account missing** — no Supabase / Vercel / GitHub account (billing/ownership)

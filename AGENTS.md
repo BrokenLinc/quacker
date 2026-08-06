@@ -66,6 +66,8 @@ See [`docs/environments.md`](docs/environments.md) for dev vs prod split.
 
 The agent **creates Supabase projects**, applies migrations, configures auth, fetches keys, syncs Vercel/GitHub — see [`.cursor/rules/mcp-first-ops.mdc`](.cursor/rules/mcp-first-ops.mdc).
 
+**Local GitHub:** use `gh` CLI auth for push/PR/`gh secret set`. Do **not** use `.env.local` `GITHUB_TOKEN` (Issues-only PAT for Edge); it overrides `gh` and causes push 403 — `unset GITHUB_TOKEN` after sourcing `.env.local`.
+
 Do **not** ask the user to create projects, use dashboards, run `yarn dev`, apply migrations, or verify manually.
 
 ## Bug fixes — strengthen the ruleset (same PR)
