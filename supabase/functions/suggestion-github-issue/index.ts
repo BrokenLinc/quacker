@@ -54,27 +54,91 @@ async function ensureLabel(
   }
 }
 
-Deno.serve(async (req) => {
-  if (req.method === 'OPTIONS') {
-    return new Response('ok', { headers: corsHeaders });
-  }
+/** Webhook secret (DB trigger) or SuperAdmin session JWT. */
+async function authorizeRequest(req: Request): Promise<Response | null> {
+  const webhookSecret = Deno.env.get('SUGGESTION_GITHUB_WEBHOOK_SECRET');
+  const provided = req.headers.get('x-webhook-secret');
 
-  try {
-    const webhookSecret = Deno.env.get('SUGGESTION_GITHUB_WEBHOOK_SECRET');
+  if (provided != null && provided !== '') {
     if (!webhookSecret) {
-      console.error('SUGGESTION_GITHUB_WEBHOOK_SECRET unset — refusing requests');
+      console.error('SUGGESTION_GITHUB_WEBHOOK_SECRET unset — refusing webhook');
       return new Response(JSON.stringify({ error: 'misconfigured' }), {
         status: 503,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
-    const provided = req.headers.get('x-webhook-secret');
     if (provided !== webhookSecret) {
       return new Response(JSON.stringify({ error: 'unauthorized' }), {
         status: 401,
         headers: { ...corsHeaders, 'Content-Type': 'application/json' },
       });
     }
+    return null;
+  }
+
+  const authHeader = req.headers.get('Authorization');
+  if (!authHeader?.startsWith('Bearer ')) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const { createClient } = await import('npm:@supabase/supabase-js@2');
+  const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
+  const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
+  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
+  if (!supabaseUrl || !serviceKey || !anonKey) {
+    return new Response(JSON.stringify({ error: 'misconfigured' }), {
+      status: 503,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const userClient = createClient(supabaseUrl, anonKey, {
+    global: { headers: { Authorization: authHeader } },
+  });
+  const {
+    data: { user },
+    error: userError,
+  } = await userClient.auth.getUser();
+  if (userError || !user) {
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  const admin = createClient(supabaseUrl, serviceKey);
+  const { data: isAdmin, error: adminError } = await admin.rpc(
+    'is_user_superadmin',
+    { uid: user.id }
+  );
+  if (adminError || !isAdmin) {
+    return new Response(JSON.stringify({ error: 'forbidden' }), {
+      status: 403,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  return null;
+}
+
+Deno.serve(async (req) => {
+  if (req.method === 'OPTIONS') {
+    return new Response('ok', { headers: corsHeaders });
+  }
+
+  if (req.method !== 'POST') {
+    return new Response(JSON.stringify({ error: 'method_not_allowed' }), {
+      status: 405,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
+  try {
+    const authError = await authorizeRequest(req);
+    if (authError) return authError;
 
     const token = Deno.env.get('GITHUB_TOKEN');
     if (!token) {
@@ -98,7 +162,6 @@ Deno.serve(async (req) => {
 
     await ensureLabel(repo, token);
 
-    // Same-origin links: detail page + /api/suggestion-export (Vercel proxies to Edge).
     const exportUrl = `${publicAppUrl}/api/suggestion-export?id=${record.id}`;
 
     const issueBody = [
@@ -140,7 +203,10 @@ Deno.serve(async (req) => {
       );
     }
 
-    const issue = (await createRes.json()) as { number?: number; html_url?: string };
+    const issue = (await createRes.json()) as {
+      number?: number;
+      html_url?: string;
+    };
     return new Response(
       JSON.stringify({
         ok: true,

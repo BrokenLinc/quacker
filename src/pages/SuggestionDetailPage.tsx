@@ -4,6 +4,7 @@ import {
   SUGGESTION_STATUS_LABELS,
   SUGGESTION_STATUSES,
   addSuggestionComment,
+  createSuggestionGithubIssue,
   retrySuggestion,
   toggleSuggestionVote,
   updateSuggestionStatus,
@@ -17,7 +18,11 @@ import { RequireAuth } from '@@components/auth/RequireAuth';
 import { isSuperAdminPhone, useAuthState } from '@@lib/supabase/auth';
 import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
-import { faArrowLeft, faComment, faThumbsUp } from '@fortawesome/free-solid-svg-icons';
+import {
+  faArrowLeft,
+  faComment,
+  faThumbsUp,
+} from '@fortawesome/free-solid-svg-icons';
 import { faThumbsUp as faThumbsUpRegular } from '@fortawesome/free-regular-svg-icons';
 import React from 'react';
 import { useParams } from 'react-router-dom';
@@ -137,6 +142,7 @@ const SuggestionDetailCard: React.FC<{
   const toast = UI.useToast();
   const [voting, setVoting] = React.useState(false);
   const [statusSaving, setStatusSaving] = React.useState(false);
+  const [creatingIssue, setCreatingIssue] = React.useState(false);
   const [votedByMe, setVotedByMe] = React.useState(suggestion.votedByMe);
   const [voteCount, setVoteCount] = React.useState(suggestion.voteCount);
   const [status, setStatus] = React.useState(suggestion.status);
@@ -207,6 +213,35 @@ const SuggestionDetailCard: React.FC<{
     }
   };
 
+  const handleCreateGithubIssue = async () => {
+    if (!isSuperAdmin || creatingIssue) return;
+    setCreatingIssue(true);
+    try {
+      const result = await createSuggestionGithubIssue({
+        id: suggestion.id,
+        title: suggestion.title,
+        body: suggestion.body,
+      });
+      toast({
+        title: 'GitHub issue created',
+        description: result.url
+          ? `Opened #${result.number ?? '?'} — check the repo.`
+          : 'Opened on the repo.',
+        status: 'success',
+        duration: 5000,
+      });
+    } catch {
+      toast({
+        title: "Couldn't create GitHub issue",
+        description: 'Check your connection and try again.',
+        status: 'error',
+        duration: 4000,
+      });
+    } finally {
+      setCreatingIssue(false);
+    }
+  };
+
   return (
     <UI.Box
       borderWidth="1px"
@@ -265,6 +300,19 @@ const SuggestionDetailCard: React.FC<{
             <UI.Text fontSize="xs" color="text.muted">
               {suggestion.authorDisplayName}
             </UI.Text>
+          ) : null}
+          {isSuperAdmin ? (
+            <UI.Button
+              size="sm"
+              variant="outline"
+              alignSelf="flex-start"
+              mt={1}
+              onClick={handleCreateGithubIssue}
+              isLoading={creatingIssue}
+              data-testid="suggestion-create-github-issue"
+            >
+              Create GitHub issue
+            </UI.Button>
           ) : null}
         </UI.VStack>
         <UI.VStack spacing={0} flexShrink={0}>

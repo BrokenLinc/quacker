@@ -68,29 +68,42 @@ Never ask the user to create a project or paste URL/keys you can fetch. See [`.c
 - **Test OTP (local/dev only):** `AUTH_ALLOW_TEST_OTP=true` + fictional `555-01XX` phones + `AUTH_TEST_OTP_CODE` (default `555555`) short-circuits Twilio in `auth-send-otp` / `auth-verify-otp`. Wire via `supabase/functions/.env` (from `.env.example`) or the **quacker-dev** secret — **never** set on production. **`supabase start` loads `supabase/functions/.env` automatically** — CI copies `.env.example` before start; local e2e needs the same (restart stack if you add `.env` after start). Shared helpers: `_shared/auth-utils.ts` + `_shared/phone-session.ts`. Reserved FTUE number `+12025550199` / `(202) 555-0199` is deleted before each session when test OTP is on so onboarding is always testable; Maestro shared login uses `0100`.
 - **Real SMS to any phone:** Twilio account must have an **approved Primary Compliance Profile** (Trust Hub). Upgrade + billing balance alone still returns error **21608** until PCP is approved — Console-only for direct accounts; see [`docs/prerequisites.md`](docs/prerequisites.md#twilio-verify-sms-otp).
 
+## Vault → pg_net → Edge webhooks (general)
+
+Patterns shared by `notify-new-message`, `suggestion-github-issue`, and any future DB→Edge hook. Bug class from PR reviews: silent 401s, forged privileged calls, and desynced local secrets.
+
+1. **Never `http_post` with an empty `x-webhook-secret`.** If Vault secret is null/empty, **skip the post** (`return NEW`). Do not `coalesce(hook_secret, '')` — Edge that requires a secret will 401 while the insert still “succeeds.” Symptom → check: rows insert, no Edge/GitHub side effect, no DB error.
+2. **Match Edge auth strictness to the side effect.**
+   - Privileged actions (mint GitHub issues, spend tokens, mutate external systems): **fail closed** — require non-empty webhook secret (503 if unset) *or* an explicit alternate (e.g. SuperAdmin JWT). Never “if secret set then check.”
+   - Best-effort (Web Push): soft-skip without secret is OK; document that difference next to the function.
+3. **`verify_jwt: false` is not “open.”** Gateway JWT off means *you* own auth. Every code path must authenticate (secret header and/or session + SQL `is_*` check). UI gates are UX only.
+4. **Setup scripts — blank `.env.example` keys.** `KEY=` in `.env.local` is *unset*. When minting secrets: replace the existing `^KEY=` line (including empty), do not `grep -q` and skip. Symptom → check: Vault/Edge rotate each rerun; local curl 401 with empty env.
+5. **Setup scripts — env-specific app URLs.** Do not default non-prod link bases to `VITE_APP_URL` / `https://yowl.us` / `http://127.0.0.1:*`. Accept an explicit preview URL (`PUBLIC_APP_URL_DEV` or non-prod `PUBLIC_APP_URL`). Reject only production (`yowl.us`). Same preview value in `PUBLIC_APP_URL` and `VITE_APP_URL` is fine — do not require them to differ. Symptom → check: GitHub/email links point at prod or localhost for quacker-dev rows.
+6. **No SuperAdmin identity probes on `anon`.** Prefer existing `is_user_superadmin(uid)` (authenticated/service_role). If a public export needs flags, embed the check inside a security-definer RPC — do not `grant execute … to anon` on a standalone `user_is_superadmin(uid)`.
+
 ## Web Push (notify-new-message)
 
 - Schema: `user_notification_prefs`, `group_members.notify_level`, `messages.is_announcement`
 - Unread: `group_members.last_viewed_at` + RPC `unread_message_counts()` (filter by notify_level; compare `messages.author_id`)
 - Focused app: SW posts `yowl-push` to clients instead of OS notif; `InAppPushToastListener` toasts other groups
 - Trigger `on_message_notify` uses Vault `notify_webhook_url` + `notify_webhook_secret` → Edge Function
-- Edge auth: `x-webhook-secret` (deploy with `verify_jwt: false`); VAPID via project secrets
-- Setup script: `scripts/setup-notify-webhook.sh` (Management API — CLI may lack `--token` on `secrets set`)
+- Edge auth: optional `x-webhook-secret` when set (best-effort push — soft-skip if unset); still `verify_jwt: false`
+- Prefer skipping `http_post` when Vault URL is missing (same as general webhook rule). Empty-secret posts are still a footgun if you later harden notify auth to required.
+- Setup script: `scripts/setup-notify-webhook.sh` (Management API — CLI may lack `--token` on `secrets set`); persist minted `NOTIFY_WEBHOOK_SECRET` over blank `.env.local` lines
 - Browser: `VITE_VAPID_PUBLIC_KEY` only; never auto-call `Notification.requestPermission`
 - E2E push mock (`tests/e2e/fixtures/push.ts`) must stub `serviceWorker.addEventListener` / `removeEventListener` — `InAppPushToastListener` attaches on mount
 
 ## Suggestion GitHub Issues (suggestion-github-issue)
 
-- Trigger `on_suggestion_github_issue` uses Vault `suggestion_github_webhook_url` + `suggestion_github_webhook_secret` → Edge Function (same `pg_net` + `x-webhook-secret` pattern as notify)
+Follow **Vault → pg_net → Edge webhooks** above. Product specifics:
+
+- Trigger `on_suggestion_github_issue` → Vault `suggestion_github_webhook_*` → Edge (secret **required**; skip post if URL or secret missing)
 - Edge secrets: `GITHUB_TOKEN`, `GITHUB_REPO` (default `BrokenLinc/quacker`), `PUBLIC_APP_URL` / `PUBLIC_APP_URL_DEV`, `SUGGESTION_GITHUB_WEBHOOK_SECRET`
-- **Fail closed on missing webhook secret.** `verify_jwt: false` + optional secret check = anyone can forge issues with the project PAT. Require `SUGGESTION_GITHUB_WEBHOOK_SECRET` and 503 if unset (do not mirror notify’s soft skip for privileged side effects). DB trigger must **skip** `http_post` when Vault secret is null/empty — never post `x-webhook-secret: ''` (guaranteed 401 while inserts look healthy).
-- **Dev setup must not inherit `yowl.us`.** `scripts/setup-suggestion-github-webhook.sh dev` accepts `PUBLIC_APP_URL_DEV` or an explicit non-prod `PUBLIC_APP_URL` (same preview origin as `VITE_APP_URL` is OK). Reject only unset / `https://yowl.us` — do not require the two vars to differ. Symptom → check: setup exits “Set PUBLIC_APP_URL_DEV” despite a valid preview URL in both vars.
-- **Persist minted webhook secrets into blank `.env.local` keys.** `.env.example` ships `SUGGESTION_GITHUB_WEBHOOK_SECRET=`; setup must replace that line, not skip when the key exists empty (else each rerun rotates Vault/Edge while local curl stays 401).
-- **Do not grant SuperAdmin probe RPCs to `anon`.** Export embeds flags via `is_user_superadmin` inside a security-definer RPC; never expose a standalone `user_is_superadmin(uid)` to `anon` (publishable key can enumerate admin accounts). Prefer reusing `is_user_superadmin` (authenticated/service_role only).
-- Setup: `scripts/setup-suggestion-github-webhook.sh [dev|prod]`
-- Public companion: `suggestion-export` (`GET ?id=`) via RPC `suggestion_export`; GitHub issue links use **app-origin** `/api/suggestion-export` (Vercel Edge proxy injects anon key) so Preview and Production stay same-host as `/suggestions/:id`
+- Auth: `x-webhook-secret` (DB) **or** SuperAdmin JWT + `is_user_superadmin` (detail **Create GitHub issue** / `suggestion-create-github-issue`)
+- Setup: `scripts/setup-suggestion-github-webhook.sh [dev|prod]` — preview branch alias for `PUBLIC_APP_URL_DEV`, never `yowl.us` / localhost defaults
+- Export: RPC `suggestion_export` + Edge `suggestion-export`; issue links use app-origin `/api/suggestion-export` (Vercel proxy injects anon key) so Preview/Production match `/suggestions/:id`
 - Deploy both with `verify_jwt: false` (see `deploy.yml`)
-- Symptom → check: GitHub issue detail link is `127.0.0.1` / localhost → `PUBLIC_APP_URL_DEV` was left on local Vite; set the Vercel branch alias and re-run `setup-suggestion-github-webhook.sh dev`
+
 ## Gitignore (CLI-generated paths)
 
 The Supabase CLI writes local state under `supabase/.temp/` (linked project ref) and `supabase/.branches/` (branch metadata). These must stay **gitignored** — never commit them.

@@ -483,3 +483,33 @@ export const updateSuggestionStatus = async (
   if (error) throw error;
   notifySuggestionsChanged();
 };
+
+/** SuperAdmin manual / override — creates a GitHub issue (duplicates allowed). */
+export const createSuggestionGithubIssue = async (suggestion: {
+  id: string;
+  title: string;
+  body: string;
+}): Promise<{ number?: number; url?: string }> => {
+  const { data, error } = await supabase.functions.invoke(
+    'suggestion-github-issue',
+    {
+      body: {
+        record: {
+          id: suggestion.id,
+          title: suggestion.title,
+          body: suggestion.body,
+        },
+      },
+    }
+  );
+  if (error) throw error;
+  if (data?.error) {
+    throw new Error(
+      typeof data.error === 'string' ? data.error : 'Could not create GitHub issue'
+    );
+  }
+  return {
+    number: typeof data?.number === 'number' ? data.number : undefined,
+    url: typeof data?.url === 'string' ? data.url : undefined,
+  };
+};

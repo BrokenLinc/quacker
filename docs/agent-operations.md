@@ -45,9 +45,15 @@ Note: current Supabase CLI may not accept `--token` on `secrets set`; prefer Man
 
 ## Suggestion export + GitHub Issues
 
-1. Put `GITHUB_TOKEN` (Issues write on `BrokenLinc/quacker`) in `.env.local`. Optional: `GITHUB_REPO`. Prod links: `PUBLIC_APP_URL` (default `https://yowl.us`). **Dev/preview links:** set `PUBLIC_APP_URL_DEV` to the Vercel **branch alias** (e.g. `https://quacker-git-<branch>-….vercel.app`) — setup refuses `VITE_APP_URL` / yowl.us. Issue footer uses same-origin `/suggestions/:id` and `/api/suggestion-export?id=` (Vercel Edge proxies to Supabase). `SUGGESTION_GITHUB_WEBHOOK_SECRET` is minted if missing — required at runtime (function 503s if unset).
-2. `scripts/setup-suggestion-github-webhook.sh dev` then `prod` — Edge secrets + Vault for `notify_suggestion_insert`.
-3. Deploy `suggestion-export` and `suggestion-github-issue` with `verify_jwt: false` (wired in `deploy.yml` / `deploy.sh`).
+1. Put `GITHUB_TOKEN` (Issues write on `BrokenLinc/quacker`) in `.env.local`. Optional: `GITHUB_REPO`.
+2. **App URLs for issue footers**
+   - Prod: `PUBLIC_APP_URL` (default `https://yowl.us` / `VITE_APP_URL`).
+   - Dev/preview: `PUBLIC_APP_URL_DEV` **or** a non-prod `PUBLIC_APP_URL` (Vercel **branch alias**, e.g. `https://quacker-git-<branch>-….vercel.app`). Never default to `yowl.us` or `http://127.0.0.1:*`. A preview URL duplicated as both `PUBLIC_APP_URL` and `VITE_APP_URL` is OK.
+3. `SUGGESTION_GITHUB_WEBHOOK_SECRET` — script mints if empty; must **rewrite** blank `KEY=` lines in `.env.local` (do not skip when the key exists empty). Required for DB→Edge; SPA SuperAdmin override uses JWT instead.
+4. `scripts/setup-suggestion-github-webhook.sh dev` then `prod` — Edge secrets + Vault.
+5. Deploy `suggestion-export` and `suggestion-github-issue` with `verify_jwt: false`.
+
+Issue footer uses same-origin `/suggestions/:id` and `/api/suggestion-export?id=` (Vercel Edge proxies to Supabase).
 
 **Export curl** (prefer app origin so Preview/Production pick the right Supabase):
 
@@ -61,7 +67,15 @@ curl -sS "https://<project-ref>.supabase.co/functions/v1/suggestion-export?id=<u
   -H "Authorization: Bearer $VITE_SUPABASE_ANON_KEY"
 ```
 
-Issue body footer includes the in-app suggestion URL and that export URL for automation.
+### Webhook setup pitfalls (any Vault → Edge script)
+
+| Bug class | Do |
+| --- | --- |
+| Empty `x-webhook-secret` posted when Vault secret missing | Skip `http_post` if secret (or URL) empty — privileged Edge must fail closed |
+| Soft-skip auth on `verify_jwt: false` + privileged side effect | Require secret (or SuperAdmin JWT); never “if secret then check” |
+| Setup treats `KEY=` as configured | Replace blank assignments when minting; don’t append a second line |
+| Non-prod links inherit `VITE_APP_URL` / yowl.us / localhost | Explicit preview base URL; reject only production host |
+| `anon` can call SuperAdmin probe RPC | Embed checks in security-definer export; grant probe helpers only to authenticated/service_role |
 
 ## Secret propagation (agent runs these)
 

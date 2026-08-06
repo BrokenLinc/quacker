@@ -69,6 +69,7 @@ test('suggestion detail shows full body and accepts replies', async ({
   await expect(
     page.getByTestId('suggestion-detail').getByText('Third line for good measure.')
   ).toBeVisible();
+  await expect(page.getByTestId('suggestion-create-github-issue')).toHaveCount(0);
 
   await expect(
     page.getByText('No comments yet. Be the first to reply.')

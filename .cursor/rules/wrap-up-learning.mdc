@@ -35,13 +35,13 @@ Bug review and code review are one step: if the fix merges without a rules delta
 3. **Prefer deltas** — Amend existing docs/rules; don't invent parallel guides. Keep additions short and actionable (hints, commands, "don't do X — do Y").
 4. **Skip when empty** — If nothing transferable was learned, do not pad docs.
 
-## Good captures
-
-- Exact CLI/MCP sequences that worked (with project-specific flags)
-- Footguns discovered (wrong env, wrong project-ref, hanging Playwright, etc.)
-- "If you see error Y, check Z" troubleshooting lines
-- Generated-path / gitignore notes when tooling layout changes
-- **Bug class + prevention pattern + test that guards it** (required for bug fixes)
+- **Good captures**
+  - Exact CLI/MCP sequences that worked (with project-specific flags)
+  - Footguns discovered (wrong env, wrong project-ref, hanging Playwright, empty `KEY=` treated as set, `pg_net` posting blank webhook secrets, etc.)
+  - "If you see error Y, check Z" troubleshooting lines
+  - Generated-path / gitignore notes when tooling layout changes
+  - **Bug class + prevention pattern + test that guards it** (required for bug fixes)
+  - After Bugbot / PR review findings on webhooks, Edge `verify_jwt: false`, or setup scripts: amend [`.cursor/rules/supabase.mdc`](supabase.mdc) **Vault → pg_net → Edge** (general), not only the feature section
 
 ## Anti-patterns
 

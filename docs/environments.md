@@ -29,6 +29,8 @@ No `develop` branch — solo workflow: PR preview → merge to `main` → prod d
 
 Shared: `SUPABASE_ACCESS_TOKEN`, `VERCEL_*`, `TWILIO_*` (Edge Function secrets only), `GITHUB_TOKEN` (suggestion → GitHub Issues; see `scripts/setup-suggestion-github-webhook.sh`).
 
+Preview-only link base for GitHub issue footers: `PUBLIC_APP_URL_DEV` (Vercel branch alias). Do not point it at `https://yowl.us` or local Vite — quacker-dev rows are not on production. See [agent-operations](agent-operations.md#suggestion-export--github-issues).
+
 See [`.env.example`](../.env.example).
 
 ## Vercel env vars
