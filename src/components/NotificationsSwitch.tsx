@@ -37,23 +37,6 @@ const failCopy = (
         title: "Notifications aren't available here",
         description: 'Try Chrome, Edge, Firefox, or an installed Yowl app.',
       };
-    case 'sw-not-ready':
-      return {
-        title: 'Almost ready',
-        description:
-          'Close Yowl completely and open it again from your Home Screen, then turn on notifications.',
-      };
-    case 'subscribe-failed':
-      return {
-        title: "Couldn't enable notifications",
-        description:
-          'Close the app and reopen it from your Home Screen, then try again.',
-      };
-    case 'persist-failed':
-      return {
-        title: "Couldn't enable notifications",
-        description: 'Check your connection and try again.',
-      };
     default:
       return {
         title: "Couldn't enable notifications",
