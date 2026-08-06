@@ -26,6 +26,7 @@ export interface Message {
   text: string;
   groupId: string;
   isAnnouncement: boolean;
+  isAdminMessage: boolean;
 }
 
 export const rowToMessage = (row: MessageRow): Message => ({
@@ -37,6 +38,7 @@ export const rowToMessage = (row: MessageRow): Message => ({
   text: row.text,
   groupId: row.group_id,
   isAnnouncement: row.is_announcement ?? false,
+  isAdminMessage: row.is_admin_message ?? false,
 });
 
 const DEFAULT_MESSAGE_LIMIT = 100;
@@ -180,14 +182,17 @@ export const addMessage = async (data: {
   authorPhotoURL: string | null;
   text: string;
   groupId: string;
+  isAdminMessage?: boolean;
 }) => {
+  const isAdmin = Boolean(data.isAdminMessage);
   const { error } = await supabase.from('messages').insert({
     ...(data.id ? { id: data.id } : {}),
     group_id: data.groupId,
     author_id: data.uid,
-    author_name: data.authorName,
-    author_photo_url: data.authorPhotoURL,
+    author_name: isAdmin ? 'Yowl Admin' : data.authorName,
+    author_photo_url: isAdmin ? null : data.authorPhotoURL,
     text: data.text,
+    is_admin_message: isAdmin,
   });
 
   if (error) throw error;

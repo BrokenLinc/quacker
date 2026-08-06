@@ -30,6 +30,17 @@ export const queryKeys = {
 
   pushEnabled: (userId: string | undefined) =>
     ['pushEnabled', userId ?? null] as const,
+
+  siteSettings: () => ['siteSettings'] as const,
+
+  userModeration: (userId: string | undefined) =>
+    ['userModeration', userId ?? null] as const,
+
+  adminGroupsRoot: ['adminGroups'] as const,
+  adminGroups: (search: string) => ['adminGroups', search] as const,
+
+  adminUsersRoot: ['adminUsers'] as const,
+  adminUsers: (search: string) => ['adminUsers', search] as const,
 };
 
 /**
