@@ -50,6 +50,9 @@ export const invalidateSuggestionComments = (suggestionId: string): void => {
 export const invalidateUserScopedQueries = (): void => {
   invalidateGroups();
   void queryClient.invalidateQueries({ queryKey: queryKeys.messagesRoot });
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.messageReactionsRoot,
+  });
   invalidateSuggestions();
   void queryClient.invalidateQueries({
     queryKey: queryKeys.suggestionCommentsRoot,
@@ -68,6 +71,9 @@ export const retryRoom = (groupId: string): void => {
 
 export const retryMessages = (groupId: string): void => {
   void queryClient.refetchQueries({ queryKey: queryKeys.messages(groupId) });
+  void queryClient.refetchQueries({
+    queryKey: queryKeys.messageReactions(groupId),
+  });
 };
 
 export const retryGroups = (): void => {

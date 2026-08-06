@@ -84,4 +84,57 @@ test.describe('group messaging', () => {
     await pasteIntoInput(urlInput, 'https://yowl.us/docs');
     await expect(urlInput).toHaveValue('https://yowl.us/docs');
   });
+
+  test('member can add and toggle an emoji reaction', async ({ page }) => {
+    const { admin, userId } = await seedAuthenticatedSession(page);
+
+    const group = await seedTestGroup(admin, userId, {
+      slug: `rxn${Date.now().toString(36).slice(-5)}`,
+      name: 'Reactions Test',
+    });
+
+    await gotoGroupPage(page, group);
+
+    const messageText = `React to me ${Date.now()}`;
+    const editor = page.getByTestId('message-editor');
+    await expect(editor).toBeVisible({ timeout: 15_000 });
+    await editor.click();
+    await page.keyboard.type(messageText);
+    await page.getByRole('button', { name: 'Send' }).click();
+
+    await expect
+      .poll(async () => page.getByText(messageText).count(), { timeout: 15_000 })
+      .toBeGreaterThan(0);
+
+    // List hides Add reaction until a chip exists — open the message detail.
+    await expect(page.getByTestId('message-add-reaction')).toHaveCount(0);
+    await page.getByTestId('message-body').last().click();
+
+    const detail = page.getByRole('dialog', { name: 'Message' });
+    await expect(detail).toBeVisible();
+    const addReaction = detail.getByTestId('message-add-reaction');
+    await expect(addReaction).toBeVisible();
+    await addReaction.click();
+
+    await expect(
+      page.getByRole('dialog', { name: 'Add reaction' })
+    ).toBeVisible();
+    await page.getByRole('button', { name: 'React with 👍' }).click();
+
+    const chip = page.getByTestId('message-reaction-chip-👍').first();
+    await expect(chip).toBeVisible({ timeout: 10_000 });
+    await expect(chip).toHaveAttribute('aria-pressed', 'true');
+    await expect(chip).toContainText('1');
+
+    // Close detail — list now shows chip + trailing Add reaction.
+    await page.keyboard.press('Escape');
+    await expect(detail).toBeHidden();
+    await expect(page.getByTestId('message-add-reaction')).toBeVisible();
+
+    await page.getByTestId('message-reaction-chip-👍').click();
+    await expect(
+      page.getByTestId('message-reaction-chip-👍')
+    ).toBeHidden({ timeout: 10_000 });
+    await expect(page.getByTestId('message-add-reaction')).toHaveCount(0);
+  });
 });

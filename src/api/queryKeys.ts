@@ -24,6 +24,10 @@ export const queryKeys = {
   messagesRoot: ['messages'] as const,
   messages: (groupId: string) => ['messages', groupId] as const,
 
+  messageReactionsRoot: ['messageReactions'] as const,
+  messageReactions: (groupId: string) =>
+    ['messageReactions', groupId] as const,
+
   unreadCountsRoot: ['unreadCounts'] as const,
   unreadCounts: (userId: string | undefined) =>
     ['unreadCounts', userId ?? null] as const,
@@ -64,6 +68,7 @@ export const PERSISTED_QUERY_ROOTS: readonly string[] = [
   'groupMembers',
   'membership',
   'messages',
+  'messageReactions',
   'unreadCounts',
 ];
 

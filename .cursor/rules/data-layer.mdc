@@ -44,14 +44,19 @@ rules below. Overview in [`docs/architecture.md`](../../docs/architecture.md).
  unloaded. Preserve null yourself (see `useSuggestion`) or throw / use a
  sentinel object for missing rows.
 - Realtime topics must be **stable values** (declared per `groupId`), and their
- handlers must close over the query client, not component state.
+  handlers must close over the query client, not component state.
 
 ## Pitfalls found the hard way
 
+- **Message reactions** live in `message_reactions` (Realtime by `group_id`).
+  Merge with `applyReactionInsert` / `applyReactionDelete` — same no-refetch
+  rule as messages. Persist under `messageReactions` query root. Keep the
+  emoji CHECK constraint aligned with `REACTION_EMOJIS`.
+
 - **`RealtimeTopic` circular imports.** Defining topics in a shared module
- while API modules import the type creates a cycle. Keep topic objects in the
- API module that owns the row mapper; keep only the type + hook in
- `src/lib/realtime/`.
+  while API modules import the type creates a cycle. Keep topic objects in the
+  API module that owns the row mapper; keep only the type + hook in
+  `src/lib/realtime/`.
 - **StrictMode channel churn.** Double-invoked effects would remove a channel
  that is immediately resubscribed. The manager defers teardown by
  `TEARDOWN_DELAY_MS` and cancels it on resubscribe, and appends a generation
