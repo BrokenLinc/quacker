@@ -44,7 +44,8 @@ test('suggestion detail shows full body and accepts replies', async ({
   await page.getByTestId('suggestions-nav').click();
   await page.getByTestId('make-suggestion').click();
   await page.getByLabel('Title').fill(title);
-  await page.getByLabel('Suggestion').fill(longBody);
+  // exact: true — getByLabel('Suggestion') also matches Suggestions nav / Back link
+  await page.getByRole('textbox', { name: 'Suggestion', exact: true }).fill(longBody);
   await page.getByRole('button', { name: 'Submit suggestion' }).click();
 
   await expect(
