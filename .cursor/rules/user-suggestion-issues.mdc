@@ -1,0 +1,77 @@
+---
+description: How to triage and implement GitHub issues labeled user-suggestion (Yowl in-app suggestions)
+alwaysApply: true
+---
+
+# User-suggestion GitHub issues
+
+Issues labeled **`user-suggestion`** come from the in-app Suggestions product
+(Edge `suggestion-github-issue`). They are **not** engineer-authored specs.
+
+## Before coding
+
+1. **Fetch Export JSON** — open the issue’s **Export JSON** link (footer). That
+   payload is the source of truth: title, description, category, status, votes,
+   author, and the full comment thread. Do not work from the GitHub body alone;
+   it is a snapshot and may omit later in-app comments.
+2. **Prioritize SuperAdmin comments** — in export JSON, any comment (or author)
+   with `author.isSuperAdmin: true` is product direction. Treat those as
+   authoritative clarification of intent, constraints, and preferred shape.
+   When SuperAdmin guidance conflicts with the submitter’s literal wording,
+   follow SuperAdmin and note the delta in the issue thread.
+3. **Read community comments** — peer comments and `voteCount` are signals of
+   shared pain, not a mandate to ship the proposed UI/API as written.
+
+```bash
+# Prefer the Export JSON URL from the issue body (app host injects anon key):
+curl -sS "https://<app-host>/api/suggestion-export?id=<uuid>"
+# Or: gh issue view <n> --json body,labels,comments
+```
+
+## Interpret, don’t copy-paste
+
+End-user submissions often misuse product terms, propose incomplete logic, or
+conflate problem and solution. **Respect the spirit** (job-to-be-done, pain,
+desired outcome); **do not** implement a bad literal design.
+
+Before implementing, think through:
+
+| Lens | Ask |
+| ---- | --- |
+| **Problem vs solution** | What failure mode or unmet need is underneath the ask? |
+| **Yowl fit** | Does it serve short-lived group chat (trips/conferences)? Prefer Slack-baseline utility over novelty. See [`docs/ux.md`](../docs/ux.md). |
+| **Existing surface** | Can this be a small extension of room chat, invite, members, composer, or notifications — not a new IA island? |
+| **Consent & privacy** | Joining is explicit; no silent membership or surprise side effects. Phone-identity users deserve careful defaults. |
+| **Mobile / PWA first** | Thumb reach, keyboard, safe areas, offline shell — desktop-only solutions fail the product. |
+| **Honesty of states** | Loading / empty / error / destructive confirm — never blank. Match [ux-standards](ux-standards.mdc). |
+| **Scope** | Smallest change that delivers the outcome. Defer adjacent “while we’re here” features. |
+| **Duplicates** | Search open/`user-suggestion` issues and the codebase before adding parallel features. |
+
+## Propose alterations in the issue thread
+
+If the best approach differs from the submitter’s ask (rename, narrower MVP,
+different interaction, “won’t do / already exists”), **comment on the GitHub
+issue before or with the PR** (`gh issue comment`). Cover:
+
+1. **Understood need** — one sentence in plain language
+2. **Proposed approach** — what you will (or won’t) build and why
+3. **Trade-offs** — what you are consciously dropping
+4. **Open questions** — only true product ambiguities (user gates); otherwise decide and document
+
+Do not silently ship a reinterpretation. SuperAdmin can correct course on the
+thread or in-app.
+
+## Guardrails while building
+
+- User-facing copy says **Yowl**, never Quacker; sentence case; no developer jargon in errors
+- Membership-scoped data; RLS + Edge for anything privileged (UI gates are UX only)
+- Update Playwright / Maestro selectors in the same change when labels/`aria-label`s change
+- Prefer patterns already in the app (`MorphingPopover`, `QuickModal`, `@@ui`, optimistic toggles)
+- After ship: leave the issue/PR linked; do not claim “done” in-app status unless a SuperAdmin workflow owns that update
+
+## Anti-patterns
+
+- Implementing the suggestion title as a feature name without checking Export JSON / SuperAdmin comments
+- Treating the GitHub issue body as complete after in-app discussion continued
+- Shipping a kitchen-sink settings page or dashboard chrome for a one-tap chat need
+- Asking the human owner to “decide the UX” when the north star and SuperAdmin notes already constrain the answer

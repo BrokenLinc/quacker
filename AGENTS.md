@@ -91,6 +91,14 @@ Full process: [`.cursor/rules/wrap-up-learning.mdc`](.cursor/rules/wrap-up-learn
 - [`docs/gravatar-llms.txt`](docs/gravatar-llms.txt) — Gravatar API v3.0.0 reference for AI development environments
 - [`.cursor/skills/quacker-ops/SKILL.md`](.cursor/skills/quacker-ops/SKILL.md) — detailed ops skill
 
+## User-suggestion GitHub issues
+
+Issues labeled **`user-suggestion`** are in-app product suggestions mirrored to
+GitHub. Before implementing: follow the issue’s **Export JSON** link, prioritize
+comments with `author.isSuperAdmin: true`, respect the spirit of the ask (not
+literal incomplete designs), and propose approach changes on the issue thread.
+Full workflow: [`.cursor/rules/user-suggestion-issues.mdc`](.cursor/rules/user-suggestion-issues.mdc).
+
 ## Auth
 
 Twilio Verify SMS OTP (MVP). Google OAuth is deferred — see [`docs/roadmap.md`](docs/roadmap.md).
