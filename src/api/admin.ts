@@ -93,6 +93,8 @@ export const useSiteSettings = (): HookResult<SiteSettings> => {
           : Date.now(),
       };
     },
+    // Gate must not sit on retries while offline; AppLayout fails open on error.
+    retry: false,
   });
 
   useRealtimeTopic(siteSettingsTopic);

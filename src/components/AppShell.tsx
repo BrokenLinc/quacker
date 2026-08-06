@@ -99,9 +99,12 @@ export const AppLayout: React.FC = () => {
     isGroupRoute || isSuggestionsRoute || isAdminRoute || isSuperadminSignIn;
 
   const isSuperAdmin = isSuperAdminPhone(user?.phone);
-  const [settings, settingsLoading] = useSiteSettings();
+  const [settings, , settingsError] = useSiteSettings();
   const [moderation, moderationLoading] = useMySuperBan(user?.uid);
-  const lockdown = Boolean(settings?.lockdown);
+  // Apply lockdown only when we successfully read settings. Unreachable
+  // Supabase (offline PWA shell) must not hold the gate forever — Edge still
+  // enforces lockdown on OTP.
+  const lockdown = !settingsError && Boolean(settings?.lockdown);
   const superBanned = Boolean(moderation?.superBannedAt);
 
   React.useEffect(() => {
@@ -117,12 +120,12 @@ export const AppLayout: React.FC = () => {
   const showChrome = Boolean(user) && !ftueHold;
   const endFtue = React.useCallback(() => setFtueHold(false), []);
 
-  // Wait for auth + site settings (+ moderation when signed in) before deciding
-  // lockdown / super-ban — fail closed with a hold, never paint the app first.
+  // Hold for auth (+ moderation when signed in) so SuperAdmins are never
+  // treated as offline and super-banned users never see chrome first.
+  // Do NOT wait on site settings — that query hangs offline and would leave
+  // the precached shell on a skeleton instead of sign-in.
   const gateLoading =
-    authLoading ||
-    settingsLoading ||
-    (Boolean(user) && moderationLoading && !isSuperAdmin);
+    authLoading || (Boolean(user) && moderationLoading && !isSuperAdmin);
 
   let gated: React.ReactNode = null;
   if (gateLoading) {
