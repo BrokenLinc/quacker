@@ -95,26 +95,16 @@ Function in the same change (CI deploys it from `deploy.yml`).
 Pitfalls:
 
 - **Register at module scope.** `registerSW` returns an updater bound to one
-  Workbox instance. Calling it inside an effect double-registers under
-  StrictMode, so the prompt watches one instance while skip-waiting goes to
-  another — Reload appears to do nothing.
+ Workbox instance. Calling it inside an effect double-registers under
+ StrictMode, so the prompt watches one instance while skip-waiting goes to
+ another — Reload appears to do nothing.
 - **vite-plugin-pwa only reloads on `controlling` when a worker already
-  controlled the page at registration.** A first-visit install plus a deploy in
-  the same session needs our own `controllerchange` reload
-  (`reloadWhenControlled`).
+ controlled the page at registration.** A first-visit install plus a deploy in
+ the same session needs our own `controllerchange` reload
+ (`reloadWhenControlled`).
 - **`clientsClaim()` does not cause a reload loop** here: the plugin's reload
-  listener is attached only after a `waiting` worker appears and requires
-  `event.isUpdate`.
-- **Push opt-in needs a controlling SW.** Do not call `pushManager.subscribe`
-  from a bare `getRegistration()` — await `serviceWorker.ready` and ensure
-  `navigator.serviceWorker.controller` (see `registerServiceWorker` in
-  `subscribe.ts`). iOS Home Screen PWAs often activate the worker without
-  controlling the first document; subscribe then fails with no REST traffic.
-  Detection: enable-notifications toast with no `push_subscriptions` upsert in
-  Supabase API logs. Do not reuse `getSubscription()` without comparing
-  `options.applicationServerKey` to the current VAPID key. Call
-  `requestPermission` before long SW waits (user-activation). Ready timeout →
-  `unsupported`; missing `active`/`controller` → `sw-not-ready`.
+ listener is attached only after a `waiting` worker appears and requires
+ `event.isUpdate`.
 
 ## Testing
 
