@@ -22,6 +22,9 @@ export default tseslint.config(
       'src/ui/ValueDisplay.tsx',
       'src/navigation/**',
       'supabase/functions/**',
+      // CLI-generated local stack state (gitignored). `supabase start` writes a
+      // minified edge-runtime bundle here that must not be linted.
+      'supabase/.temp/**',
     ],
   },
   js.configs.recommended,
