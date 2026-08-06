@@ -1,4 +1,5 @@
 import { useQuery } from '@tanstack/react-query';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
 import { queryClient } from '@@lib/query/client';
@@ -490,9 +491,26 @@ export const createSuggestionGithubIssue = async (suggestion: {
   title: string;
   body: string;
 }): Promise<{ number?: number; url?: string }> => {
+  // Warm IndexedDB / getSession can paint SuperAdmin UI with an expired
+  // access_token. getUser() validates (and refreshes) before Edge auth.
+  const { data: userData, error: userError } = await supabase.auth.getUser();
+  if (userError || !userData.user) {
+    throw new Error('Sign in again, then retry.');
+  }
+  const {
+    data: { session },
+  } = await supabase.auth.getSession();
+  const accessToken = session?.access_token;
+  if (!accessToken) {
+    throw new Error('Sign in again, then retry.');
+  }
+
   const { data, error } = await supabase.functions.invoke(
     'suggestion-github-issue',
     {
+      // Explicit Bearer — do not rely on functionsFetch alone (publishable keys
+      // omit anon-as-Bearer; a missing/stale session then hits Edge with no JWT).
+      headers: { Authorization: `Bearer ${accessToken}` },
       body: {
         record: {
           id: suggestion.id,
@@ -502,8 +520,29 @@ export const createSuggestionGithubIssue = async (suggestion: {
       },
     }
   );
-  if (error) throw error;
+  if (error) {
+    if (error instanceof FunctionsHttpError) {
+      try {
+        const body = (await error.context.json()) as {
+          error?: unknown;
+          reason?: unknown;
+        };
+        if (body?.error === 'unauthorized' || body?.error === 'forbidden') {
+          throw new Error('Sign in again, then retry.');
+        }
+        if (typeof body?.error === 'string') {
+          throw new Error(body.error);
+        }
+      } catch (parsed) {
+        if (parsed instanceof Error && parsed !== error) throw parsed;
+      }
+    }
+    throw error;
+  }
   if (data?.error) {
+    if (data.error === 'unauthorized' || data.error === 'forbidden') {
+      throw new Error('Sign in again, then retry.');
+    }
     throw new Error(
       typeof data.error === 'string' ? data.error : 'Could not create GitHub issue'
     );
