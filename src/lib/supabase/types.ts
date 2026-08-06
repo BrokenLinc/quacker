@@ -202,6 +202,41 @@ export type Database = {
           },
         ];
       };
+      suggestion_comments: {
+        Row: {
+          author_display_name: string | null;
+          author_id: string;
+          body: string;
+          created_at: string;
+          id: string;
+          suggestion_id: string;
+        };
+        Insert: {
+          author_display_name?: string | null;
+          author_id: string;
+          body: string;
+          created_at?: string;
+          id?: string;
+          suggestion_id: string;
+        };
+        Update: {
+          author_display_name?: string | null;
+          author_id?: string;
+          body?: string;
+          created_at?: string;
+          id?: string;
+          suggestion_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'suggestion_comments_suggestion_id_fkey';
+            columns: ['suggestion_id'];
+            isOneToOne: false;
+            referencedRelation: 'suggestions';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       suggestion_votes: {
         Row: {
           created_at: string;
@@ -240,6 +275,7 @@ export type Database = {
           title: string;
           updated_at: string;
           vote_count: number;
+          comment_count: number;
         };
         Insert: {
           author_display_name?: string | null;
@@ -252,6 +288,7 @@ export type Database = {
           title: string;
           updated_at?: string;
           vote_count?: number;
+          comment_count?: number;
         };
         Update: {
           author_display_name?: string | null;
@@ -264,6 +301,7 @@ export type Database = {
           title?: string;
           updated_at?: string;
           vote_count?: number;
+          comment_count?: number;
         };
         Relationships: [];
       };
@@ -469,6 +507,8 @@ export type GroupSilenceRow =
 export type SuggestionRow = Database['public']['Tables']['suggestions']['Row'];
 export type SuggestionVoteRow =
   Database['public']['Tables']['suggestion_votes']['Row'];
+export type SuggestionCommentRow =
+  Database['public']['Tables']['suggestion_comments']['Row'];
 export type SuggestionCategory =
   Database['public']['Enums']['suggestion_category'];
 export type SuggestionStatus = Database['public']['Enums']['suggestion_status'];

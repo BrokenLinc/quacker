@@ -13,10 +13,12 @@
 | `/` | Home — group list |
 | `/suggestions` | Product suggestions (list + upvote) |
 | `/suggestions/new` | Create a suggestion |
+| `/suggestions/:suggestionId` | Suggestion detail + comment thread |
 | `/:groupId` | Group chat |
 | `/g/:slug` | Short link → resolves to group |
 
-Register `/suggestions*` **before** `/:groupId` so room catch-all does not swallow them.
+Register `/suggestions/new` and `/suggestions/:suggestionId` **before**
+`/suggestions` and `/:groupId` so more-specific paths win.
 
 ## Data model
 
@@ -42,12 +44,17 @@ suggestions
   id, author_id, author_display_name, title, body,
   category (feature_request|bug_report|other),
   status (new|under_review|in_development|done),
-  vote_count, created_at, updated_at
+  vote_count, comment_count, created_at, updated_at
   -- author auto-upvoted via trigger; list sorted vote_count desc, created_at desc
-  -- INSERT RLS pins status='new' and vote_count=0 (clients must not seed counters/workflow)
+  -- INSERT RLS pins status='new', vote_count=0, comment_count=0
+  -- comment_count maintained by trigger on suggestion_comments
 
 suggestion_votes
   suggestion_id, user_id   -- one upvote per user; toggle by insert/delete
+
+suggestion_comments
+  id, suggestion_id, author_id, author_display_name, body, created_at
+  -- flat chronological thread on the suggestion detail page
 
 user_notification_prefs
   user_id, push_enabled

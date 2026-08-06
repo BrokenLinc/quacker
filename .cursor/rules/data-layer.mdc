@@ -39,6 +39,10 @@ rules below. Overview in [`docs/architecture.md`](../../docs/architecture.md).
  revalidate and the whole point is lost.
 - `error` is only surfaced when there is no data, so a failed background
  refetch shows stale data instead of an `ErrorState`.
+- **`asHookResult` collapses `null`.** It uses `query.data ?? undefined`, so a
+ queryFn that returns `null` for “not found” becomes `undefined` and looks
+ unloaded. Preserve null yourself (see `useSuggestion`) or throw / use a
+ sentinel object for missing rows.
 - Realtime topics must be **stable values** (declared per `groupId`), and their
  handlers must close over the query client, not component state.
 

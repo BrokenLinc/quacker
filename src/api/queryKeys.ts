@@ -30,6 +30,16 @@ export const queryKeys = {
 
   pushEnabled: (userId: string | undefined) =>
     ['pushEnabled', userId ?? null] as const,
+
+  suggestionsRoot: ['suggestions'] as const,
+  suggestions: (userId: string | undefined) =>
+    ['suggestions', userId ?? null] as const,
+  suggestion: (suggestionId: string, userId: string | undefined) =>
+    ['suggestion', suggestionId, userId ?? null] as const,
+
+  suggestionCommentsRoot: ['suggestionComments'] as const,
+  suggestionComments: (suggestionId: string) =>
+    ['suggestionComments', suggestionId] as const,
 };
 
 /**

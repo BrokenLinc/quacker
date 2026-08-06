@@ -1,11 +1,24 @@
+import { useQuery } from '@tanstack/react-query';
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 
+import { queryClient } from '@@lib/query/client';
+import { asHookResult, type HookResult } from '@@lib/query/hookResult';
+import type { RealtimeTopic } from '@@lib/realtime/manager';
+import { useRealtimeTopic } from '@@lib/realtime/useRealtimeTopic';
 import { supabase } from '@@lib/supabase/client';
 import type {
   SuggestionCategory,
+  SuggestionCommentRow,
   SuggestionRow,
   SuggestionStatus,
 } from '@@lib/supabase/types';
+
+import {
+  invalidateSuggestionComments,
+  invalidateSuggestions,
+  retrySuggestion,
+} from './cache';
+import { queryKeys } from './queryKeys';
 
 export type { SuggestionCategory, SuggestionStatus };
 
@@ -19,10 +32,20 @@ export interface Suggestion {
   category: SuggestionCategory;
   status: SuggestionStatus;
   voteCount: number;
+  commentCount: number;
   createdAt: number;
   updatedAt: number;
   /** True when the signed-in user has an upvote on this suggestion. */
   votedByMe: boolean;
+}
+
+export interface SuggestionComment {
+  id: string;
+  suggestionId: string;
+  authorId: string;
+  authorDisplayName: string | null;
+  body: string;
+  createdAt: number;
 }
 
 export const SUGGESTION_CATEGORY_LABELS: Record<SuggestionCategory, string> = {
@@ -45,7 +68,10 @@ export const SUGGESTION_STATUSES: SuggestionStatus[] = [
   'done',
 ];
 
+export const SUGGESTION_COMMENT_BODY_MAX = 1000;
+
 const SUGGESTIONS_LIMIT = 500;
+const COMMENTS_LIMIT = 500;
 
 const SUGGESTIONS_CHANGED_EVENT = 'quacker:suggestions-changed';
 
@@ -53,6 +79,7 @@ const notifySuggestionsChanged = () => {
   if (typeof window !== 'undefined') {
     window.dispatchEvent(new Event(SUGGESTIONS_CHANGED_EVENT));
   }
+  invalidateSuggestions();
 };
 
 const rowToSuggestion = (
@@ -67,9 +94,21 @@ const rowToSuggestion = (
   category: row.category,
   status: row.status,
   voteCount: row.vote_count,
+  commentCount: row.comment_count,
   createdAt: new Date(row.created_at).getTime(),
   updatedAt: new Date(row.updated_at).getTime(),
   votedByMe,
+});
+
+export const rowToSuggestionComment = (
+  row: SuggestionCommentRow
+): SuggestionComment => ({
+  id: row.id,
+  suggestionId: row.suggestion_id,
+  authorId: row.author_id,
+  authorDisplayName: row.author_display_name,
+  body: row.body,
+  createdAt: new Date(row.created_at).getTime(),
 });
 
 /** Sort by most upvoted, then most recent. */
@@ -79,12 +118,15 @@ export const sortSuggestions = (items: Suggestion[]): Suggestion[] =>
     return b.createdAt - a.createdAt;
   });
 
-type HookResult<T> = [T | undefined, boolean, Error | undefined];
+const sortComments = (items: SuggestionComment[]): SuggestionComment[] =>
+  [...items].sort((a, b) => a.createdAt - b.createdAt);
+
+type LegacyHookResult<T> = [T | undefined, boolean, Error | undefined];
 
 export const useSuggestions = (options?: {
   userId?: string;
   channelId?: string;
-}): HookResult<Suggestion[]> => {
+}): LegacyHookResult<Suggestion[]> => {
   const userId = options?.userId;
   const instanceId = useId();
   const channelId = options?.channelId ?? instanceId;
@@ -166,6 +208,183 @@ export const useSuggestions = (options?: {
   return [suggestions, loading, error];
 };
 
+const fetchSuggestion = async (
+  suggestionId: string,
+  userId?: string
+): Promise<Suggestion | null> => {
+  const { data, error } = await supabase
+    .from('suggestions')
+    .select('*')
+    .eq('id', suggestionId)
+    .maybeSingle();
+
+  if (error) throw error;
+  if (!data) return null;
+
+  let votedByMe = false;
+  if (userId) {
+    const { data: vote, error: voteError } = await supabase
+      .from('suggestion_votes')
+      .select('suggestion_id')
+      .eq('suggestion_id', suggestionId)
+      .eq('user_id', userId)
+      .maybeSingle();
+    if (voteError) throw voteError;
+    votedByMe = Boolean(vote);
+  }
+
+  return rowToSuggestion(data, votedByMe);
+};
+
+const suggestionTopic = (
+  suggestionId: string,
+  userId?: string
+): RealtimeTopic => ({
+  key: `suggestion:${suggestionId}:${userId ?? 'anon'}`,
+  configure: (channel) => {
+    channel
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'suggestions',
+          filter: `id=eq.${suggestionId}`,
+        },
+        () => {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.suggestion(suggestionId, userId),
+          });
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'suggestion_votes',
+          filter: `suggestion_id=eq.${suggestionId}`,
+        },
+        () => {
+          void queryClient.invalidateQueries({
+            queryKey: queryKeys.suggestion(suggestionId, userId),
+          });
+        }
+      );
+  },
+  resync: () => {
+    void queryClient.invalidateQueries({
+      queryKey: queryKeys.suggestion(suggestionId, userId),
+    });
+  },
+});
+
+export const useSuggestion = (
+  suggestionId: string,
+  options?: { userId?: string }
+): HookResult<Suggestion | null> => {
+  const userId = options?.userId;
+  const enabled = Boolean(suggestionId);
+
+  const query = useQuery({
+    queryKey: queryKeys.suggestion(suggestionId, userId),
+    queryFn: () => fetchSuggestion(suggestionId, userId),
+    enabled,
+  });
+
+  useRealtimeTopic(enabled ? suggestionTopic(suggestionId, userId) : null);
+
+  // Preserve `null` (not found). `asHookResult` collapses null via `??`.
+  return [
+    query.data === undefined ? undefined : query.data,
+    enabled ? query.isPending : false,
+    query.data === undefined ? (query.error ?? undefined) : undefined,
+  ];
+};
+
+const fetchSuggestionComments = async (
+  suggestionId: string
+): Promise<SuggestionComment[]> => {
+  const { data, error } = await supabase
+    .from('suggestion_comments')
+    .select('*')
+    .eq('suggestion_id', suggestionId)
+    .order('created_at', { ascending: true })
+    .limit(COMMENTS_LIMIT);
+
+  if (error) throw error;
+  return sortComments((data ?? []).map(rowToSuggestionComment));
+};
+
+const applyCommentInsert = (comment: SuggestionComment): void => {
+  const key = queryKeys.suggestionComments(comment.suggestionId);
+  const cached = queryClient.getQueryData<SuggestionComment[]>(key);
+  if (!cached) return;
+  if (cached.some((c) => c.id === comment.id)) return;
+  queryClient.setQueryData(key, sortComments([...cached, comment]));
+};
+
+const applyCommentDelete = (
+  suggestionId: string,
+  commentId: string
+): void => {
+  const key = queryKeys.suggestionComments(suggestionId);
+  const cached = queryClient.getQueryData<SuggestionComment[]>(key);
+  if (!cached) return;
+  queryClient.setQueryData(
+    key,
+    cached.filter((c) => c.id !== commentId)
+  );
+};
+
+const suggestionCommentsTopic = (suggestionId: string): RealtimeTopic => ({
+  key: `suggestion-comments:${suggestionId}`,
+  configure: (channel) => {
+    channel.on(
+      'postgres_changes',
+      {
+        event: '*',
+        schema: 'public',
+        table: 'suggestion_comments',
+        filter: `suggestion_id=eq.${suggestionId}`,
+      },
+      (payload) => {
+        if (payload.eventType === 'DELETE') {
+          const old = payload.old as Partial<SuggestionCommentRow> | undefined;
+          if (old?.id) applyCommentDelete(suggestionId, old.id);
+          return;
+        }
+        if (payload.new) {
+          applyCommentInsert(
+            rowToSuggestionComment(payload.new as SuggestionCommentRow)
+          );
+        }
+      }
+    );
+  },
+  resync: () => {
+    invalidateSuggestionComments(suggestionId);
+  },
+});
+
+export const useSuggestionComments = (
+  suggestionId: string
+): HookResult<SuggestionComment[]> => {
+  const enabled = Boolean(suggestionId);
+
+  const query = useQuery({
+    queryKey: queryKeys.suggestionComments(suggestionId),
+    queryFn: () => fetchSuggestionComments(suggestionId),
+    enabled,
+  });
+
+  useRealtimeTopic(enabled ? suggestionCommentsTopic(suggestionId) : null);
+
+  return asHookResult(query, enabled);
+};
+
+export { retrySuggestion };
+
 export const addSuggestion = async (input: {
   authorId: string;
   authorDisplayName: string | null;
@@ -195,6 +414,40 @@ export const addSuggestion = async (input: {
   notifySuggestionsChanged();
   // Author auto-upvote runs in a DB trigger; treat as voted.
   return rowToSuggestion(data, true);
+};
+
+export const addSuggestionComment = async (input: {
+  suggestionId: string;
+  authorId: string;
+  authorDisplayName: string | null;
+  body: string;
+}): Promise<SuggestionComment> => {
+  const body = input.body.trim();
+  if (!body) {
+    throw new Error('Comment is required');
+  }
+
+  const { data, error } = await supabase
+    .from('suggestion_comments')
+    .insert({
+      suggestion_id: input.suggestionId,
+      author_id: input.authorId,
+      author_display_name: input.authorDisplayName,
+      body,
+    })
+    .select('*')
+    .single();
+
+  if (error) throw error;
+
+  const comment = rowToSuggestionComment(data);
+  applyCommentInsert(comment);
+  // Seed cache when the detail page has not mounted yet.
+  const key = queryKeys.suggestionComments(input.suggestionId);
+  if (!queryClient.getQueryData(key)) {
+    invalidateSuggestionComments(input.suggestionId);
+  }
+  return comment;
 };
 
 export const toggleSuggestionVote = async (
