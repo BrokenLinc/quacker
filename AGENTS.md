@@ -108,9 +108,33 @@ Twilio Verify SMS OTP (MVP). Google OAuth is deferred — see [`docs/roadmap.md`
 The VM snapshot already has JS deps, Docker, and the Supabase CLI installed; the startup update script only re-runs `yarn install`. Services are NOT auto-started — start them per session as below. Standard commands live in the Quick commands table above; only the non-obvious caveats are captured here.
 
 ### Start the backend (Docker + local Supabase) each session
-Docker runs rootless-in-VM and is not started automatically:
-1. `sudo dockerd` (run in the background, e.g. a tmux session; it stays up for the session).
+Docker runs rootless-in-VM and is not started automatically. In this nested VM
+the Docker **defaults do not work** — two settings are mandatory before
+`supabase start` (both are baked into the environment snapshot / handled by the
+`start` script; only re-apply by hand if you rebuild Docker state):
+
+1. **Storage driver `fuse-overlayfs`** — the native overlayfs snapshotter cannot
+   extract image whiteout files (`failed to convert whiteout file … operation
+   not permitted`). Write `/etc/docker/daemon.json`:
+   `{ "features": { "containerd-snapshotter": false }, "storage-driver": "fuse-overlayfs" }`
+   (needs the `fuse-overlayfs` package + `/dev/fuse`).
+2. **Legacy iptables** — the `nft` backend breaks Docker bridge networking, so
+   the Realtime init container hangs on `tcp connect (supabase_db_…:5432):
+   timeout` and `supabase start` dies at *Initialising schema* with `error
+   running container: exit 1`. Run `sudo update-alternatives --set iptables
+   /usr/sbin/iptables-legacy` (and `ip6tables`).
+
+Then:
+1. `sudo dockerd` (background, e.g. a tmux session) and `sudo chmod 666 /var/run/docker.sock` so the agent user can reach it.
 2. `supabase start` from the repo root (brings up Postgres/Auth/Realtime/Storage on 54321–54324 and applies `supabase/migrations/*`).
+
+Symptom → check: image pulls fail on *whiteout … operation not permitted* →
+storage driver; *Initialising schema … exit 1* with Realtime `db_conn` connect
+timeouts → iptables backend. Also note the base-image `node_modules` can be
+incomplete — run `yarn install` if `eslint`/`vitest` are “not found”. `yarn
+verify` runs `yarn lint`, which lints CLI-generated `supabase/.temp/` unless it
+is in the eslint `ignores` (already added) — regenerate lint ignores if a new
+`.temp` bundle trips `no-var`/`prefer-const` on a minified file.
 
 `.env.local` is created during setup from `.env.example` with the standard local Supabase demo keys (`http://127.0.0.1:54321`). It is gitignored, so recreate it if missing: `cp .env.example .env.local` and fill `VITE_SUPABASE_URL`/`VITE_SUPABASE_ANON_KEY`/`SUPABASE_SERVICE_ROLE_KEY` with the values printed by `supabase start`.
 
