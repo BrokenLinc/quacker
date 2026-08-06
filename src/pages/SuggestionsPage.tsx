@@ -22,7 +22,10 @@ import {
   faThumbsUp,
 } from '@fortawesome/free-solid-svg-icons';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faThumbsUp as faThumbsUpRegular } from '@fortawesome/free-regular-svg-icons';
+import {
+  faComment,
+  faThumbsUp as faThumbsUpRegular,
+} from '@fortawesome/free-regular-svg-icons';
 import React from 'react';
 
 const STATUS_DOT_COLOR: Record<SuggestionStatus, string> = {
@@ -275,6 +278,7 @@ const SuggestionRow: React.FC<{
 
   return (
     <UI.Box
+      position="relative"
       borderWidth="1px"
       borderColor="border.subtle"
       borderRadius="xl"
@@ -283,7 +287,7 @@ const SuggestionRow: React.FC<{
       py={3}
       data-testid="suggestion-row"
     >
-      <UI.HStack align="start" spacing={3}>
+      <UI.HStack align="start" spacing={3} position="relative" zIndex={1}>
         <UI.VStack align="stretch" spacing={1} flex={1} minW={0}>
           <UI.HStack spacing={2} flexWrap="wrap">
             <UI.Box
@@ -302,6 +306,7 @@ const SuggestionRow: React.FC<{
                 value={status}
                 isDisabled={statusSaving}
                 aria-label="Suggestion status"
+                pointerEvents="auto"
                 onChange={(e) =>
                   handleStatusChange(e.target.value as SuggestionStatus)
                 }
@@ -322,29 +327,49 @@ const SuggestionRow: React.FC<{
             </UI.Text>
           </UI.HStack>
           <UI.Text fontWeight="semibold">{suggestion.title}</UI.Text>
-          <UI.Text fontSize="sm" color="text.muted" noOfLines={3}>
+          <UI.Text fontSize="sm" color="text.muted" noOfLines={2}>
             {suggestion.body}
           </UI.Text>
-          {suggestion.authorDisplayName ? (
-            <UI.Text fontSize="xs" color="text.muted">
-              {suggestion.authorDisplayName}
-            </UI.Text>
-          ) : null}
+          <UI.RouteLink
+            route={routes.suggestion(suggestion.id)}
+            fontSize="xs"
+            color="text.muted"
+            aria-label={`Open suggestion: ${suggestion.title}`}
+          >
+            Read more &amp; reply
+          </UI.RouteLink>
         </UI.VStack>
-        <UI.VStack spacing={0} flexShrink={0}>
-          <UI.IconButton
-            aria-label={votedByMe ? 'Remove upvote' : 'Upvote suggestion'}
-            icon={votedByMe ? faThumbsUp : faThumbsUpRegular}
-            size="sm"
-            variant={votedByMe ? 'solid' : 'ghost'}
-            colorScheme={votedByMe ? 'teal' : undefined}
-            onClick={handleVote}
-            isLoading={voting}
-            isDisabled={!userId}
-          />
-          <UI.Text fontSize="sm" fontWeight="medium" aria-label="Vote count">
-            {voteCount}
-          </UI.Text>
+        <UI.VStack spacing={4} flexShrink={0}>
+          <UI.VStack spacing={0} flexShrink={0}>
+            <UI.IconButton
+              aria-label={votedByMe ? 'Remove upvote' : 'Upvote suggestion'}
+              icon={votedByMe ? faThumbsUp : faThumbsUpRegular}
+              size="sm"
+              variant={votedByMe ? 'solid' : 'ghost'}
+              colorScheme={votedByMe ? 'teal' : undefined}
+              onClick={handleVote}
+              isLoading={voting}
+              isDisabled={!userId}
+            />
+            <UI.Text fontSize="sm" fontWeight="medium" aria-label="Vote count">
+              {voteCount}
+            </UI.Text>
+          </UI.VStack>
+          {suggestion.commentCount > 0 ? (
+            <UI.VStack spacing={0} flexShrink={0}>
+              <UI.Box py={0.5}>
+                <UI.Icon icon={faComment} size="sm" />
+              </UI.Box>
+              <UI.Text
+                fontSize="xs"
+                color="text.muted"
+                aria-label="Comment count"
+                data-testid="suggestion-comment-count"
+              >
+                {suggestion.commentCount}
+              </UI.Text>
+            </UI.VStack>
+          ) : null}
         </UI.VStack>
       </UI.HStack>
     </UI.Box>

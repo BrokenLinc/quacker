@@ -5,6 +5,9 @@ export const SuggestionsPage = React.lazy(() => import('./SuggestionsPage'));
 export const NewSuggestionPage = React.lazy(
   () => import('./NewSuggestionPage')
 );
+export const SuggestionDetailPage = React.lazy(
+  () => import('./SuggestionDetailPage')
+);
 export const SuperAdminSignInPage = React.lazy(
   () => import('./SuperAdminSignInPage')
 );

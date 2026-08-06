@@ -35,10 +35,25 @@ export const invalidateGroup = (groupId: string): void => {
   void queryClient.invalidateQueries({ queryKey: queryKeys.group(groupId) });
 };
 
+export const invalidateSuggestions = (): void => {
+  void queryClient.invalidateQueries({ queryKey: queryKeys.suggestionsRoot });
+  void queryClient.invalidateQueries({ queryKey: ['suggestion'] });
+};
+
+export const invalidateSuggestionComments = (suggestionId: string): void => {
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.suggestionComments(suggestionId),
+  });
+};
+
 /** Everything a signed-in user sees. Used when a session appears or changes. */
 export const invalidateUserScopedQueries = (): void => {
   invalidateGroups();
   void queryClient.invalidateQueries({ queryKey: queryKeys.messagesRoot });
+  invalidateSuggestions();
+  void queryClient.invalidateQueries({
+    queryKey: queryKeys.suggestionCommentsRoot,
+  });
 };
 
 /**
@@ -62,4 +77,16 @@ export const retryGroups = (): void => {
 export const retryGroupMembers = (groupId: string): void => {
   void queryClient.refetchQueries({ queryKey: queryKeys.groupMembers(groupId) });
   void queryClient.refetchQueries({ queryKey: queryKeys.groupSilences(groupId) });
+};
+
+export const retrySuggestion = (
+  suggestionId: string,
+  userId?: string
+): void => {
+  void queryClient.refetchQueries({
+    queryKey: queryKeys.suggestion(suggestionId, userId),
+  });
+  void queryClient.refetchQueries({
+    queryKey: queryKeys.suggestionComments(suggestionId),
+  });
 };

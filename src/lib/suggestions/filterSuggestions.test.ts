@@ -13,6 +13,7 @@ const base = (partial: Partial<Suggestion> & Pick<Suggestion, 'id'>): Suggestion
   category: 'feature_request',
   status: 'new',
   voteCount: 1,
+  commentCount: 0,
   createdAt: 1_000,
   updatedAt: 1_000,
   votedByMe: true,

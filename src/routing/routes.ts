@@ -14,6 +14,11 @@ export const routes = {
     label: 'Make a suggestion',
     parent: routes.suggestions(),
   }),
+  suggestion: (suggestionId = ':suggestionId') => ({
+    path: `/suggestions/${suggestionId}`,
+    label: 'Suggestion',
+    parent: routes.suggestions(),
+  }),
   superadminSignIn: () => ({
     path: '/superadmin',
     label: 'SuperAdmin sign in',

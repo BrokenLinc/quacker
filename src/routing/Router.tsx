@@ -99,6 +99,11 @@ const router = createBrowserRouter([
         element: withSuspense(Pages.NewSuggestionPage),
       },
       {
+        id: getRouteIdFromPaths({ path: routes.suggestion().path }),
+        path: routes.suggestion().path,
+        element: withSuspense(Pages.SuggestionDetailPage),
+      },
+      {
         id: getRouteIdFromPaths({ path: routes.suggestions().path }),
         path: routes.suggestions().path,
         element: withSuspense(Pages.SuggestionsPage),
