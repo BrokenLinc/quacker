@@ -508,6 +508,15 @@ export const createSuggestionGithubIssue = async (suggestion: {
       typeof data.error === 'string' ? data.error : 'Could not create GitHub issue'
     );
   }
+  // Edge returns 200 + { skipped: true } when GITHUB_TOKEN/record is missing —
+  // that is not success (no issue was created).
+  if (data?.skipped || !data?.ok) {
+    throw new Error(
+      typeof data?.reason === 'string'
+        ? `GitHub issue not created (${data.reason})`
+        : 'Could not create GitHub issue'
+    );
+  }
   return {
     number: typeof data?.number === 'number' ? data.number : undefined,
     url: typeof data?.url === 'string' ? data.url : undefined,

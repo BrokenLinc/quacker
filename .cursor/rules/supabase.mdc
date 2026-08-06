@@ -100,6 +100,7 @@ Follow **Vault → pg_net → Edge webhooks** above. Product specifics:
 - Trigger `on_suggestion_github_issue` → Vault `suggestion_github_webhook_*` → Edge (secret **required**; skip post if URL or secret missing)
 - Edge secrets: `GITHUB_TOKEN`, `GITHUB_REPO` (default `BrokenLinc/quacker`), `PUBLIC_APP_URL` / `PUBLIC_APP_URL_DEV`, `SUGGESTION_GITHUB_WEBHOOK_SECRET`
 - Auth: `x-webhook-secret` (DB) **or** SuperAdmin JWT + `is_user_superadmin` (detail **Create GitHub issue** / `suggestion-create-github-issue`)
+- **Client helpers must treat `{ skipped: true }` as failure.** Edge returns HTTP 200 with `skipped` when `GITHUB_TOKEN`/record is missing (distinct from `{ ok: true, number, url }`). `createSuggestionGithubIssue` must throw on `skipped` or missing `ok` — otherwise SuperAdmin UI shows a success toast with no issue. Symptom → check: toast “GitHub issue created” / “Opened on the repo.” while `GITHUB_TOKEN` unset.
 - Setup: `scripts/setup-suggestion-github-webhook.sh [dev|prod]` — preview branch alias for `PUBLIC_APP_URL_DEV`, never `yowl.us` / localhost defaults
 - Export: RPC `suggestion_export` + Edge `suggestion-export`; issue links use app-origin `/api/suggestion-export` (Vercel proxy injects anon key) so Preview/Production match `/suggestions/:id`
 - Deploy both with `verify_jwt: false` (see `deploy.yml`)
