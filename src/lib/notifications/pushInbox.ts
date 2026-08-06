@@ -23,6 +23,7 @@ export type PushedMessage = {
   text: string;
   createdAt: string;
   isAnnouncement: boolean;
+  isAdminMessage?: boolean;
 };
 
 const isPushedMessage = (value: unknown): value is PushedMessage => {
@@ -45,6 +46,7 @@ export const pushedMessageToMessage = (pushed: PushedMessage): Message => ({
   text: pushed.text,
   groupId: pushed.groupId,
   isAnnouncement: Boolean(pushed.isAnnouncement),
+  isAdminMessage: Boolean(pushed.isAdminMessage),
 });
 
 /** Merge anything the SW stored into the cache. Returns how many were applied. */

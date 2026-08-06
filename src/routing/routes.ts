@@ -14,6 +14,20 @@ export const routes = {
     label: 'Make a suggestion',
     parent: routes.suggestions(),
   }),
+  superadminSignIn: () => ({
+    path: '/superadmin',
+    label: 'SuperAdmin sign in',
+  }),
+  adminGroups: () => ({
+    path: '/admin/groups',
+    label: 'All groups',
+    parent: routes.home(),
+  }),
+  adminUsers: () => ({
+    path: '/admin/users',
+    label: 'All users',
+    parent: routes.home(),
+  }),
   group: (groupId = ':groupId') => ({
     path: `/${groupId}`,
     label: 'Room',

@@ -55,6 +55,8 @@ export const seedTestSession = async (
   options?: {
     /** Defaults to a real name so FTUE is skipped. Pass a `···1234` fallback to land on onboarding. */
     displayName?: string;
+    /** E.164 or digits — sets `auth.users.phone` (needed for SuperAdmin fixtures). */
+    phone?: string;
   }
 ) => {
   const admin = getAdminClient();
@@ -63,10 +65,13 @@ export const seedTestSession = async (
     process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:4173';
   const { url, anonKey } = getSupabaseEnv();
   const displayName = options?.displayName ?? 'E2E Tester';
+  const phone = options?.phone;
 
   const { data: userData, error } = await admin.auth.admin.createUser({
     email,
     email_confirm: true,
+    phone: phone ?? undefined,
+    phone_confirm: phone ? true : undefined,
     user_metadata: { display_name: displayName },
   });
   if (error || !userData.user) throw error ?? new Error('No user');
@@ -106,6 +111,42 @@ export const seedTestSession = async (
   );
 
   return { admin, userId: userData.user.id, email, displayName };
+};
+
+/** Seed the hard-coded SuperAdmin phone user (skips FTUE). */
+export const seedSuperAdminSession = async (page: Page) => {
+  const result = await seedTestSession(page, {
+    displayName: 'E2E SuperAdmin',
+  });
+  const admin = result.admin;
+  // Free the SuperAdmin phone if a prior run still holds it.
+  const { data: listed } = await admin.auth.admin.listUsers({ perPage: 1000 });
+  for (const u of listed?.users ?? []) {
+    const digits = (u.phone ?? '').replace(/\D/g, '');
+    if (digits === '13522622098' && u.id !== result.userId) {
+      await admin.auth.admin.updateUserById(u.id, { phone: '' });
+    }
+  }
+  const { error } = await admin.auth.admin.updateUserById(result.userId, {
+    phone: '+13522622098',
+    phone_confirm: true,
+  });
+  if (error) throw error;
+
+  const { url, anonKey } = getSupabaseEnv();
+  await page.evaluate(
+    async ({ supabaseUrl, supabaseKey }) => {
+      const { createClient } = await import(
+        'https://esm.sh/@supabase/supabase-js@2.110.7'
+      );
+      const client = createClient(supabaseUrl, supabaseKey);
+      await client.auth.refreshSession();
+    },
+    { supabaseUrl: url, supabaseKey: anonKey }
+  );
+  await page.reload();
+  await waitForAuthenticated(page);
+  return result;
 };
 
 /** Seed a session that skips FTUE (real display name) and wait for chrome. */

@@ -8,6 +8,30 @@ alwaysApply: true
 Yowl is a Slack-baseline utility chat: snappy, device-appropriate, lovable
 because it works. Full rationale in [`docs/ux.md`](../../docs/ux.md).
 
+## SuperAdmin tools
+
+- UI gates (`isSuperAdminPhone`) are **UX only** — pair every privileged action
+  with SQL `is_superadmin()` RLS, security-definer RPCs, and Edge checks
+  (`get_site_lockdown` / `is_superadmin_phone` on auth OTP; skip
+  `user_moderation.super_banned_at` recipients in notify).
+- **Two group soft-state axes — do not conflate:** `deleted_at` = creator
+  soft-delete (reversible); `deactivated_at` = SuperAdmin moderation. Never use
+  hard `DELETE` for rooms from the client.
+- Lockdown: signed-out OTP only via `/superadmin`; Edge rejects non-SuperAdmin
+  phones while `site_settings.lockdown` is true. Precedence: lockdown →
+  super-ban → app.
+- Admin chat posts: `messages.is_admin_message` + SuperAdmin insert RLS (no
+  membership). Display as **Yowl Admin**, non-interactive; self-only
+  “Posting as system admin” banner.
+- E2E: `seedSuperAdminSession` + `tests/e2e/superadmin.spec.ts`.
+- **`useAuthState` is per-mount local state** (starts `user: null`,
+  `loading: true`). Nested children that remount under `RequireAuth` must not
+  call `useAuthState` again and non-null-assert `user!.uid` — back-navigation
+  can paint warm TanStack Query rows while the child’s session is still null
+  (`Cannot read properties of null (reading 'uid')`). Pass `AppUser` from the
+  parent that already resolved auth, and wait on `loading` before SuperAdmin
+  deny screens. Symptom → check: crash on admin list remount / back.
+
 ## Color roles (never mix)
 
 - **Purple = brand/neutral foundation** — the `gray` scale is purple-tinted;

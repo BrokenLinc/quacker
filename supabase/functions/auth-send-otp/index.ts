@@ -63,6 +63,23 @@ const canSendOtp = async (req: Request, phone: string): Promise<boolean> => {
   return isWithinRateLimit(`phone:${phone}`, 5);
 };
 
+const assertNotLockdownBlocked = async (phone: string) => {
+  const admin = getAdminClient();
+  const { data: lockdown, error } = await admin.rpc('get_site_lockdown');
+  if (error) throw error;
+  if (!lockdown) return;
+  const { data: isAdmin, error: adminErr } = await admin.rpc(
+    'is_superadmin_phone',
+    { p_phone: phone }
+  );
+  if (adminErr) throw adminErr;
+  if (!isAdmin) {
+    throw Object.assign(new Error('Yowl is temporarily offline.'), {
+      code: 'SITE_LOCKDOWN',
+    });
+  }
+};
+
 Deno.serve(async (req) => {
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders });
@@ -77,6 +94,26 @@ Deno.serve(async (req) => {
     const phone = normalizePhone(String(rawPhone ?? ''));
     if (!phone) {
       return jsonResponse({ error: 'Invalid phone number' }, 400);
+    }
+
+    try {
+      await assertNotLockdownBlocked(phone);
+    } catch (e) {
+      if (
+        e &&
+        typeof e === 'object' &&
+        'code' in e &&
+        (e as { code: string }).code === 'SITE_LOCKDOWN'
+      ) {
+        return jsonResponse(
+          {
+            error: 'Yowl is temporarily offline. We\'re working on it!',
+            code: 'SITE_LOCKDOWN',
+          },
+          503
+        );
+      }
+      throw e;
     }
 
     // Local/dev test OTP — never enable AUTH_ALLOW_TEST_OTP in prod secrets.

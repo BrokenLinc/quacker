@@ -24,6 +24,11 @@ alwaysApply: false
   and/or omit those columns from client inserts and maintain them only via
   triggers / SuperAdmin UPDATE. When reviewing a new table, ask: “Can a
   malicious insert inflate ranking or skip a workflow state?”
+- **SuperAdmin UI without RLS/Edge is incomplete.** Site lockdown, super-ban,
+  admin lists, and `is_admin_message` inserts must be enforced with
+  `is_superadmin()` (and auth Edge `get_site_lockdown` /
+  `is_superadmin_phone`). Group soft-delete (`deleted_at`) ≠ SuperAdmin
+  deactivate (`deactivated_at`).
 
 ## Agent-owned Supabase ops (do not defer to user)
 

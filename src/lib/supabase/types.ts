@@ -99,7 +99,13 @@ export type Database = {
           author_photo_url: string | null;
           created_at: string;
           creator_id: string;
+          deactivated_at: string | null;
+          deactivated_by: string | null;
+          deleted_at: string | null;
+          deleted_by: string | null;
           id: string;
+          member_count: number;
+          message_count: number;
           name: string;
           slug: string;
         };
@@ -108,7 +114,13 @@ export type Database = {
           author_photo_url?: string | null;
           created_at?: string;
           creator_id: string;
+          deactivated_at?: string | null;
+          deactivated_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
           id?: string;
+          member_count?: number;
+          message_count?: number;
           name: string;
           slug: string;
         };
@@ -117,7 +129,13 @@ export type Database = {
           author_photo_url?: string | null;
           created_at?: string;
           creator_id?: string;
+          deactivated_at?: string | null;
+          deactivated_by?: string | null;
+          deleted_at?: string | null;
+          deleted_by?: string | null;
           id?: string;
+          member_count?: number;
+          message_count?: number;
           name?: string;
           slug?: string;
         };
@@ -131,6 +149,7 @@ export type Database = {
           created_at: string;
           group_id: string;
           id: string;
+          is_admin_message: boolean;
           is_announcement: boolean;
           text: string;
         };
@@ -141,6 +160,7 @@ export type Database = {
           created_at?: string;
           group_id: string;
           id?: string;
+          is_admin_message?: boolean;
           is_announcement?: boolean;
           text: string;
         };
@@ -151,6 +171,7 @@ export type Database = {
           created_at?: string;
           group_id?: string;
           id?: string;
+          is_admin_message?: boolean;
           is_announcement?: boolean;
           text?: string;
         };
@@ -267,6 +288,45 @@ export type Database = {
         };
         Relationships: [];
       };
+      site_settings: {
+        Row: {
+          id: boolean;
+          lockdown: boolean;
+          updated_at: string;
+        };
+        Insert: {
+          id?: boolean;
+          lockdown?: boolean;
+          updated_at?: string;
+        };
+        Update: {
+          id?: boolean;
+          lockdown?: boolean;
+          updated_at?: string;
+        };
+        Relationships: [];
+      };
+      user_moderation: {
+        Row: {
+          super_banned_at: string | null;
+          super_banned_by: string | null;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          super_banned_at?: string | null;
+          super_banned_by?: string | null;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          super_banned_at?: string | null;
+          super_banned_by?: string | null;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
       user_notification_prefs: {
         Row: {
           push_enabled: boolean;
@@ -285,11 +345,73 @@ export type Database = {
         };
         Relationships: [];
       };
+      user_stats: {
+        Row: {
+          message_count: number;
+          room_count: number;
+          signed_up_at: string;
+          updated_at: string;
+          user_id: string;
+        };
+        Insert: {
+          message_count?: number;
+          room_count?: number;
+          signed_up_at?: string;
+          updated_at?: string;
+          user_id: string;
+        };
+        Update: {
+          message_count?: number;
+          room_count?: number;
+          signed_up_at?: string;
+          updated_at?: string;
+          user_id?: string;
+        };
+        Relationships: [];
+      };
     };
     Views: {
       [_ in never]: never;
     };
     Functions: {
+      admin_list_groups: {
+        Args: {
+          p_created_before?: string | null;
+          p_limit?: number;
+          p_search?: string | null;
+        };
+        Returns: {
+          created_at: string;
+          creator_display_name: string;
+          creator_id: string;
+          creator_phone: string;
+          creator_photo_url: string | null;
+          deactivated_at: string | null;
+          deleted_at: string | null;
+          id: string;
+          member_count: number;
+          message_count: number;
+          name: string;
+          slug: string;
+        }[];
+      };
+      admin_list_users: {
+        Args: {
+          p_limit?: number;
+          p_search?: string | null;
+          p_signed_up_before?: string | null;
+        };
+        Returns: {
+          display_name: string;
+          message_count: number;
+          phone: string;
+          photo_url: string | null;
+          room_count: number;
+          signed_up_at: string;
+          super_banned_at: string | null;
+          user_id: string;
+        }[];
+      };
       check_auth_otp_rate_limit: {
         Args: {
           p_identifier: string;
@@ -298,12 +420,16 @@ export type Database = {
         };
         Returns: boolean;
       };
+      get_site_lockdown: { Args: Record<PropertyKey, never>; Returns: boolean };
       is_group_staff: { Args: { gid: string }; Returns: boolean };
       is_silenced_in_group: {
         Args: { gid: string; uid: string };
         Returns: boolean;
       };
+      is_super_banned: { Args: { uid?: string }; Returns: boolean };
       is_superadmin: { Args: Record<PropertyKey, never>; Returns: boolean };
+      is_superadmin_phone: { Args: { p_phone: string }; Returns: boolean };
+      is_user_superadmin: { Args: { uid: string }; Returns: boolean };
       unread_message_counts: {
         Args: Record<PropertyKey, never>;
         Returns: {

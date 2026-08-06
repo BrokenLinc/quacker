@@ -9,8 +9,11 @@ import {
   joinGroup,
   leaveGroup,
   markGroupViewed,
+  restoreDeletedGroup,
+  setGroupDeactivated,
   setMemberMod,
   setMemberSilenced,
+  setUserSuperBanned,
   updateGroup,
   useGroup,
   useGroupMembers,
@@ -48,14 +51,17 @@ import {
 } from '@@lib/chat/messageTime';
 import {
   AppUser,
+  isSuperAdminPhone,
   phoneLast4FromPhone,
   resolveAppUserPhotoURL,
   useAuthState,
 } from '@@lib/supabase/auth';
+import { supabase } from '@@lib/supabase/client';
 import { routes } from '@@routing/routes';
 import * as UI from '@@ui';
 import {
   faArrowLeft,
+  faBan,
   faBell,
   faCheck,
   faComments,
@@ -64,7 +70,9 @@ import {
   faPaperPlane,
   faPenToSquare,
   faRightFromBracket,
+  faRotateLeft,
   faShareFromSquare,
+  faShieldHalved,
   faTrash,
   faUserPlus,
   faUsers,
@@ -189,10 +197,19 @@ const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
   const { user, group, loading, error, member } = state;
   const waiting = loading || (member === null && !error);
   const ready = Boolean(group && user && !waiting && !error);
+  const isSuperAdmin = isSuperAdminPhone(user?.phone);
+  const isCreator = Boolean(group && user && group.uid === user.uid);
+  const groupGone = Boolean(group?.deletedAt || group?.deactivatedAt);
+  const canEnterAsAdmin = Boolean(isSuperAdmin && group);
+  const canRestoreAsCreator = Boolean(
+    group?.deletedAt && isCreator && !group.deactivatedAt
+  );
+  const canChat =
+    Boolean(member) ||
+    (canEnterAsAdmin && (!groupGone || isSuperAdmin));
 
   return (
     <React.Fragment>
-      {/* Bar shell mounts immediately at known size; contents fill when ready. */}
       <GroupBarShell>
         {ready && group && user ? (
           <GroupBarContents
@@ -226,12 +243,87 @@ const GroupPageContents: React.FC<{ groupId: string }> = ({ groupId }) => {
             }
           />
         </UI.Box>
-      ) : member ? (
-        <GroupChat groupId={groupId} group={group} user={user} />
+      ) : groupGone && !isSuperAdmin && !canRestoreAsCreator ? (
+        <UI.Box flex={1} minH={0} overflowY="auto">
+          <UI.EmptyState
+            icon={faComments}
+            title={
+              group.deletedAt ? 'This room was deleted' : 'Room unavailable'
+            }
+            description={
+              group.deletedAt
+                ? 'The creator removed this room.'
+                : 'This room is temporarily unavailable.'
+            }
+            action={
+              <UI.RouteButton route={routes.home()} variant="outline">
+                Back home
+              </UI.RouteButton>
+            }
+          />
+        </UI.Box>
+      ) : group.deletedAt && canRestoreAsCreator && !isSuperAdmin ? (
+        <DeletedRoomRestore
+          group={group}
+          onRestored={() => retryRoom(groupId)}
+        />
+      ) : canChat ? (
+        <GroupChat
+          groupId={groupId}
+          group={group}
+          user={user}
+          postingAsAdmin={Boolean(isSuperAdmin && !member)}
+        />
       ) : (
         <JoinPrompt group={group} onJoin={state.join} joining={state.joining} />
       )}
     </React.Fragment>
+  );
+};
+
+const DeletedRoomRestore: React.FC<{
+  group: Group;
+  onRestored: () => void;
+}> = ({ group, onRestored }) => {
+  const [busy, setBusy] = React.useState(false);
+  const toast = UI.useToast();
+
+  const restore = async () => {
+    setBusy(true);
+    try {
+      await restoreDeletedGroup(group.id);
+      onRestored();
+      toast({ title: 'Room restored', duration: 2500 });
+    } catch {
+      toast({ title: "Couldn't restore the room", status: 'error' });
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <UI.Box flex={1} minH={0} overflowY="auto" data-testid="room-deleted-restore">
+      <UI.EmptyState
+        icon={faComments}
+        title="This room was deleted"
+        description="Restore it to make it available to members again."
+        action={
+          <UI.VStack spacing={3}>
+            <UI.Button
+              preset="primary"
+              onClick={() => void restore()}
+              isLoading={busy}
+              leftIcon={<UI.Icon icon={faRotateLeft} />}
+            >
+              Restore room
+            </UI.Button>
+            <UI.RouteButton route={routes.home()} variant="ghost" size="sm">
+              Back home
+            </UI.RouteButton>
+          </UI.VStack>
+        }
+      />
+    </UI.Box>
   );
 };
 
@@ -437,12 +529,13 @@ const GroupOverflowMenu: React.FC<{
     closeMenu();
     confirmation.open({
       title: `Delete ${group.name}?`,
-      message: 'This deletes the room and all its messages for everyone.',
+      message:
+        'This removes the room for everyone. You can restore it later from the invite link.',
       confirmLabel: 'Delete room',
       isDestructive: true,
       onConfirm: async () => {
         try {
-          await deleteGroup(group.id);
+          await deleteGroup(group.id, user.uid);
           navigate(routes.home().path);
           toast({ title: `Deleted ${group.name}`, duration: 2500 });
         } catch {
@@ -766,6 +859,7 @@ const MemberRosterRow: React.FC<{
             targetIsMember={targetIsMember}
             canSilence={perms.canSilence}
             canToggleMod={perms.canToggleMod}
+            viewerIsSuperAdmin={isSuperAdminPhone(user.phone)}
           />
         </UI.MorphingPopoverContent>
       </UI.MorphingPopover>
@@ -1035,25 +1129,30 @@ const GroupChat: React.FC<{
   groupId: string;
   group: Group;
   user: AppUser;
-}> = ({ groupId, group, user }) => {
+  postingAsAdmin?: boolean;
+}> = ({ groupId, group, user, postingAsAdmin = false }) => {
   const [messages, loading, error] = useGroupMessages(groupId, { limit: 100 });
   const [members] = useGroupMembers(groupId);
   const [silences] = useGroupSilences(groupId);
   const queued = useOutboxEntries(groupId);
   const connection = useConnectionState();
+  const toast = UI.useToast();
+  const [bannerBusy, setBannerBusy] = React.useState(false);
+  const isSuperAdmin = isSuperAdminPhone(user.phone);
 
   const silencedUids = React.useMemo(
     () => new Set((silences ?? []).map((s) => s.uid)),
     [silences]
   );
-  const iAmSilenced = silencedUids.has(user.uid);
+  const iAmSilenced = silencedUids.has(user.uid) && !postingAsAdmin;
   const myMember = members?.find((m) => m.uid === user.uid);
   const isCreator = group.uid === user.uid;
   const otherMemberCount = (members ?? []).filter(
     (m) => m.uid !== user.uid
   ).length;
   // Tip well until someone else joins (creator-only; mod promote copy is aspirational).
-  const showCreatorTips = isCreator && otherMemberCount === 0;
+  const showCreatorTips =
+    isCreator && otherMemberCount === 0 && !group.deletedAt && !group.deactivatedAt;
   const shareModal = UI.useDisclosure();
 
   const memberByUid = (() => {
@@ -1097,10 +1196,35 @@ const GroupChat: React.FC<{
     await sendOrQueueMessage({
       groupId,
       uid: user.uid,
-      authorName: user.displayName,
-      authorPhotoURL: resolveAppUserPhotoURL(user),
+      authorName: postingAsAdmin ? 'Yowl Admin' : user.displayName,
+      authorPhotoURL: postingAsAdmin ? null : resolveAppUserPhotoURL(user),
       text,
+      isAdminMessage: postingAsAdmin || undefined,
     });
+  };
+
+  const reactivate = async () => {
+    setBannerBusy(true);
+    try {
+      await setGroupDeactivated(groupId, false, user.uid);
+      toast({ title: 'Room activated', duration: 2500 });
+    } catch {
+      toast({ title: "Couldn't activate room", status: 'error' });
+    } finally {
+      setBannerBusy(false);
+    }
+  };
+
+  const restore = async () => {
+    setBannerBusy(true);
+    try {
+      await restoreDeletedGroup(groupId);
+      toast({ title: 'Room restored', duration: 2500 });
+    } catch {
+      toast({ title: "Couldn't restore room", status: 'error' });
+    } finally {
+      setBannerBusy(false);
+    }
   };
 
   // Queued sends carry the id they will have on the server, so an entry that has
@@ -1126,6 +1250,68 @@ const GroupChat: React.FC<{
 
   return (
     <React.Fragment>
+      {isSuperAdmin && group.deactivatedAt ? (
+        <UI.HStack
+          px={4}
+          py={2}
+          bg="orange.50"
+          _dark={{ bg: 'orange.900' }}
+          borderBottomWidth="1px"
+          borderColor="border.subtle"
+          data-testid="group-deactivated-banner"
+          spacing={3}
+        >
+          <UI.Text fontSize="sm" flex={1}>
+            This room is deactivated
+          </UI.Text>
+          <UI.Button
+            size="xs"
+            preset="primary"
+            isLoading={bannerBusy}
+            onClick={() => void reactivate()}
+          >
+            Activate
+          </UI.Button>
+        </UI.HStack>
+      ) : null}
+      {isSuperAdmin && group.deletedAt ? (
+        <UI.HStack
+          px={4}
+          py={2}
+          bg="surface.sunken"
+          borderBottomWidth="1px"
+          borderColor="border.subtle"
+          data-testid="group-deleted-banner"
+          spacing={3}
+        >
+          <UI.Text fontSize="sm" flex={1}>
+            Deleted by creator
+          </UI.Text>
+          <UI.Button
+            size="xs"
+            preset="primary"
+            isLoading={bannerBusy}
+            onClick={() => void restore()}
+            leftIcon={<UI.Icon icon={faRotateLeft} />}
+          >
+            Restore
+          </UI.Button>
+        </UI.HStack>
+      ) : null}
+      {postingAsAdmin ? (
+        <UI.Box
+          px={4}
+          py={2}
+          bg="surface.sunken"
+          borderBottomWidth="1px"
+          borderColor="border.subtle"
+          data-testid="posting-as-admin-banner"
+        >
+          <UI.Text fontSize="sm" color="text.muted">
+            Posting as system admin
+          </UI.Text>
+        </UI.Box>
+      ) : null}
       <ChatScrollArea
         items={items}
         loading={loading}
@@ -1139,6 +1325,7 @@ const GroupChat: React.FC<{
         memberByUid={memberByUid}
         showCreatorTips={showCreatorTips}
         onInvite={shareModal.onOpen}
+        viewerIsSuperAdmin={isSuperAdmin}
       />
       <UI.Box
         flexShrink={0}
@@ -1195,6 +1382,7 @@ const ChatScrollArea: React.FC<{
   memberByUid: Map<string, MemberProfile>;
   showCreatorTips: boolean;
   onInvite: () => void;
+  viewerIsSuperAdmin?: boolean;
 }> = ({
   items,
   loading,
@@ -1208,6 +1396,7 @@ const ChatScrollArea: React.FC<{
   memberByUid,
   showCreatorTips,
   onInvite,
+  viewerIsSuperAdmin = false,
 }) => {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const didInitialScroll = React.useRef(false);
@@ -1323,6 +1512,8 @@ const ChatScrollArea: React.FC<{
             !!prev &&
             !showDayDivider &&
             !message.pending &&
+            !message.isAdminMessage &&
+            !prev.isAdminMessage &&
             prev.uid === message.uid &&
             message.time - prev.time < GROUPING_WINDOW_MS;
           const member = memberByUid.get(message.uid);
@@ -1334,18 +1525,29 @@ const ChatScrollArea: React.FC<{
               <MessageRow
                 message={message}
                 grouped={grouped}
-                isOwn={message.uid === currentUid}
+                isOwn={message.uid === currentUid && !message.isAdminMessage}
                 groupId={groupId}
                 groupCreatorId={groupCreatorId}
                 currentUid={currentUid}
                 actorRole={actorRole}
                 isSilenced={silencedUids.has(message.uid)}
                 targetIsMember={memberByUid.has(message.uid)}
-                liveDisplayName={member?.displayName ?? message.authorName}
-                livePhotoURL={member?.photoURL ?? message.authorPhotoURL}
-                phoneLast4={member?.phoneLast4 ?? null}
-                joinedAt={member?.joinedAt ?? null}
-                role={member?.role ?? null}
+                liveDisplayName={
+                  message.isAdminMessage
+                    ? 'Yowl Admin'
+                    : member?.displayName ?? message.authorName
+                }
+                livePhotoURL={
+                  message.isAdminMessage
+                    ? null
+                    : member?.photoURL ?? message.authorPhotoURL
+                }
+                phoneLast4={
+                  message.isAdminMessage ? null : member?.phoneLast4 ?? null
+                }
+                joinedAt={message.isAdminMessage ? null : member?.joinedAt ?? null}
+                role={message.isAdminMessage ? null : member?.role ?? null}
+                viewerIsSuperAdmin={viewerIsSuperAdmin}
               />
             </React.Fragment>
           );
@@ -1385,6 +1587,7 @@ export const MessageRow: React.FC<{
   phoneLast4?: string | null;
   joinedAt?: number | null;
   role?: GroupMemberRole | null;
+  viewerIsSuperAdmin?: boolean;
 }> = ({
   message,
   grouped,
@@ -1400,15 +1603,19 @@ export const MessageRow: React.FC<{
   phoneLast4,
   joinedAt,
   role,
+  viewerIsSuperAdmin = false,
 }) => {
   const [profileOpen, setProfileOpen] = React.useState(false);
-  const displayName = liveDisplayName ?? message.authorName;
-  const photoURL = livePhotoURL ?? message.authorPhotoURL;
+  const isAdminMsg = Boolean(message.isAdminMessage);
+  const displayName = isAdminMsg
+    ? 'Yowl Admin'
+    : liveDisplayName ?? message.authorName;
+  const photoURL = isAdminMsg ? null : livePhotoURL ?? message.authorPhotoURL;
   const name = formatAuthorLabel(displayName);
   const profileLabel = `View ${name}'s profile`;
 
   const perms =
-    groupId && groupCreatorId && currentUid
+    !isAdminMsg && groupId && groupCreatorId && currentUid
       ? canManageMember({
           actorUid: currentUid,
           actorRole,
@@ -1419,6 +1626,64 @@ export const MessageRow: React.FC<{
           targetIsMember,
         })
       : { canSilence: false, canToggleMod: false, canSelfUnmod: false };
+
+  if (isAdminMsg) {
+    return (
+      <UI.HStack
+        align="flex-start"
+        spacing={3}
+        px={3}
+        pt={grouped ? 0.5 : 3}
+        pb={0.5}
+        borderRadius="lg"
+        opacity={message.pending ? 0.55 : 1}
+        data-testid={
+          message.pending ? 'message-pending' : 'admin-message-row'
+        }
+        bg="surface.sunken"
+        sx={{
+          animation: 'yowl-message-in 160ms ease-out',
+          '@media (prefers-reduced-motion: reduce)': { animation: 'none' },
+          '@keyframes yowl-message-in': {
+            from: { opacity: 0, transform: 'translateY(4px)' },
+            to: { opacity: message.pending ? 0.55 : 1, transform: 'none' },
+          },
+        }}
+      >
+        {grouped ? (
+          <UI.Box w={8} flexShrink={0} />
+        ) : (
+          <UI.Flex
+            w={8}
+            h={8}
+            flexShrink={0}
+            mt={1}
+            borderRadius="full"
+            bg="brand.100"
+            _dark={{ bg: 'brand.800' }}
+            align="center"
+            justify="center"
+            aria-hidden
+          >
+            <UI.Icon icon={faShieldHalved} boxSize={3.5} color="brand.600" />
+          </UI.Flex>
+        )}
+        <UI.Box minW={0} flex={1}>
+          {grouped ? null : (
+            <UI.HStack spacing={2} align="baseline" mb={0.5}>
+              <UI.Text fontSize="sm" fontWeight="bold" color="brand.600">
+                Yowl Admin
+              </UI.Text>
+              <UI.Text fontSize="xs" color="text.muted">
+                {formatMessageTime(message.time)}
+              </UI.Text>
+            </UI.HStack>
+          )}
+          <UI.RichTextContent content={message.text} />
+        </UI.Box>
+      </UI.HStack>
+    );
+  }
 
   return (
     <UI.HStack
@@ -1475,6 +1740,7 @@ export const MessageRow: React.FC<{
               targetIsMember={targetIsMember}
               canSilence={perms.canSilence}
               canToggleMod={perms.canToggleMod}
+              viewerIsSuperAdmin={viewerIsSuperAdmin}
             />
           </UI.MorphingPopoverContent>
         </UI.MorphingPopover>
@@ -1537,6 +1803,7 @@ const MemberProfileBody: React.FC<{
   targetIsMember: boolean;
   canSilence: boolean;
   canToggleMod: boolean;
+  viewerIsSuperAdmin?: boolean;
 }> = ({
   groupId,
   name,
@@ -1549,10 +1816,14 @@ const MemberProfileBody: React.FC<{
   isSilenced,
   canSilence,
   canToggleMod,
+  viewerIsSuperAdmin = false,
 }) => {
   const toast = UI.useToast();
+  const confirmation = useConfirmation();
+  const [user] = useAuthState();
   const [silenceBusy, setSilenceBusy] = React.useState(false);
   const [modBusy, setModBusy] = React.useState(false);
+  const [banBusy, setBanBusy] = React.useState(false);
   const [silenceChecked, setSilenceChecked] = React.useState(isSilenced);
   const [modChecked, setModChecked] = React.useState(role === 'mod');
 
@@ -1603,7 +1874,50 @@ const MemberProfileBody: React.FC<{
     }
   };
 
+  const onSuperBan = () => {
+    if (!user || isOwn || banBusy) return;
+    confirmation.open({
+      title: `Super-ban ${name}?`,
+      message:
+        'They can still sign in, but every screen will show an account deactivated message until you lift the ban.',
+      confirmLabel: 'Super-ban',
+      isDestructive: true,
+      onConfirm: async () => {
+        setBanBusy(true);
+        try {
+          await setUserSuperBanned(uid, true, user.uid);
+          toast({ title: 'User super-banned', duration: 2500 });
+        } catch {
+          toast({ title: "Couldn't super-ban user", status: 'error' });
+        } finally {
+          setBanBusy(false);
+        }
+      },
+      onCancel: () => undefined,
+    });
+  };
+
   const showControls = canSilence || canToggleMod;
+  const showSuperBan = viewerIsSuperAdmin && !isOwn;
+  const [superBannedAt, setSuperBannedAt] = React.useState<string | null>(null);
+
+  React.useEffect(() => {
+    if (!viewerIsSuperAdmin) return;
+    let cancelled = false;
+    void (async () => {
+      const { data } = await supabase
+        .from('user_moderation')
+        .select('super_banned_at')
+        .eq('user_id', uid)
+        .maybeSingle();
+      if (!cancelled) {
+        setSuperBannedAt(data?.super_banned_at ?? null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [viewerIsSuperAdmin, uid, banBusy]);
 
   return (
     <UI.Box>
@@ -1622,6 +1936,11 @@ const MemberProfileBody: React.FC<{
           <UI.Text fontSize="sm" color="text.muted">
             Room creator
           </UI.Text>
+        ) : null}
+        {superBannedAt ? (
+          <UI.Badge colorScheme="red" fontSize="xs">
+            Deactivated
+          </UI.Badge>
         ) : null}
         {joinedAt ? (
           <UI.Text fontSize="sm" color="text.muted">
@@ -1677,16 +1996,33 @@ const MemberProfileBody: React.FC<{
                 isChecked={modChecked}
                 isDisabled={modBusy || !groupId}
                 onChange={(e) => void onModChange(e.target.checked)}
-                aria-label={`Mod ${name}`}
+                aria-label={`Make ${name} a mod`}
                 data-testid="member-mod-switch"
               />
             </UI.FormControl>
           ) : null}
         </UI.VStack>
       ) : null}
+      {showSuperBan ? (
+        <UI.VStack
+          align="stretch"
+          spacing={0}
+          borderTopWidth="1px"
+          borderColor="border.subtle"
+          py={1}
+        >
+          <UI.PopoverMenuRow
+            icon={faBan}
+            label="Super-ban"
+            onClick={onSuperBan}
+            isDestructive
+          />
+        </UI.VStack>
+      ) : null}
     </UI.Box>
   );
 };
+
 
 const MESSAGE_MAX_LENGTH = 140;
 

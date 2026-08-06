@@ -190,6 +190,14 @@ export const verifySmsOtp = async (
   return { error: sessionError };
 };
 
+/**
+ * Session → AppUser for the calling component.
+ *
+ * Each call owns local state that starts as `null` / `loading: true` until
+ * `getSession` resolves — it is not a shared store. Do not remount a child,
+ * call this again, and non-null-assert `user` while rendering cached lists;
+ * pass `AppUser` down from a parent that already waited on `loading`.
+ */
 export const useAuthState = (): [
   AppUser | null,
   boolean,

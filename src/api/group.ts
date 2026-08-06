@@ -34,6 +34,8 @@ export interface Group {
   authorPhotoURL: string | null;
   time: number;
   name: string;
+  deletedAt: number | null;
+  deactivatedAt: number | null;
 }
 
 export interface GroupMember {
@@ -65,6 +67,10 @@ const rowToGroup = (row: GroupRow): Group => ({
   authorPhotoURL: row.author_photo_url,
   time: new Date(row.created_at).getTime(),
   name: row.name,
+  deletedAt: row.deleted_at ? new Date(row.deleted_at).getTime() : null,
+  deactivatedAt: row.deactivated_at
+    ? new Date(row.deactivated_at).getTime()
+    : null,
 });
 
 const rowToGroupMember = (row: GroupMemberRow): GroupMember => ({
@@ -287,6 +293,8 @@ export const useGroups = (options: {
         .from('groups')
         .select('*, group_members!inner(user_id)')
         .eq('group_members.user_id', userId as string)
+        .is('deleted_at', null)
+        .is('deactivated_at', null)
         .order('created_at', { ascending: false })
         .limit(limit);
       if (error) throw error;
@@ -454,12 +462,30 @@ export const updateGroup = async (id: string, data: Partial<Group>) => {
   void queryClient.invalidateQueries({ queryKey: queryKeys.group(id) });
 };
 
-export const deleteGroup = async (id: string) => {
-  const { error } = await supabase.from('groups').delete().eq('id', id);
+export const deleteGroup = async (id: string, actorId: string) => {
+  const { error } = await supabase
+    .from('groups')
+    .update({
+      deleted_at: new Date().toISOString(),
+      deleted_by: actorId,
+    })
+    .eq('id', id);
   if (error) throw error;
   queryClient.removeQueries({ queryKey: queryKeys.messages(id) });
-  queryClient.removeQueries({ queryKey: queryKeys.group(id) });
+  void queryClient.invalidateQueries({ queryKey: queryKeys.group(id) });
   invalidateGroups();
+  void queryClient.invalidateQueries({ queryKey: queryKeys.adminGroupsRoot });
+};
+
+export const restoreDeletedGroup = async (id: string) => {
+  const { error } = await supabase
+    .from('groups')
+    .update({ deleted_at: null, deleted_by: null })
+    .eq('id', id);
+  if (error) throw error;
+  void queryClient.invalidateQueries({ queryKey: queryKeys.group(id) });
+  invalidateGroups();
+  void queryClient.invalidateQueries({ queryKey: queryKeys.adminGroupsRoot });
 };
 
 export const joinGroup = async (
