@@ -97,6 +97,11 @@ composer format toolbar only while the editor is focused):
   raised CSS on `html`/`body`, canvas on `#root`, and an early body script
   (Chakra mode + those bgs) so the UA never flashes white before React. Do not
   put `ColorModeScript` only inside React.
+- **Color mode persistence:** `initialColorMode: 'system'` is fine for first
+  visit; keep `useSystemColorMode: false`. Live system sync overwrites
+  `chakra-ui-color-mode` when iOS Automatic (or any OS schedule) flips —
+  in-app dark mode is “forgotten” ~daily. Guard with `theme-modes` e2e
+  (`page.emulateMedia` after seeding dark). See [`docs/ux.md`](../../docs/ux.md).
 - **Document vs content:** `html`/`body`/`theme-color` = `surface.raised`
   (matches composer; iOS Safari accessory bar samples document bg). `#root` /
   AppShell = `surface.canvas`. Do not paint document with canvas.

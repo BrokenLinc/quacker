@@ -19,8 +19,12 @@ const FONT_STACK = `'Nunito Sans Variable', -apple-system, BlinkMacSystemFont, '
 
 export const theme = extendTheme({
   config: {
+    // First visit follows the OS; after that persist light/dark only.
+    // useSystemColorMode must stay false — when true, Chakra's prefers-color-scheme
+    // listener overwrites localStorage whenever iOS Automatic (or any OS schedule)
+    // flips, so the in-app toggle is forgotten ~daily on PWAs.
     initialColorMode: 'system',
-    useSystemColorMode: true,
+    useSystemColorMode: false,
   },
   fonts: {
     heading: FONT_STACK,
