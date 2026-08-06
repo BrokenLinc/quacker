@@ -87,29 +87,38 @@ async function authorizeRequest(req: Request): Promise<Response | null> {
   const { createClient } = await import('npm:@supabase/supabase-js@2');
   const supabaseUrl = Deno.env.get('SUPABASE_URL') ?? '';
   const serviceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '';
-  const anonKey = Deno.env.get('SUPABASE_ANON_KEY') ?? '';
-  if (!supabaseUrl || !serviceKey || !anonKey) {
+  if (!supabaseUrl || !serviceKey) {
     return new Response(JSON.stringify({ error: 'misconfigured' }), {
       status: 503,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
-  const userClient = createClient(supabaseUrl, anonKey, {
-    global: { headers: { Authorization: authHeader } },
-  });
-  const {
-    data: { user },
-    error: userError,
-  } = await userClient.auth.getUser();
-  if (userError || !user) {
+  // Edge has no persisted Auth session — pass the JWT explicitly. Setting
+  // Authorization via global headers alone is not enough for getUser().
+  const jwt = authHeader.slice('Bearer '.length).trim();
+  if (!jwt) {
     return new Response(JSON.stringify({ error: 'unauthorized' }), {
       status: 401,
       headers: { ...corsHeaders, 'Content-Type': 'application/json' },
     });
   }
 
-  const admin = createClient(supabaseUrl, serviceKey);
+  const admin = createClient(supabaseUrl, serviceKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  });
+  const {
+    data: { user },
+    error: userError,
+  } = await admin.auth.getUser(jwt);
+  if (userError || !user) {
+    console.error('suggestion-github-issue getUser', userError?.message);
+    return new Response(JSON.stringify({ error: 'unauthorized' }), {
+      status: 401,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
+  }
+
   const { data: isAdmin, error: adminError } = await admin.rpc(
     'is_user_superadmin',
     { uid: user.id }
