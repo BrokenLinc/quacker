@@ -91,6 +91,7 @@ Patterns shared by `notify-new-message`, `suggestion-github-issue`, and any futu
 - Prefer skipping `http_post` when Vault URL is missing (same as general webhook rule). Empty-secret posts are still a footgun if you later harden notify auth to required.
 - Setup script: `scripts/setup-notify-webhook.sh` (Management API — CLI may lack `--token` on `secrets set`); persist minted `NOTIFY_WEBHOOK_SECRET` over blank `.env.local` lines
 - Browser: `VITE_VAPID_PUBLIC_KEY` only; never auto-call `Notification.requestPermission`
+- **iOS PWA subscribe:** await `navigator.serviceWorker.ready` **and** a controlling worker before `pushManager.subscribe`. A registration can exist while `controller` is still null on first Home Screen launch — subscribe then throws and the Switch shows a generic failure. Prefer reusing `getSubscription()` when present; on VAPID mismatch unsubscribe + retry once. Map `sw-not-ready` / `subscribe-failed` to “reopen from Home Screen,” not “check your connection.” Symptom → check: prod PWA toast *Couldn't enable notifications* / *Check your connection* with no `push_subscriptions` POST in API logs.
 - E2E push mock (`tests/e2e/fixtures/push.ts`) must stub `serviceWorker.addEventListener` / `removeEventListener` — `InAppPushToastListener` attaches on mount
 
 ## Suggestion GitHub Issues (suggestion-github-issue)

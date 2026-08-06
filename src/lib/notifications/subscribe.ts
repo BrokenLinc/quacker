@@ -8,7 +8,8 @@ import { supabase } from '@@lib/supabase/client';
 
 import { getNotificationPermissionState } from './permission';
 
-const SW_READY_TIMEOUT_MS = 5_000;
+const SW_READY_TIMEOUT_MS = 8_000;
+const SW_CONTROLLER_TIMEOUT_MS = 5_000;
 
 /**
  * The app registers the service worker at startup (see
@@ -20,22 +21,60 @@ export const registerServiceWorker =
   async (): Promise<ServiceWorkerRegistration | null> => {
     if (!('serviceWorker' in navigator)) return null;
 
-    const existing = await navigator.serviceWorker.getRegistration();
-    if (existing) return existing;
-
-    // Startup registration may still be in flight, or may have failed earlier
-    // in the session — retry via the shared helper before giving up.
     ensureRegistered();
 
-    // Bounded wait so a missing SW surfaces as "unsupported" instead of
-    // hanging the switch.
-    return Promise.race([
+    // Always await `ready` (not just getRegistration). On a freshly opened iOS
+    // PWA the registration can exist while pushManager.subscribe still throws
+    // InvalidStateError until an active worker is ready.
+    const ready = await Promise.race([
       navigator.serviceWorker.ready,
       new Promise<null>((resolve) =>
         setTimeout(() => resolve(null), SW_READY_TIMEOUT_MS)
       ),
     ]);
+    if (!ready) return null;
+
+    if (!navigator.serviceWorker.controller) {
+      // Prompt-mode updates leave a waiting worker; claim so push can subscribe.
+      ready.waiting?.postMessage({ type: 'SKIP_WAITING' });
+      const controlling = await waitForServiceWorkerController(
+        SW_CONTROLLER_TIMEOUT_MS
+      );
+      if (!controlling) return null;
+    }
+
+    return ready;
   };
+
+/** True when this document is controlled by an active service worker. */
+export const waitForServiceWorkerController = (
+  timeoutMs: number
+): Promise<boolean> => {
+  if (typeof navigator === 'undefined' || !('serviceWorker' in navigator)) {
+    return Promise.resolve(false);
+  }
+  if (navigator.serviceWorker.controller) return Promise.resolve(true);
+
+  return new Promise((resolve) => {
+    const timer = window.setTimeout(() => {
+      cleanup();
+      resolve(Boolean(navigator.serviceWorker.controller));
+    }, timeoutMs);
+
+    const onChange = () => {
+      if (!navigator.serviceWorker.controller) return;
+      cleanup();
+      resolve(true);
+    };
+
+    const cleanup = () => {
+      window.clearTimeout(timer);
+      navigator.serviceWorker.removeEventListener('controllerchange', onChange);
+    };
+
+    navigator.serviceWorker.addEventListener('controllerchange', onChange);
+  });
+};
 
 export type EnablePushResult =
   | { ok: true }
@@ -47,7 +86,8 @@ export type EnablePushResult =
         | 'ios-needs-install'
         | 'denied'
         | 'subscribe-failed'
-        | 'persist-failed';
+        | 'persist-failed'
+        | 'sw-not-ready';
     };
 
 /** Request OS permission + store endpoint. Call only from Switch-on handlers. */
@@ -69,21 +109,38 @@ export const enablePushSubscription = async (
   if (state === 'denied') return { ok: false, reason: 'denied' };
 
   const reg = await registerServiceWorker();
-  if (!reg) return { ok: false, reason: 'unsupported' };
+  if (!reg?.active) return { ok: false, reason: 'sw-not-ready' };
 
   const permission =
     state === 'granted' ? 'granted' : await Notification.requestPermission();
   if (permission !== 'granted') return { ok: false, reason: 'denied' };
 
-  let sub: PushSubscription;
+  let sub: PushSubscription | null = null;
   try {
-    sub = await reg.pushManager.subscribe({
-      userVisibleOnly: true,
-      applicationServerKey: urlBase64ToUint8Array(vapidKey),
-    });
-  } catch {
-    return { ok: false, reason: 'subscribe-failed' };
+    sub = await reg.pushManager.getSubscription();
+    if (!sub) {
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+    }
+  } catch (err) {
+    console.error('pushManager.subscribe failed', err);
+    // Existing subscription bound to a different VAPID key — drop and retry once.
+    try {
+      const stale = await reg.pushManager.getSubscription();
+      await stale?.unsubscribe();
+      sub = await reg.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: urlBase64ToUint8Array(vapidKey),
+      });
+    } catch (retryErr) {
+      console.error('pushManager.subscribe retry failed', retryErr);
+      return { ok: false, reason: 'subscribe-failed' };
+    }
   }
+
+  if (!sub) return { ok: false, reason: 'subscribe-failed' };
 
   const json = sub.toJSON();
   if (!json.endpoint || !json.keys?.p256dh || !json.keys?.auth) {
@@ -101,7 +158,10 @@ export const enablePushSubscription = async (
     { onConflict: 'user_id,endpoint' }
   );
 
-  if (error) return { ok: false, reason: 'persist-failed' };
+  if (error) {
+    console.error('push_subscriptions upsert failed', error);
+    return { ok: false, reason: 'persist-failed' };
+  }
   return { ok: true };
 };
 
@@ -136,7 +196,7 @@ export const subscribeToPush = async (
   return result.ok;
 };
 
-function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
+export function urlBase64ToUint8Array(base64String: string): Uint8Array<ArrayBuffer> {
   const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
   const base64 = (base64String + padding).replace(/-/g, '+').replace(/_/g, '/');
   const raw = atob(base64);

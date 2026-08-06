@@ -174,6 +174,19 @@ function toastPushFailure(
     });
     return;
   }
+  if (result.reason === 'sw-not-ready' || result.reason === 'subscribe-failed') {
+    toast({
+      title:
+        result.reason === 'sw-not-ready'
+          ? 'Almost ready'
+          : "Couldn't enable notifications",
+      description:
+        'Close Yowl completely and open it again from your Home Screen, then try again.',
+      status: 'warning',
+      duration: 6000,
+    });
+    return;
+  }
   toast({
     title: "Couldn't enable notifications",
     description: 'You can turn them on later from Account.',
