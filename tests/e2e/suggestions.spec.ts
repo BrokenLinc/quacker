@@ -62,7 +62,9 @@ test('suggestion detail shows full body and accepts replies', async ({
   await row.getByRole('link', { name: `Open suggestion: ${title}` }).click();
 
   await expect(page.getByTestId('suggestion-detail')).toBeVisible();
-  await expect(page.getByRole('heading', { name: title })).toBeVisible();
+  await expect(
+    page.getByTestId('suggestion-detail').getByRole('heading', { name: title })
+  ).toBeVisible();
   // Full body is visible on the detail page (list clips with noOfLines={1}).
   await expect(
     page.getByTestId('suggestion-detail').getByText('Third line for good measure.')
