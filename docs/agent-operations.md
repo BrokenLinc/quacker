@@ -58,7 +58,12 @@ Note: current Supabase CLI may not accept `--token` on `secrets set`; prefer Man
 4. `scripts/setup-suggestion-github-webhook.sh dev` then `prod` — Edge secrets + Vault.
 5. Deploy `suggestion-export` and `suggestion-github-issue` with `verify_jwt: false`.
 
-Issue footer uses same-origin `/suggestions/:id` and `/api/suggestion-export?id=` (Vercel Edge proxies to Supabase).
+Issue footer uses same-origin `/suggestions/:id` and `/api/suggestion-export?id=` (Vercel Edge proxies to Supabase). Label: **`user-suggestion`**.
+
+**Working a `user-suggestion` issue:** fetch Export JSON first; prioritize
+`author.isSuperAdmin` comments; reinterpret end-user wording toward Yowl’s
+north star; comment proposed alterations on the GitHub thread before shipping a
+pivot. Rule: [`.cursor/rules/user-suggestion-issues.mdc`](../.cursor/rules/user-suggestion-issues.mdc).
 
 **Export curl** (prefer app origin so Preview/Production pick the right Supabase):
 
