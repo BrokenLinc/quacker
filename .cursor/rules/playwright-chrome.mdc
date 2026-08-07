@@ -75,6 +75,7 @@ PLAYWRIGHT_BASE_URL=https://yowl.us yarn test:e2e --config=playwright.smoke.conf
 | Dialog/button not found after UI polish | You likely changed a label/title without updating e2e — see **UI changes must update e2e** above |
 | Popover input won't accept type/paste on mobile | Focus-gated parent unmounted on blur — see **Focus-gated toolbar + nested popover** above; fix app (`overlayOpen` in gate), then add mobile e2e that fills the popover field |
 | Account menu / mobile chrome “passes” but product is wrong | Assertion matched **sidebar** UserMenu at desktop width — see **Mobile-only page chrome**; re-run at mobile viewport or scope to the page header |
+| Color mode flips after OS appearance change / overnight on iOS PWA | `useSystemColorMode: true` overwrites storage — keep it `false`; cover with `theme-modes` + `page.emulateMedia({ colorScheme })` |
 
 ## Avoid locally
 

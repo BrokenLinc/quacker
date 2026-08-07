@@ -174,6 +174,15 @@ Implementation: `index.html` (geometry + `html.standalone`),
   `chakra-ui-color-mode` (or system) to `data-theme`, `color-scheme`,
   document = raised, `#root` = canvas — same role as Chakra’s `ColorModeScript`,
   but before React. Do not rely on a React-mounted `ColorModeScript` alone.
+- **Persist the in-app toggle — do not live-sync the OS.** Theme config keeps
+  `initialColorMode: 'system'` (first visit / empty storage) but
+  `useSystemColorMode: false`. When `useSystemColorMode` is true, Chakra’s
+  `prefers-color-scheme` listener calls `setColorMode` and **overwrites**
+  `localStorage` on every OS appearance change — iOS Automatic flips ~daily and
+  the PWA “forgets” dark mode. Detection: `theme-modes` e2e
+  (`color mode preference survives OS appearance changes` via
+  `page.emulateMedia`). Symptom → check: dark mode lost overnight on iOS PWA
+  while the toggle still works → look for `useSystemColorMode: true`.
 - Wipe installed PWA Storage after `index.html` boot changes (webclip cache).
 
 ### Document vs content paint (Safari accessory)
