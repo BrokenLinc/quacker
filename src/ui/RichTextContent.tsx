@@ -6,9 +6,17 @@ import { createRichTextExtensions } from './richText/extensions';
 export type RichTextContentProps = {
   content: string;
   emptyFallback?: React.ReactNode;
+  /**
+   * Rendered in the same text flow after the markdown (e.g. muted
+   * “(edited)”). Uses inline layout so a short suffix sits on the last line.
+   */
+  trailing?: React.ReactNode;
 };
 
-const RichTextDocument: React.FC<{ markdown: string }> = ({ markdown }) => {
+const RichTextDocument: React.FC<{
+  markdown: string;
+  trailing?: React.ReactNode;
+}> = ({ markdown, trailing }) => {
   const extensions = React.useMemo(
     () => createRichTextExtensions({ openLinksOnClick: true }),
     [],
@@ -31,11 +39,18 @@ const RichTextDocument: React.FC<{ markdown: string }> = ({ markdown }) => {
 
   return (
     <UI.Box
+      display={trailing ? 'inline' : undefined}
       sx={{
         '.ProseMirror': {
           outline: 'none',
+          ...(trailing
+            ? {
+                display: 'inline',
+                '& > *:last-child': { display: 'inline' },
+              }
+            : {}),
           '& p': { margin: 0 },
-          '& p + p': { mt: 2 },
+          '& p + p': { mt: 2, display: trailing ? 'block' : undefined },
           '& h1': { fontSize: 'lg', fontWeight: 'bold', lineHeight: 'short' },
           '& h2, & h3': { fontSize: 'md', fontWeight: 'semibold', lineHeight: 'short' },
             '& a': {
@@ -54,6 +69,12 @@ const RichTextDocument: React.FC<{ markdown: string }> = ({ markdown }) => {
       }}
     >
       <EditorContent editor={editor} />
+      {trailing ? (
+        <>
+          {'\u00a0'}
+          {trailing}
+        </>
+      ) : null}
     </UI.Box>
   );
 };
@@ -61,12 +82,23 @@ const RichTextDocument: React.FC<{ markdown: string }> = ({ markdown }) => {
 export const RichTextContent: React.FC<RichTextContentProps> = ({
   content,
   emptyFallback = '🤔',
+  trailing,
 }) => {
   const markdown = content.trim();
 
   if (!markdown) {
-    return <UI.Text>{emptyFallback}</UI.Text>;
+    return (
+      <UI.Text>
+        {emptyFallback}
+        {trailing ? (
+          <>
+            {'\u00a0'}
+            {trailing}
+          </>
+        ) : null}
+      </UI.Text>
+    );
   }
 
-  return <RichTextDocument markdown={markdown} />;
+  return <RichTextDocument markdown={markdown} trailing={trailing} />;
 };

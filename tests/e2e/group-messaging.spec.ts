@@ -188,6 +188,46 @@ test.describe('group messaging', () => {
     );
   });
 
+  test('silenced author does not see Edit on own message', async ({ page }) => {
+    const { admin, userId } = await seedAuthenticatedSession(page);
+
+    const group = await seedTestGroup(admin, userId, {
+      slug: `sil${Date.now().toString(36).slice(-5)}`,
+      name: 'Silenced Edit Test',
+    });
+
+    await gotoGroupPage(page, group);
+
+    const messageText = `Silenced edit ${Date.now()}`;
+    const editor = page.getByTestId('message-editor');
+    await expect(editor).toBeVisible({ timeout: 15_000 });
+    await editor.click();
+    await page.keyboard.type(messageText);
+    await page.getByRole('button', { name: 'Send' }).click();
+
+    await expect
+      .poll(async () => page.getByText(messageText).count(), { timeout: 15_000 })
+      .toBeGreaterThan(0);
+
+    const { error: silenceError } = await admin.from('group_silences').upsert({
+      group_id: group.id,
+      user_id: userId,
+      display_name: 'E2E Tester',
+      silenced_by: userId,
+    });
+    if (silenceError) throw silenceError;
+
+    await expect(page.getByTestId('composer-silenced')).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await page.getByTestId('message-body').last().click();
+    const detail = page.getByRole('dialog', { name: 'Message' });
+    await expect(detail).toBeVisible();
+    await expect(detail.getByTestId('message-edit')).toHaveCount(0);
+    await expect(detail.getByTestId('message-add-reaction')).toBeVisible();
+  });
+
   test('other members do not see Edit on someone else’s message', async ({
     page,
   }) => {

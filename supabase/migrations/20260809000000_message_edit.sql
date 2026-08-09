@@ -1,6 +1,9 @@
 -- Authors may edit their own non-admin messages. edited_at is set when text changes.
 -- Immutable columns are guarded by trigger so UPDATE RLS cannot be used to move
 -- authorship, room, or admin/announcement flags.
+--
+-- Push notify stays INSERT-only (`on_message_notify` / notify_message_insert).
+-- Do not add an UPDATE trigger that calls notify — edits must not re-push.
 
 alter table public.messages
   add column if not exists edited_at timestamptz;

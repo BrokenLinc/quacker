@@ -159,13 +159,17 @@ composer format toolbar only while the editor is focused):
 
 - Own non-admin messages only: **Edit** in the Message detail sheet
   (`data-testid="message-edit"`), not a free-floating list control. Pending /
-  failed / admin rows cannot edit.
+  failed / admin / **silenced viewer** rows cannot edit (hide the control —
+  RLS already rejects; do not leave a dead-end Save).
 - Editor reuses compose limits (`MESSAGE_MAX_LENGTH` 140) and TipTap; Save is
   `message-edit-save`. Do not invent a parallel plain-text field.
-- After edit, show muted `(edited)` (`data-testid="message-edited"`) under the
-  bubble body (and in detail). No edit history UI.
-- Symptom → check: Edit missing on own message → `isOwn` / admin flag; save
-  fails while reactions work → `messages_update_own` / `edited_at` migration.
+- After edit, show muted `(edited)` (`data-testid="message-edited"`) **inline**
+  after the message text via `RichTextContent` `trailing` (small `fontSize="xs"`,
+  not a block under the bubble or next to the timestamp). No edit history UI.
+- Edits must **not** re-fire Web Push — `on_message_notify` is AFTER INSERT only.
+- Symptom → check: Edit missing on own message → `isOwn` / admin / silence;
+  save fails while reactions work → `messages_update_own` / `edited_at`
+  migration; edit triggers a push → someone added an UPDATE notify trigger.
 
 Prefer foolproof entry over free-text + late validation:
 

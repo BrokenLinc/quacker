@@ -1536,6 +1536,7 @@ const ChatScrollArea: React.FC<{
                 currentUid={currentUid}
                 actorRole={actorRole}
                 isSilenced={silencedUids.has(message.uid)}
+                viewerIsSilenced={iAmSilenced}
                 targetIsMember={memberByUid.has(message.uid)}
                 liveDisplayName={
                   message.isAdminMessage
@@ -1598,11 +1599,15 @@ const MessageEditedLabel: React.FC = () => (
     as="span"
     fontSize="xs"
     color="text.muted"
+    fontWeight="normal"
     data-testid="message-edited"
   >
     (edited)
   </UI.Text>
 );
+
+const messageEditedTrailing = (editedAt: number | null): React.ReactNode =>
+  editedAt ? <MessageEditedLabel /> : null;
 
 const EditMessageModal: React.FC<{
   isOpen: boolean;
@@ -1743,9 +1748,11 @@ const MessageDetailModal: React.FC<{
           <UI.Text fontSize="xs" color="text.muted" flexShrink={0}>
             {timeLabel}
           </UI.Text>
-          {editedAt ? <MessageEditedLabel /> : null}
         </UI.HStack>
-        <UI.RichTextContent content={content} />
+        <UI.RichTextContent
+          content={content}
+          trailing={messageEditedTrailing(editedAt)}
+        />
         {canEdit ? (
           <UI.Button
             variant="outline"
@@ -1802,12 +1809,10 @@ const MessageBodyTapTarget: React.FC<{
     role={canOpenDetail ? 'button' : undefined}
     aria-label={canOpenDetail ? 'Open message' : undefined}
   >
-    <UI.RichTextContent content={content} />
-    {editedAt ? (
-      <UI.Box mt={0.5}>
-        <MessageEditedLabel />
-      </UI.Box>
-    ) : null}
+    <UI.RichTextContent
+      content={content}
+      trailing={messageEditedTrailing(editedAt)}
+    />
   </UI.Box>
 );
 
@@ -1820,6 +1825,8 @@ export const MessageRow: React.FC<{
   currentUid?: string;
   actorRole?: GroupMemberRole | null;
   isSilenced?: boolean;
+  /** Current viewer is silenced in this room (blocks Edit, mirrors RLS). */
+  viewerIsSilenced?: boolean;
   targetIsMember?: boolean;
   liveDisplayName?: string | null;
   livePhotoURL?: string | null;
@@ -1837,6 +1844,7 @@ export const MessageRow: React.FC<{
   currentUid,
   actorRole = null,
   isSilenced = false,
+  viewerIsSilenced = false,
   targetIsMember = true,
   liveDisplayName,
   livePhotoURL,
@@ -1859,9 +1867,15 @@ export const MessageRow: React.FC<{
   const canOpenDetail = Boolean(
     groupId && currentUid && !message.pending && !message.failed
   );
-  const canEdit = Boolean(canOpenDetail && isOwn && !isAdminMsg);
+  const canEdit = Boolean(
+    canOpenDetail && isOwn && !isAdminMsg && !viewerIsSilenced
+  );
   const editedAt = message.editedAt ?? null;
   const timeLabel = message.statusLabel ?? formatMessageTime(message.time);
+
+  React.useEffect(() => {
+    if (viewerIsSilenced) setEditOpen(false);
+  }, [viewerIsSilenced]);
 
   const perms =
     !isAdminMsg && groupId && groupCreatorId && currentUid

@@ -41,7 +41,8 @@ messages
   -- author_name/photo stamped at send (notifications + left-member fallback);
   -- chat UI prefers live group_members.display_name; phone_last4 on member profile sheet
   -- authors may UPDATE own non-admin text (RLS + trigger); trigger stamps edited_at;
-  -- warm sync merges by created_at **or** edited_at; muted “(edited)” in the bubble
+  -- warm sync merges by created_at **or** edited_at; muted “(edited)” inline on the bubble;
+  -- notify-new-message stays INSERT-only (edits must not re-push)
 
 message_reactions
   message_id, group_id, user_id, emoji, created_at

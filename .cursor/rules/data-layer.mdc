@@ -59,9 +59,10 @@ rules below. Overview in [`docs/architecture.md`](../../docs/architecture.md).
   wins by id). Warm delta sync must include `edited_at.gte` alongside
   `created_at.gte` or resume misses edits to older rows. Trigger
   `messages_update_guard` blocks rewriting authorship / room / flags.
-  Symptom → check: peer still shows old text after reconnect → sync filter;
-  toast *Couldn't edit message* with working local e2e → migration not on
-  **quacker-dev**.
+  **No push on edit** — `on_message_notify` is INSERT-only; do not wire notify
+  to UPDATE. Symptom → check: peer still shows old text after reconnect →
+  sync filter; toast *Couldn't edit message* with working local e2e →
+  migration not on **quacker-dev**; edit sends a push → UPDATE notify trigger.
 
 - **`RealtimeTopic` circular imports.** Defining topics in a shared module
   while API modules import the type creates a cycle. Keep topic objects in the
