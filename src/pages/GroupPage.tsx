@@ -1326,6 +1326,7 @@ const GroupChat: React.FC<{
         currentUid={user.uid}
         actorRole={myMember?.role ?? null}
         silencedUids={silencedUids}
+        viewerIsSilenced={iAmSilenced}
         memberByUid={memberByUid}
         showCreatorTips={showCreatorTips}
         onInvite={shareModal.onOpen}
