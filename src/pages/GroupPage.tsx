@@ -1383,6 +1383,7 @@ const ChatScrollArea: React.FC<{
   currentUid: string;
   actorRole: GroupMemberRole | null;
   silencedUids: Set<string>;
+  viewerIsSilenced: boolean;
   memberByUid: Map<string, MemberProfile>;
   showCreatorTips: boolean;
   onInvite: () => void;
@@ -1397,6 +1398,7 @@ const ChatScrollArea: React.FC<{
   currentUid,
   actorRole,
   silencedUids,
+  viewerIsSilenced,
   memberByUid,
   showCreatorTips,
   onInvite,
@@ -1536,7 +1538,7 @@ const ChatScrollArea: React.FC<{
                 currentUid={currentUid}
                 actorRole={actorRole}
                 isSilenced={silencedUids.has(message.uid)}
-                viewerIsSilenced={iAmSilenced}
+                viewerIsSilenced={viewerIsSilenced}
                 targetIsMember={memberByUid.has(message.uid)}
                 liveDisplayName={
                   message.isAdminMessage
