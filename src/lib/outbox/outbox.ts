@@ -118,6 +118,7 @@ export const outboxEntryToMessage = (entry: OutboxEntry): Message => ({
   groupId: entry.groupId,
   isAnnouncement: false,
   isAdminMessage: Boolean(entry.isAdminMessage),
+  editedAt: null,
 });
 
 const attempt = async (

@@ -137,4 +137,141 @@ test.describe('group messaging', () => {
     ).toBeHidden({ timeout: 10_000 });
     await expect(page.getByTestId('message-add-reaction')).toHaveCount(0);
   });
+
+  test('author can edit own message and sees muted edited marker', async ({
+    page,
+  }) => {
+    const { admin, userId } = await seedAuthenticatedSession(page);
+
+    const group = await seedTestGroup(admin, userId, {
+      slug: `edt${Date.now().toString(36).slice(-5)}`,
+      name: 'Edit Message Test',
+    });
+
+    await gotoGroupPage(page, group);
+
+    const original = `Edit me ${Date.now()}`;
+    const editor = page.getByTestId('message-editor');
+    await expect(editor).toBeVisible({ timeout: 15_000 });
+    await editor.click();
+    await page.keyboard.type(original);
+    await page.getByRole('button', { name: 'Send' }).click();
+
+    await expect
+      .poll(async () => page.getByText(original).count(), { timeout: 15_000 })
+      .toBeGreaterThan(0);
+
+    await page.getByTestId('message-body').last().click();
+    const detail = page.getByRole('dialog', { name: 'Message' });
+    await expect(detail).toBeVisible();
+    await expect(detail.getByTestId('message-edit')).toBeVisible();
+    await detail.getByTestId('message-edit').click();
+
+    const editDialog = page.getByRole('dialog', { name: 'Edit message' });
+    await expect(editDialog).toBeVisible();
+    const editEditor = editDialog.getByTestId('message-edit-editor');
+    await expect(editEditor).toBeVisible();
+    await editEditor.click();
+    await page.keyboard.press('ControlOrMeta+A');
+    const updated = `Edited ${Date.now()}`;
+    await page.keyboard.type(updated);
+    await editDialog.getByTestId('message-edit-save').click();
+
+    await expect(editDialog).toBeHidden({ timeout: 10_000 });
+    await expect
+      .poll(async () => page.getByText(updated).count(), { timeout: 15_000 })
+      .toBeGreaterThan(0);
+    await expect(page.getByText(original)).toHaveCount(0);
+    await expect(page.getByTestId('message-edited').first()).toBeVisible();
+    await expect(page.getByTestId('message-edited').first()).toHaveText(
+      '(edited)'
+    );
+  });
+
+  test('silenced author does not see Edit on own message', async ({ page }) => {
+    const { admin, userId } = await seedAuthenticatedSession(page);
+
+    const group = await seedTestGroup(admin, userId, {
+      slug: `sil${Date.now().toString(36).slice(-5)}`,
+      name: 'Silenced Edit Test',
+    });
+
+    await gotoGroupPage(page, group);
+
+    const messageText = `Silenced edit ${Date.now()}`;
+    const editor = page.getByTestId('message-editor');
+    await expect(editor).toBeVisible({ timeout: 15_000 });
+    await editor.click();
+    await page.keyboard.type(messageText);
+    await page.getByRole('button', { name: 'Send' }).click();
+
+    await expect
+      .poll(async () => page.getByText(messageText).count(), { timeout: 15_000 })
+      .toBeGreaterThan(0);
+
+    const { error: silenceError } = await admin.from('group_silences').upsert({
+      group_id: group.id,
+      user_id: userId,
+      display_name: 'E2E Tester',
+      silenced_by: userId,
+    });
+    if (silenceError) throw silenceError;
+
+    await expect(page.getByTestId('composer-silenced')).toBeVisible({
+      timeout: 15_000,
+    });
+
+    await page.getByTestId('message-body').last().click();
+    const detail = page.getByRole('dialog', { name: 'Message' });
+    await expect(detail).toBeVisible();
+    await expect(detail.getByTestId('message-edit')).toHaveCount(0);
+    await expect(detail.getByTestId('message-add-reaction')).toBeVisible();
+  });
+
+  test('other members do not see Edit on someone else’s message', async ({
+    page,
+  }) => {
+    const { admin, userId } = await seedAuthenticatedSession(page);
+
+    const group = await seedTestGroup(admin, userId, {
+      slug: `ned${Date.now().toString(36).slice(-5)}`,
+      name: 'No Edit Test',
+    });
+
+    const { data: otherData, error: otherError } =
+      await admin.auth.admin.createUser({
+        email: `e2e-other-${Date.now()}@quacker.test`,
+        email_confirm: true,
+      });
+    if (otherError || !otherData.user) {
+      throw otherError ?? new Error('No other user');
+    }
+    const otherId = otherData.user.id;
+
+    const { error: memberError } = await admin.from('group_members').insert({
+      group_id: group.id,
+      user_id: otherId,
+      role: 'member',
+      display_name: 'Other',
+    });
+    if (memberError) throw memberError;
+
+    const { error: messageError } = await admin.from('messages').insert({
+      group_id: group.id,
+      author_id: otherId,
+      author_name: 'Other',
+      text: `Not yours ${Date.now()}`,
+    });
+    if (messageError) throw messageError;
+
+    await gotoGroupPage(page, group);
+    await expect(page.getByTestId('message-body').last()).toBeVisible({
+      timeout: 15_000,
+    });
+    await page.getByTestId('message-body').last().click();
+    const detail = page.getByRole('dialog', { name: 'Message' });
+    await expect(detail).toBeVisible();
+    await expect(detail.getByTestId('message-edit')).toHaveCount(0);
+    await expect(detail.getByTestId('message-add-reaction')).toBeVisible();
+  });
 });

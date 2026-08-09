@@ -47,6 +47,8 @@ export const pushedMessageToMessage = (pushed: PushedMessage): Message => ({
   groupId: pushed.groupId,
   isAnnouncement: Boolean(pushed.isAnnouncement),
   isAdminMessage: Boolean(pushed.isAdminMessage),
+  // Pushes are insert-only; edits are not re-notified.
+  editedAt: null,
 });
 
 /** Merge anything the SW stored into the cache. Returns how many were applied. */

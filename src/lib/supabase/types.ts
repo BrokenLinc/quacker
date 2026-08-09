@@ -147,6 +147,7 @@ export type Database = {
           author_name: string | null;
           author_photo_url: string | null;
           created_at: string;
+          edited_at: string | null;
           group_id: string;
           id: string;
           is_admin_message: boolean;
@@ -158,6 +159,7 @@ export type Database = {
           author_name?: string | null;
           author_photo_url?: string | null;
           created_at?: string;
+          edited_at?: string | null;
           group_id: string;
           id?: string;
           is_admin_message?: boolean;
@@ -169,6 +171,7 @@ export type Database = {
           author_name?: string | null;
           author_photo_url?: string | null;
           created_at?: string;
+          edited_at?: string | null;
           group_id?: string;
           id?: string;
           is_admin_message?: boolean;

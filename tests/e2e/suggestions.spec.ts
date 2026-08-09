@@ -1,8 +1,20 @@
 import { expect, test } from '@playwright/test';
 
-import { seedAuthenticatedSession } from './fixtures/supabase';
+import {
+  getAdminClient,
+  seedAuthenticatedSession,
+} from './fixtures/supabase';
 
 test('suggestions nav opens list and create form', async ({ page }) => {
+  // Suggestions are global — clear leftovers so parallel detail specs cannot
+  // flip empty-state chrome (Search/Mine) while this smoke runs.
+  const admin = getAdminClient();
+  const { error: clearError } = await admin
+    .from('suggestions')
+    .delete()
+    .neq('id', '00000000-0000-0000-0000-000000000000');
+  if (clearError) throw clearError;
+
   await seedAuthenticatedSession(page);
 
   await expect(page.getByTestId('suggestions-nav')).toBeVisible({
@@ -14,6 +26,9 @@ test('suggestions nav opens list and create form', async ({ page }) => {
   await expect(
     page.getByRole('heading', { name: 'Suggestions', exact: true })
   ).toBeVisible();
+  await expect(
+    page.getByRole('heading', { name: 'No suggestions yet' })
+  ).toBeVisible({ timeout: 15_000 });
   await expect(page.getByLabel('Search')).toBeHidden();
   await expect(page.getByLabel('Mine')).toBeHidden();
 

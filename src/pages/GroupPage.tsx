@@ -15,6 +15,7 @@ import {
   setMemberSilenced,
   setUserSuperBanned,
   updateGroup,
+  updateMessage,
   useGroup,
   useGroupMembers,
   useGroupMembership,
@@ -1325,6 +1326,7 @@ const GroupChat: React.FC<{
         currentUid={user.uid}
         actorRole={myMember?.role ?? null}
         silencedUids={silencedUids}
+        viewerIsSilenced={iAmSilenced}
         memberByUid={memberByUid}
         showCreatorTips={showCreatorTips}
         onInvite={shareModal.onOpen}
@@ -1382,6 +1384,7 @@ const ChatScrollArea: React.FC<{
   currentUid: string;
   actorRole: GroupMemberRole | null;
   silencedUids: Set<string>;
+  viewerIsSilenced: boolean;
   memberByUid: Map<string, MemberProfile>;
   showCreatorTips: boolean;
   onInvite: () => void;
@@ -1396,6 +1399,7 @@ const ChatScrollArea: React.FC<{
   currentUid,
   actorRole,
   silencedUids,
+  viewerIsSilenced,
   memberByUid,
   showCreatorTips,
   onInvite,
@@ -1535,6 +1539,7 @@ const ChatScrollArea: React.FC<{
                 currentUid={currentUid}
                 actorRole={actorRole}
                 isSilenced={silencedUids.has(message.uid)}
+                viewerIsSilenced={viewerIsSilenced}
                 targetIsMember={memberByUid.has(message.uid)}
                 liveDisplayName={
                   message.isAdminMessage
@@ -1590,6 +1595,113 @@ const openMessageDetailFromEvent = (
   open();
 };
 
+const MESSAGE_MAX_LENGTH = 140;
+
+const MessageEditedLabel: React.FC = () => (
+  <UI.Text
+    as="span"
+    fontSize="xs"
+    color="text.muted"
+    fontWeight="normal"
+    data-testid="message-edited"
+  >
+    (edited)
+  </UI.Text>
+);
+
+const messageEditedTrailing = (editedAt: number | null): React.ReactNode =>
+  editedAt ? <MessageEditedLabel /> : null;
+
+const EditMessageModal: React.FC<{
+  isOpen: boolean;
+  onClose: () => void;
+  messageId: string;
+  groupId: string;
+  initialText: string;
+}> = ({ isOpen, onClose, messageId, groupId, initialText }) => {
+  const [text, setText] = React.useState(initialText);
+  const [saving, setSaving] = React.useState(false);
+  const toast = UI.useToast();
+
+  React.useEffect(() => {
+    if (isOpen) setText(initialText);
+  }, [isOpen, initialText]);
+
+  const trimmed = text.trim();
+  const canSubmit =
+    !!trimmed &&
+    trimmed !== initialText.trim() &&
+    text.length <= MESSAGE_MAX_LENGTH &&
+    !saving;
+
+  const handleSubmit = async () => {
+    if (!canSubmit) return;
+    setSaving(true);
+    try {
+      await updateMessage({ id: messageId, groupId, text: trimmed });
+      onClose();
+    } catch {
+      toast({
+        title: "Couldn't edit message",
+        description: 'Check your connection and try again.',
+        status: 'error',
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <UI.QuickModal
+      isOpen={isOpen}
+      onClose={onClose}
+      headerContent="Edit message"
+      size="sm"
+    >
+      <UI.ModalBody pb={6}>
+        <UI.VStack align="stretch" spacing={3}>
+          {isOpen ? (
+            <UI.Box position="relative">
+              <UI.RichTextEditor
+                value={text}
+                onChange={setText}
+                onSubmit={() => void handleSubmit()}
+                maxLength={MESSAGE_MAX_LENGTH}
+                placeholder="Edit message"
+                testId="message-edit-editor"
+              />
+              {text.length > 0 ? (
+                <UI.Text
+                  position="absolute"
+                  bottom={3}
+                  right={3}
+                  fontSize="xs"
+                  color={
+                    text.length > MESSAGE_MAX_LENGTH ? 'red.500' : 'text.muted'
+                  }
+                  pointerEvents="none"
+                >
+                  {text.length}/{MESSAGE_MAX_LENGTH}
+                </UI.Text>
+              ) : null}
+            </UI.Box>
+          ) : null}
+          <UI.Button
+            colorScheme="action"
+            onClick={() => void handleSubmit()}
+            isDisabled={!canSubmit}
+            isLoading={saving}
+            leftIcon={<UI.Icon icon={faCheck} />}
+            data-testid="message-edit-save"
+          >
+            Save
+          </UI.Button>
+        </UI.VStack>
+      </UI.ModalBody>
+    </UI.QuickModal>
+  );
+};
+
 const MessageDetailModal: React.FC<{
   isOpen: boolean;
   onClose: () => void;
@@ -1597,6 +1709,9 @@ const MessageDetailModal: React.FC<{
   authorColor?: string;
   timeLabel: string;
   content: string;
+  editedAt: number | null;
+  canEdit: boolean;
+  onEdit: () => void;
   messageId: string;
   groupId: string;
   currentUid: string;
@@ -1608,6 +1723,9 @@ const MessageDetailModal: React.FC<{
   authorColor,
   timeLabel,
   content,
+  editedAt,
+  canEdit,
+  onEdit,
   messageId,
   groupId,
   currentUid,
@@ -1634,7 +1752,21 @@ const MessageDetailModal: React.FC<{
             {timeLabel}
           </UI.Text>
         </UI.HStack>
-        <UI.RichTextContent content={content} />
+        <UI.RichTextContent
+          content={content}
+          trailing={messageEditedTrailing(editedAt)}
+        />
+        {canEdit ? (
+          <UI.Button
+            variant="outline"
+            size="sm"
+            leftIcon={<UI.Icon icon={faPenToSquare} />}
+            onClick={onEdit}
+            data-testid="message-edit"
+          >
+            Edit
+          </UI.Button>
+        ) : null}
         <MessageReactionsBar
           messageId={messageId}
           groupId={groupId}
@@ -1649,9 +1781,10 @@ const MessageDetailModal: React.FC<{
 
 const MessageBodyTapTarget: React.FC<{
   content: string;
+  editedAt: number | null;
   canOpenDetail: boolean;
   onOpenDetail: () => void;
-}> = ({ content, canOpenDetail, onOpenDetail }) => (
+}> = ({ content, editedAt, canOpenDetail, onOpenDetail }) => (
   <UI.Box
     data-testid="message-body"
     borderRadius="md"
@@ -1679,7 +1812,10 @@ const MessageBodyTapTarget: React.FC<{
     role={canOpenDetail ? 'button' : undefined}
     aria-label={canOpenDetail ? 'Open message' : undefined}
   >
-    <UI.RichTextContent content={content} />
+    <UI.RichTextContent
+      content={content}
+      trailing={messageEditedTrailing(editedAt)}
+    />
   </UI.Box>
 );
 
@@ -1692,6 +1828,8 @@ export const MessageRow: React.FC<{
   currentUid?: string;
   actorRole?: GroupMemberRole | null;
   isSilenced?: boolean;
+  /** Current viewer is silenced in this room (blocks Edit, mirrors RLS). */
+  viewerIsSilenced?: boolean;
   targetIsMember?: boolean;
   liveDisplayName?: string | null;
   livePhotoURL?: string | null;
@@ -1709,6 +1847,7 @@ export const MessageRow: React.FC<{
   currentUid,
   actorRole = null,
   isSilenced = false,
+  viewerIsSilenced = false,
   targetIsMember = true,
   liveDisplayName,
   livePhotoURL,
@@ -1720,6 +1859,7 @@ export const MessageRow: React.FC<{
 }) => {
   const [profileOpen, setProfileOpen] = React.useState(false);
   const [detailOpen, setDetailOpen] = React.useState(false);
+  const [editOpen, setEditOpen] = React.useState(false);
   const isAdminMsg = Boolean(message.isAdminMessage);
   const displayName = isAdminMsg
     ? 'Yowl Admin'
@@ -1730,7 +1870,15 @@ export const MessageRow: React.FC<{
   const canOpenDetail = Boolean(
     groupId && currentUid && !message.pending && !message.failed
   );
+  const canEdit = Boolean(
+    canOpenDetail && isOwn && !isAdminMsg && !viewerIsSilenced
+  );
+  const editedAt = message.editedAt ?? null;
   const timeLabel = message.statusLabel ?? formatMessageTime(message.time);
+
+  React.useEffect(() => {
+    if (viewerIsSilenced) setEditOpen(false);
+  }, [viewerIsSilenced]);
 
   const perms =
     !isAdminMsg && groupId && groupCreatorId && currentUid
@@ -1745,6 +1893,11 @@ export const MessageRow: React.FC<{
         })
       : { canSilence: false, canToggleMod: false, canSelfUnmod: false };
 
+  const openEdit = () => {
+    setDetailOpen(false);
+    setEditOpen(true);
+  };
+
   const detailModal =
     canOpenDetail && groupId && currentUid ? (
       <MessageDetailModal
@@ -1754,10 +1907,24 @@ export const MessageRow: React.FC<{
         authorColor={isAdminMsg ? 'brand.600' : undefined}
         timeLabel={formatMessageTime(message.time)}
         content={message.text}
+        editedAt={editedAt}
+        canEdit={canEdit}
+        onEdit={openEdit}
         messageId={message.id}
         groupId={groupId}
         currentUid={currentUid}
         reactions={reactions}
+      />
+    ) : null;
+
+  const editModal =
+    canEdit && groupId ? (
+      <EditMessageModal
+        isOpen={editOpen}
+        onClose={() => setEditOpen(false)}
+        messageId={message.id}
+        groupId={groupId}
+        initialText={message.text}
       />
     ) : null;
 
@@ -1816,6 +1983,7 @@ export const MessageRow: React.FC<{
             )}
             <MessageBodyTapTarget
               content={message.text}
+              editedAt={editedAt}
               canOpenDetail={canOpenDetail}
               onOpenDetail={() => setDetailOpen(true)}
             />
@@ -1831,6 +1999,7 @@ export const MessageRow: React.FC<{
           </UI.Box>
         </UI.HStack>
         {detailModal}
+        {editModal}
       </>
     );
   }
@@ -1937,6 +2106,7 @@ export const MessageRow: React.FC<{
           )}
           <MessageBodyTapTarget
             content={message.text}
+            editedAt={editedAt}
             canOpenDetail={canOpenDetail}
             onOpenDetail={() => setDetailOpen(true)}
           />
@@ -1952,6 +2122,7 @@ export const MessageRow: React.FC<{
         </UI.Box>
       </UI.HStack>
       {detailModal}
+      {editModal}
     </>
   );
 };
@@ -2189,8 +2360,6 @@ const MemberProfileBody: React.FC<{
   );
 };
 
-
-const MESSAGE_MAX_LENGTH = 140;
 
 const Composer: React.FC<{
   onSend: (text: string) => Promise<void>;

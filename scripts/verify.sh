@@ -59,11 +59,23 @@ if [[ "${SKIP_E2E:-}" == 1 ]]; then
 fi
 
 echo "==> preview server for e2e"
-yarn preview --host 127.0.0.1 --port "$PREVIEW_PORT" &
+# Vite silently hops to the next port when PREVIEW_PORT is taken, but we pin
+# PLAYWRIGHT_BASE_URL to PREVIEW_PORT — a stale listener would serve an old
+# build. Free the port first (best-effort) so preview binds where we expect.
+if command -v fuser >/dev/null 2>&1; then
+  fuser -k "${PREVIEW_PORT}/tcp" >/dev/null 2>&1 || true
+  sleep 0.5
+fi
+yarn preview --host 127.0.0.1 --port "$PREVIEW_PORT" --strictPort &
 PREVIEW_PID=$!
 for _ in $(seq 1 30); do
   if curl -sf "http://127.0.0.1:${PREVIEW_PORT}/" >/dev/null 2>&1; then
     break
+  fi
+  # preview --strictPort exits if the bind failed
+  if ! kill -0 "$PREVIEW_PID" 2>/dev/null; then
+    echo "!! preview failed to bind 127.0.0.1:${PREVIEW_PORT}"
+    exit 1
   fi
   sleep 1
 done
