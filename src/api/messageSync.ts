@@ -4,10 +4,11 @@ import type { Message } from './message';
  * Pure helpers for incremental message sync. Kept dependency-free so they are
  * unit-testable in the node vitest environment.
  *
- * Messages are append-only (no UPDATE/DELETE policy on `public.messages`), so a
- * warm sync only needs rows newer than what is already cached. `created_at` has
- * no strict ordering guarantee against concurrent inserts, so every delta
- * re-reads a short overlap window and dedupes by `id`.
+ * Warm sync fetches rows with `created_at` **or** `edited_at` at/after the
+ * newest cached message (minus an overlap window) and dedupes by `id`.
+ * Authors may UPDATE their own message text (`edited_at`); there is still no
+ * DELETE policy. `created_at` has no strict ordering guarantee against
+ * concurrent inserts, so the overlap window covers clock skew on inserts too.
  */
 
 /** Re-read this far back from the newest cached message on a delta fetch. */

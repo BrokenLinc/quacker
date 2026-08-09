@@ -27,6 +27,8 @@ export interface Message {
   groupId: string;
   isAnnouncement: boolean;
   isAdminMessage: boolean;
+  /** Epoch ms when the author last changed `text`; null if never edited. */
+  editedAt: number | null;
 }
 
 export const rowToMessage = (row: MessageRow): Message => ({
@@ -39,6 +41,7 @@ export const rowToMessage = (row: MessageRow): Message => ({
   groupId: row.group_id,
   isAnnouncement: row.is_announcement ?? false,
   isAdminMessage: row.is_admin_message ?? false,
+  editedAt: row.edited_at ? new Date(row.edited_at).getTime() : null,
 });
 
 const DEFAULT_MESSAGE_LIMIT = 100;
@@ -78,11 +81,13 @@ export const fetchGroupMessages = async (
 
   if (since === null || !cached) return fetchNewest(groupId, limit);
 
+  const sinceIso = new Date(since).toISOString();
+  // Include edits to older rows — created_at-only deltas miss them on resume.
   const { data, error } = await supabase
     .from('messages')
     .select('*')
     .eq('group_id', groupId)
-    .gte('created_at', new Date(since).toISOString())
+    .or(`created_at.gte.${sinceIso},edited_at.gte.${sinceIso}`)
     .order('created_at', { ascending: false })
     .limit(limit);
 
@@ -196,4 +201,32 @@ export const addMessage = async (data: {
   });
 
   if (error) throw error;
+};
+
+/**
+ * Update the text of an own message. RLS + trigger enforce authorship and only
+ * allow `text` / `edited_at` changes; the trigger stamps `edited_at` on text
+ * change. Optimistic cache merge uses the returned row.
+ */
+export const updateMessage = async (data: {
+  id: string;
+  groupId: string;
+  text: string;
+}): Promise<Message> => {
+  const trimmed = data.text.trim();
+  if (!trimmed) throw new Error('Message text is required');
+
+  const { data: row, error } = await supabase
+    .from('messages')
+    .update({ text: trimmed })
+    .eq('id', data.id)
+    .eq('group_id', data.groupId)
+    .select('*')
+    .single();
+
+  if (error) throw error;
+
+  const message = rowToMessage(row as MessageRow);
+  applyMessageInsert(message);
+  return message;
 };

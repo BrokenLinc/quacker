@@ -53,6 +53,16 @@ rules below. Overview in [`docs/architecture.md`](../../docs/architecture.md).
   rule as messages. Persist under `messageReactions` query root. Keep the
   emoji CHECK constraint aligned with `REACTION_EMOJIS`.
 
+- **Message edits** update `messages.text` + `edited_at` (own non-admin rows
+  only). Use `updateMessage` from `src/api/message.ts` — never patch from a
+  component. Realtime UPDATE payloads merge via `applyMessageInsert` (incoming
+  wins by id). Warm delta sync must include `edited_at.gte` alongside
+  `created_at.gte` or resume misses edits to older rows. Trigger
+  `messages_update_guard` blocks rewriting authorship / room / flags.
+  Symptom → check: peer still shows old text after reconnect → sync filter;
+  toast *Couldn't edit message* with working local e2e → migration not on
+  **quacker-dev**.
+
 - **`RealtimeTopic` circular imports.** Defining topics in a shared module
   while API modules import the type creates a cycle. Keep topic objects in the
   API module that owns the row mapper; keep only the type + hook in

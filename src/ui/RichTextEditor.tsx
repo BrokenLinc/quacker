@@ -24,6 +24,8 @@ export type RichTextEditorProps = {
   minH?: UI.BoxProps['minH'];
   /** Soft limit enforced by TipTap CharacterCount. */
   maxLength?: number;
+  /** Stable test hook; defaults to the composer `message-editor`. */
+  testId?: string;
 };
 
 const inlineCodeStyles = {
@@ -42,6 +44,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
   placeholder = 'Say something!',
   minH = 10,
   maxLength,
+  testId = 'message-editor',
 }) => {
   const placeholderColor = UI.useColorModeValue('gray.400', 'gray.500');
   const isMobile = UI.useBreakpointValue({ base: true, md: false }) ?? false;
@@ -66,7 +69,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     editorProps: {
       attributes: {
         'aria-label': placeholder,
-        'data-testid': 'message-editor',
+        'data-testid': testId,
       },
       handleKeyDown: (_view, event) => {
         if (

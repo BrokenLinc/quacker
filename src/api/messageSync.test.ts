@@ -21,6 +21,7 @@ const message = (id: string, time: number, text = id): Message => ({
   groupId: 'g1',
   isAnnouncement: false,
   isAdminMessage: false,
+  editedAt: null,
 });
 
 describe('sortMessages', () => {

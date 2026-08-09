@@ -36,9 +36,12 @@ group_silences
   -- persistent mute; survives leave/rejoin; blocks message insert until removed
 
 messages
-  id, group_id, author_id, author_name, author_photo_url, text, is_announcement, created_at
+  id, group_id, author_id, author_name, author_photo_url, text, is_announcement,
+  is_admin_message, created_at, edited_at
   -- author_name/photo stamped at send (notifications + left-member fallback);
   -- chat UI prefers live group_members.display_name; phone_last4 on member profile sheet
+  -- authors may UPDATE own non-admin text (RLS + trigger); trigger stamps edited_at;
+  -- warm sync merges by created_at **or** edited_at; muted “(edited)” in the bubble
 
 message_reactions
   message_id, group_id, user_id, emoji, created_at
