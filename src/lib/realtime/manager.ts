@@ -47,10 +47,15 @@ const notifyStatusChange = (): void => {
 const openChannel = (entry: Entry): RealtimeChannel => {
   // Suffix the wire name so a rebuild never collides with a channel that is
   // still being removed (removeChannel resolves asynchronously).
-  const channel = supabase.channel(`${entry.topic.key}#${entry.generation}`);
+  const generation = entry.generation;
+  const channel = supabase.channel(`${entry.topic.key}#${generation}`);
   entry.topic.configure(channel);
   channel.subscribe((status) => {
+    // Same Entry object is reused across rebuilds — ignore callbacks from the
+    // channel that removeChannel is tearing down, or a stale CLOSED after
+    // resume will overwrite SUBSCRIBED and stick the Reconnecting badge.
     if (entries.get(entry.topic.key) !== entry) return;
+    if (entry.generation !== generation) return;
     entry.status = status;
     notifyStatusChange();
   });
