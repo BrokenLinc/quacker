@@ -95,6 +95,14 @@ rules below. Overview in [`docs/architecture.md`](../../docs/architecture.md).
   stays `SUBSCRIBED`. On absence, `markRealtimeClosed()` before `refreshRealtime()`;
   if the socket is disconnected, `refreshRealtime` marks closed too. Coalesced
   wake-ups queue a follow-up pass (`pendingAbsenceMs`) instead of dropping.
+- **Stale channel status after rebuild.** `Entry` is reused across generations;
+  `removeChannel` can fire `CLOSED` on the *old* subscribe callback after the
+  new channel is already `SUBSCRIBED`. Always ignore status when
+  `entry.generation` no longer matches the callback’s captured generation
+  (see `openChannel`). Symptom → check: PWA resume leaves **Reconnecting…**
+  forever while `navigator.onLine` is true — unit:
+  `src/lib/realtime/manager.test.ts`. `appLifecycle` also retries
+  `refreshRealtime` after a short online degraded window.
 
 ## Service worker contract
 

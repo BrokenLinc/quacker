@@ -5,8 +5,10 @@ import { clearPushInbox, drainPushInbox } from '@@lib/notifications/pushInbox';
 import { clearOutbox, flushOutbox, loadOutbox } from '@@lib/outbox/outbox';
 import {
   disconnectRealtime,
+  getRealtimeHealth,
   markRealtimeClosed,
   refreshRealtime,
+  subscribeRealtimeStatus,
 } from '@@lib/realtime/manager';
 import { supabase } from '@@lib/supabase/client';
 
@@ -27,10 +29,17 @@ const SHORT_ABSENCE_MS = 20_000;
 /** How long the app may stay hidden before the websocket is dropped. */
 const HIDDEN_DISCONNECT_DELAY_MS = 60_000;
 
+/**
+ * If Realtime stays degraded while the browser reports online, rebuild once.
+ * Covers races (stale CLOSED after resume) and CHANNEL_ERROR with no wake-up.
+ */
+const DEGRADED_RETRY_MS = 2_500;
+
 let refCount = 0;
 let teardown: (() => void) | null = null;
 let hiddenAt: number | null = null;
 let hiddenTimer: ReturnType<typeof setTimeout> | null = null;
+let degradedRetryTimer: ReturnType<typeof setTimeout> | null = null;
 let resuming: Promise<void> | null = null;
 /** Longest absence observed while a resume pass is in flight. */
 let pendingAbsenceMs: number | null = null;
@@ -41,6 +50,22 @@ const clearHiddenTimer = (): void => {
   if (hiddenTimer === null) return;
   clearTimeout(hiddenTimer);
   hiddenTimer = null;
+};
+
+const clearDegradedRetryTimer = (): void => {
+  if (degradedRetryTimer === null) return;
+  clearTimeout(degradedRetryTimer);
+  degradedRetryTimer = null;
+};
+
+const scheduleDegradedRetry = (): void => {
+  if (degradedRetryTimer !== null) return;
+  degradedRetryTimer = setTimeout(() => {
+    degradedRetryTimer = null;
+    if (!onlineManager.isOnline()) return;
+    if (getRealtimeHealth() !== 'degraded') return;
+    refreshRealtime();
+  }, DEGRADED_RETRY_MS);
 };
 
 /** Never let one slow request hold up the rest of the recovery. */
@@ -195,6 +220,16 @@ const install = (): (() => void) => {
   document.addEventListener('freeze', suspend);
   const unsubscribeOnline = onlineManager.subscribe(onOnline);
 
+  const onRealtimeStatus = (): void => {
+    if (getRealtimeHealth() === 'degraded' && onlineManager.isOnline()) {
+      scheduleDegradedRetry();
+      return;
+    }
+    clearDegradedRetryTimer();
+  };
+  const unsubscribeRealtimeStatus = subscribeRealtimeStatus(onRealtimeStatus);
+  onRealtimeStatus();
+
   const { data: authSubscription } = supabase.auth.onAuthStateChange(
     (event, session) => {
       if (event === 'SIGNED_OUT') {
@@ -219,8 +254,10 @@ const install = (): (() => void) => {
     document.removeEventListener('resume', resume);
     document.removeEventListener('freeze', suspend);
     unsubscribeOnline();
+    unsubscribeRealtimeStatus();
     authSubscription.subscription.unsubscribe();
     clearHiddenTimer();
+    clearDegradedRetryTimer();
   };
 };
 
